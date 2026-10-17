@@ -930,7 +930,7 @@ def bin_header(title):
     labels = [f"{z}%" for z in DISPLAY_ZONES]
     return [
         f"| {title} | Lifts | " + " | ".join(labels) + " | ARI |",
-        "|" + "---|" * (len(DISPLAY_ZONES) + 2),
+        "|" + "---|" * (len(DISPLAY_ZONES) + 3),
     ]
 
 

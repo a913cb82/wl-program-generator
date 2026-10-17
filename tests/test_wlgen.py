@@ -1,3 +1,4 @@
+import re
 from math import gcd
 
 import wlgen
@@ -442,6 +443,25 @@ def test_markdown_tables_at_every_level():
     assert len(micro) == 20
     for chunk in micro:
         assert "| Group | Lifts |" in chunk
+
+
+def test_markdown_tables_have_matching_columns():
+    def cells(row):
+        return [c.strip() for c in row.strip("|").split("|")]
+
+    for cls in ANNUALS:
+        lines = to_markdown(build_plan(cls)).splitlines()
+        for i, line in enumerate(lines):
+            if not line.startswith("|") or i + 1 >= len(lines):
+                continue
+            if not re.fullmatch(r"\|[-: |]+\|", lines[i + 1]):
+                continue
+            header = cells(line)
+            assert len(cells(lines[i + 1])) == len(header), f"{cls} line {i + 1}"
+            j = i + 2
+            while j < len(lines) and lines[j].startswith("|"):
+                assert len(cells(lines[j])) == len(header), f"{cls} line {j + 1}"
+                j += 1
 
 
 def test_sizes_at_every_level():
