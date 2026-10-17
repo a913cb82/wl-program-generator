@@ -1,4 +1,3 @@
-from itertools import pairwise
 from math import gcd
 
 import wlgen
@@ -201,7 +200,7 @@ def test_spread_avoids_back_to_back_sessions():
                 ss = w["sessions"]
                 for g in GROUPS:
                     ts = [j for j, s in enumerate(ss) if g in s["movements"]]
-                    short += sum(1 for a, b in pairwise(ts) if b - a == 1)
+                    short += sum(1 for a, b in zip(ts, ts[1:]) if b - a == 1)
                 if prev_last is not None:
                     boundary += len(prev_last & set(ss[0]["movements"]))
                 prev_last = set(ss[-1]["movements"])
