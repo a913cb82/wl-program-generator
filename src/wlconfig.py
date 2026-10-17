@@ -1,5 +1,7 @@
 """Tunable data and rules for the WL program generator."""
 
+from typing import Any, Dict
+
 GROUPS = [
     "Snatch",
     "Other Snatch",
@@ -87,7 +89,7 @@ MS_R = {
     "comp": [8, 13, 5, 8, 6, 8, 20, 0, 5, 12, 0, 15],
 }
 
-CLASSES = {
+CLASSES: Dict[str, Any] = {
     "III": {"annual": 12000, "macro": MACRO, "ratios": III_II},
     "II": {"annual": 12000, "macro": MACRO, "ratios": III_II},
     "I": {"annual": 15000, "macro": MACRO, "ratios": I_CMS},

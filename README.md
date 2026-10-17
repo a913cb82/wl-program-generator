@@ -4,15 +4,16 @@ Generates a 20-week Soviet-style Olympic weightlifting macrocycle (one training 
 
 ## Run
 
-`python wlgen.py` writes one plan per competition class into `outputs/`.
+`wlgen` writes one plan per competition class into `outputs/`.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install pytest ruff
-.venv/bin/python wlgen.py            # write all five plans
+uv sync --all-extras                 # create .venv from uv.lock
+.venv/bin/wlgen                      # write all five plans
 .venv/bin/pytest -q                  # run the tests
-.venv/bin/ruff format . && .venv/bin/ruff check .
+.venv/bin/pre-commit install         # enable format and type hooks
 ```
+
+Without uv, run `python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'`.
 
 Or use it as a library:
 
@@ -54,10 +55,13 @@ Session bullets give exact sets, reps and zone:
 
 ## What's in the repo
 
-- `wlconfig.py` — all data and tuning: ratios, templates, bins, search widths. The steps below name its tables.
-- `wlgen.py` — the generator and the Markdown renderer.
-- `test_wlgen.py` — the test suite.
+- `src/wlconfig.py` — all data and tuning: ratios, templates, bins, search widths. The steps below name its tables.
+- `src/wlgen.py` — the generator and the Markdown renderer.
+- `tests/test_wlgen.py` — the test suite.
 - `outputs/` — the five generated plans.
+- `pyproject.toml` — packaging, test, lint and type-check config.
+- `uv.lock` — pinned dev dependencies.
+- `.pre-commit-config.yaml` — format and type-check hooks.
 
 ## How it plans
 

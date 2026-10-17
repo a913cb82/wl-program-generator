@@ -36,7 +36,7 @@ from wlconfig import (
 
 
 def expand(slots):
-    out = [()]
+    out: list = [()]
     for alts, lo, hi, optional in slots:
         choices = [*alts, *([None] if optional else [])]
         out = [o + (c,) for o in out for c in choices]
@@ -203,7 +203,7 @@ def feasible(prior, rows, cols):
     nr, nc = len(rows), len(cols)
     n = nr + nc + 2
     src, sink = n - 2, n - 1
-    graph = [[] for _ in range(n)]
+    graph: list = [[] for _ in range(n)]
 
     def edge(a, b, cap):
         graph[a].append([b, cap, len(graph[b])])
@@ -221,7 +221,7 @@ def feasible(prior, rows, cols):
                 edge(i, nr + j, 10**9)
     flow, total = 0, sum(rows)
     while total == sum(cols) and flow < total:
-        parent = [None] * n
+        parent: list = [None] * n
         parent[src] = (src, -1)
         queue = [src]
         while queue and parent[sink] is None:
@@ -354,7 +354,9 @@ def resolve_slots(prior, rows, cols, idx, calls, limit):
     def build(upto):
         q = [[0.0] * nc for _ in rows]
         for k in range(upto + 1):
-            for g in chosen[k]:
+            used = chosen[k]
+            assert used is not None
+            for g in used:
                 q[idx[g]][k] = 1.0
         return q
 
@@ -406,7 +408,7 @@ def slot_assign(groups, values):
     """Assign groups to distinct template slots (largest volume first), so each
     X|Y slot is filled by exactly one movement. Returns the matched groups."""
     slots = [set(alts) for alts, lo, hi, optional in DAY]
-    taken = {}
+    taken: dict = {}
 
     def place(g, seen):
         for k, alts in enumerate(slots):
@@ -434,7 +436,7 @@ def week_quota(targets, vols, prev_last=None):
     from different slots do not always land on the same days. A group that
     trained last week avoids the first day when another day is free."""
     n = len(vols)
-    quota = {}
+    quota: dict = {}
     for si, slot in enumerate(DAY):
         if slot not in FREE_SLOTS:
             continue
@@ -975,6 +977,7 @@ def fill(n, reps):
             rec(i + 1, rem - k * r, parts + [r] * k)
 
     rec(0, n, [])
+    assert best is not None
     return best[1]
 
 
@@ -984,7 +987,7 @@ def sets_text(parts):
         return str(parts[0])
     if len(set(parts)) == 1:
         return f"{len(parts)}x{parts[0]}"
-    runs = []
+    runs: list = []
     for part in parts:
         if runs and runs[-1][0] == part:
             runs[-1][1] += 1
@@ -999,7 +1002,7 @@ def complex_text(parts):
         return parts[0]
     if len(set(parts)) == 1:
         return f"{len(parts)}x{parts[0]}"
-    runs = []
+    runs: list = []
     for part in parts:
         if runs and runs[-1][0] == part:
             runs[-1][1] += 1
@@ -1039,7 +1042,7 @@ def below_min(seq, family):
 def run_penalty(seq):
     """Warm-up cost of a zone run followed by a heavier zone. A 1-set run is
     free once the heavier zone has already been visited; 3+ sets still cost."""
-    runs = []
+    runs: list = []
     for zlo, _ in seq:
         if runs and runs[-1][0] == zlo:
             runs[-1][1] += 1
@@ -1114,7 +1117,7 @@ def _render_items(items):
 
 @cache
 def _normalize(items):
-    out = []
+    out: list = []
     for item in items:
         if (
             item[0] == "group"
@@ -1163,6 +1166,7 @@ def _parse(seq):
             inner = _parse(seq[:p])
             rest = _parse(seq[k * p :])
             take(inner[0] + rest[0], _normalize((("wave", k, inner[2]),) + rest[2]))
+    assert best is not None
     return best[1], best[2], best[3]
 
 
@@ -1217,9 +1221,19 @@ def cj_zones(clean, jerk):
 def beam_search(zones, family):
     """Best legal fill and order under the session score; all styles compete."""
     present = tuple(z for z, _, _ in zones)
-    start = (tuple(c for _, c, _ in zones), None, None, frozenset(), 0, 0, 0, 0, ())
-    beam = [start]
-    finished = []
+    start: tuple = (
+        tuple(c for _, c, _ in zones),
+        None,
+        None,
+        frozenset(),
+        0,
+        0,
+        0,
+        0,
+        (),
+    )
+    beam: list = [start]
+    finished: list = []
 
     def key(state):
         _caps, _lz, _lv, _seen, _rl, below, run, rep, prefix = state
@@ -1338,9 +1352,19 @@ def beam_search(zones, family):
 def fixed_beam(types, family):
     """Best legal order of a fixed atom multiset; None if impossible."""
     present = tuple(sorted({z for z, _, _ in types}))
-    start = (tuple(c for _, _, c in types), None, None, frozenset(), 0, 0, 0, 0, ())
-    beam = [start]
-    finished = []
+    start: tuple = (
+        tuple(c for _, _, c in types),
+        None,
+        None,
+        frozenset(),
+        0,
+        0,
+        0,
+        0,
+        (),
+    )
+    beam: list = [start]
+    finished: list = []
 
     def key(state):
         _rem, _lz, _lv, _seen, _rl, below, run, rep, prefix = state
@@ -1521,5 +1545,9 @@ def write_outputs(path="outputs"):
         (path / f"{cls}.md").write_text(to_markdown(build_plan(cls)))
 
 
-if __name__ == "__main__":
+def main():
     write_outputs()
+
+
+if __name__ == "__main__":
+    main()

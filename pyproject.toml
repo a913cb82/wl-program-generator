@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wl-program-generator"
+version = "0.1.0"
+description = "Soviet-style Olympic weightlifting program generator"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+wlgen = "wlgen:main"
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.11",
+    "pre-commit>=3.7",
+    "pytest>=8",
+    "ruff>=0.17",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+py-modules = ["wlconfig", "wlgen"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.mypy]
+# mypy dropped 3.9 support; the code still targets 3.9+
+python_version = "3.10"
+mypy_path = "src"
+files = ["src"]
+check_untyped_defs = true
