@@ -1,6 +1,6 @@
 # WL Program Generator
 
-Generates a 20-week Soviet-style Olympic weightlifting macrocycle (one training block) from an annual lift target. The block ends at a competition. Volume gets split first, then intensity, then sets. Output is Markdown. The runtime is the Python standard library, and the same input always gives the same plan.
+Generates a 20-week Soviet-style Olympic weightlifting macrocycle (one training block) from an annual lift target, ending at a competition. It splits volume first, then intensity, then sets, and writes Markdown. Deterministic, standard library only.
 
 ## Run
 
@@ -79,16 +79,16 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 
 ### Intensity
 
-- The plan buckets intensity into zones, labeled by the lower edge: 60%, 70%, 80% and so on.
-- The yearly anchor comes from Takano's bin tables per class. See `BINS`.
-- Prep work sits below the anchor, comp work above it, with a class-dependent gap. The higher classes also ramp up across the three prep mesos.
-- The final comp meso tapers. Its last week keeps snatch and C&J below 90%.
+- The plan buckets intensity into zones at 60%, 70%, 80% and up.
+- Each class has a yearly zone mix from Takano's tables. See `BINS`.
+- Prep sits below that mix, comp above it, and the gap grows with class. Higher classes ramp up across the three prep mesos too.
+- The last comp week tapers: snatch and C&J stay below 90%.
 
 ### Sessions and sets
 
-- A session orders its sets like a warm-up. Zones first appear from light to heavy, and each jump up goes to the next zone the session uses. As weight rises, reps stay flat or drop. A drop back down can add reps again.
-- When a clean and a jerk share a day, they train in a fixed rep ratio (eg 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises.
-- The tool packs each movement's reps at a zone into as few sets as possible (`3x3,2x2@70%`), using that zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
+- A session orders its sets like a warm-up. Zones first appear from light to heavy. Each jump up goes to the next zone in the session. Reps stay flat or drop as weight rises. A drop back down can add reps.
+- A clean and jerk sharing a day follow a fixed rep ratio (eg 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises.
+- The tool packs each movement's reps at a zone into as few sets as possible (`3x3,2x2@70%`), using the zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
 
 ## Guarantees
 
