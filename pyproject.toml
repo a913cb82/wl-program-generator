@@ -13,6 +13,10 @@ dependencies = []
 [project.scripts]
 wlgen = "wlgen:main"
 
+[project.urls]
+Repository = "https://github.com/a913cb82/wl-program-generator"
+Issues = "https://github.com/a913cb82/wl-program-generator/issues"
+
 [project.optional-dependencies]
 dev = [
     "mypy>=1.11",
