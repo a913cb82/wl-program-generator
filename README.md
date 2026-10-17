@@ -13,7 +13,7 @@ uv sync --all-extras                 # create .venv from uv.lock (Python 3.14)
 .venv/bin/pre-commit install         # enable format and type hooks
 ```
 
-Get uv from <https://docs.astral.sh/uv/>. Without uv, run `python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'`.
+Get uv from <https://docs.astral.sh/uv/>.
 
 Or use it as a library:
 
