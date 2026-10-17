@@ -40,7 +40,7 @@ A plan has four parts:
 
 - The macrocycle total.
 - A group table per meso, with the weekly sizes.
-- A week table with lifts per group × zone, plus ARI.
+- A week table with lifts per group and zone.
 - One bullet list per session.
 
 Session bullets give exact sets, reps and zone:
@@ -61,52 +61,44 @@ Session bullets give exact sets, reps and zone:
 
 ## How it plans
 
+The plan nests four levels:
+
+- Macrocycle — the whole 20-week block.
+- Mesocycle — 5 per block, 4 weeks each: 3 prep, 2 comp.
+- Microcycle — 1 week.
+- Session — 1 training day.
+
+Each level takes a share of the level above it. `wlconfig.py` holds those shares: macro weights, meso weekly splits, class group ratios and weekly intensity bins.
+
 ### Volume
 
-- Working volume counts lifts above 50% of your best in that movement.
-- All 12 Soviet groups get planned: Snatch, Clean, Jerk, Squat, SnPull, ClPull, Press, Fundamental, plus the Other variants of the first four.
-- The block is five mesos of four weeks, three prep and two comp. Each meso has a weight and a weekly split. See `MACRO`.
-- Group targets come from the class ratio tables, shifted by the meso. eg the Comp meso adds clean and jerk and cuts squat. See `III_II`, `I_CMS` and `MS_R`.
-- A group can drift ±20% from its share. The tool caps total drift at 10% of the week. Every split sums exactly.
-- Sessions use six slots: Snatch, Clean, Jerk, Squat or pull, Other Squat or Press, and Fundamental (general strength). Each session fills the slots it needs. `X|Y` means one or the other, split across days. A movement gets at least 6 lifts when the margins allow. See `DAY`.
-- Days are S (up to 50 lifts), M (51–100) or L (over 100). The week takes the first pattern with 3 to 6 days that fits its volume. See `VARIANTS`.
+- Working volume counts lifts above 50% of your best in that movement. All 12 Soviet groups get planned: Snatch, Clean, Jerk, Squat, SnPull, ClPull, Press, Fundamental, and the Other variants of the first four.
+- The macrocycle splits into five mesos: three prep and two comp. `MACRO` holds the weight of each meso and its weekly split.
+- Each week's group volumes start from the class ratio table. To make whole lifts and fill sessions, the tool can shift a share between weeks. Each group stays within ±20% of its share, and the whole week within 10% of its target. The meso total stays exact. See `III_II`, `I_CMS` and `MS_R`.
+- A session fills six optional slots: Snatch, Clean, Jerk, Squat or pull, Other Squat or Press, and Fundamental (general strength). A trained movement gets at least 6 lifts when the week allows. See `DAY`.
+- A slot trains one movement. When it offers `X|Y`, the week splits them across days.
 
 ### Intensity
 
-- A zone is 5 points wide (eg 70–74%) and zones sit 10 apart. The label is the lower edge. The top zone is open.
-- ARI is average relative intensity. Moving 1% of reps one zone moves ARI by 0.1.
-- The anchor is Takano's yearly bin tables: class 2 (III and II), class 1 (I), CMS and MS. See `BINS`.
-- Prep and comp shift the anchor by the class gap `g`, the prep to comp intensity rise. Prep = yearly − 0.33g, comp = yearly + 0.67g. See `GAP`.
-- I, CMS and MS fan across the prep mesos. III and II use one prep shift for all three. See `FAN`.
-- The final comp meso tapers. Its last week keeps snatch and C&J below 90%. Other groups use the yearly bins.
-- An "Other" variant inherits its base table. Press inherits Fundamental. See `BIN_GROUP`.
+- The plan buckets intensity into zones, labeled by the lower edge: 60%, 70%, 80% and so on.
+- The yearly anchor comes from Takano's bin tables per class. See `BINS`.
+- Prep work sits below the anchor, comp work above it, with a class-dependent gap. The higher classes also ramp up across the three prep mesos.
+- The final comp meso tapers. Its last week keeps snatch and C&J below 90%.
 
 ### Sessions and sets
 
-- A session's zone profile is contiguous from its lowest zone to its top.
-- First visits ascend. Each ascent goes to the next zone present. Reps hold or drop as the zone holds or rises.
-- A clean and a jerk in one session get one ratio per tier:
-  - 1:1 anywhere.
-  - 2:1 and 1:2 below 90%.
-  - 3:1, 3:2, 1:3 and 2:3 below 80%.
-- The ratio narrows as weight rises.
-- A zone's count becomes sets from the preferred reps per group, largest first. Fewest sets wins. 1 is always legal. See `REPS`.
-- The tool searches the legal set orders and takes the cheapest.
-- Notation:
-  - `NxR` for repeated sets.
-  - Commas for runs, eg `4x3,2x2`.
-  - `p+q` for a clean and jerk complex.
-  - `Nx(...)` for a repeated wave.
-  - A lone set is just the rep count.
+- A session orders its sets like a warm-up. Zones first appear from light to heavy, and each jump up goes to the next zone the session uses. As weight rises, reps stay flat or drop. A drop back down can add reps again.
+- When a clean and a jerk share a day, they train in a fixed rep ratio (eg 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises.
+- The tool packs each movement's reps at a zone into as few sets as possible (`3x3,2x2@70%`), using that zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
 
 ## Guarantees
 
 - Every split sums exactly.
-- Zone profiles stay contiguous.
+- Sets follow the warm-up order.
 - Every clean:jerk ratio stays legal.
 - Same input, same output.
 
 ## Open
 
-1. Which split should be the default Comp meso (1, 3-1, 2 or 1-3)?
+1. Which volume split should the default Comp meso use?
 2. Use the ±20% week band to avoid movements below 6 lifts in taper and low-volume weeks?
