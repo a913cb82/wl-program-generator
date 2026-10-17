@@ -7,7 +7,7 @@ Generates a 20-week Soviet-style Olympic weightlifting macrocycle (one training 
 `wlgen` writes one plan per competition class into `outputs/`.
 
 ```sh
-uv sync --all-extras                 # create .venv from uv.lock
+uv sync --all-extras                 # create .venv from uv.lock (Python 3.14)
 .venv/bin/wlgen                      # write all five plans
 .venv/bin/pytest -q                  # run the tests
 .venv/bin/pre-commit install         # enable format and type hooks
@@ -61,6 +61,7 @@ Session bullets give exact sets, reps and zone:
 - `outputs/` — the five generated plans.
 - `pyproject.toml` — packaging, test, lint and type-check config.
 - `uv.lock` — pinned dev dependencies.
+- `.python-version` — interpreter uv uses.
 - `.pre-commit-config.yaml` — format and type-check hooks.
 
 ## How it plans
