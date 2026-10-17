@@ -1,3 +1,4 @@
+import re
 from functools import cache
 from itertools import product
 from math import gcd
@@ -1517,25 +1518,52 @@ def scheme_lines(s):
     return out
 
 
+def _slug(text, seen):
+    base = re.sub(r"[^\w -]", "", text.lower()).replace(" ", "-")
+    count = seen.get(base, 0)
+    seen[base] = count + 1
+    return base if count == 0 else f"{base}-{count}"
+
+
+def toc_entries(headings):
+    """GitHub-style (level, title, anchor) for each ## or ### heading."""
+    entries = []
+    seen: dict = {}
+    for line in headings:
+        if line.startswith("### "):
+            level, title = 3, line[4:]
+        elif line.startswith("## "):
+            level, title = 2, line[3:]
+        else:
+            continue
+        entries.append((level, title, _slug(title, seen)))
+    return entries
+
+
 def to_markdown(plan):
     lines = [f"# {plan['macro']}", "", f"Annual: {plan['annual']} lifts", ""]
     lines += group_table(plan["groups"]) + [""]
-    lines += ["Meso sizes: " + ", ".join(str(m["vol"]) for m in plan["mesos"])] + [""]
+    lines += ["Meso sizes: " + ", ".join(str(m["vol"]) for m in plan["mesos"]), ""]
+    body = []
     for m in plan["mesos"]:
-        lines += [f"## {m['name']} ({m['phase']}) - {m['vol']} lifts", ""]
-        lines += group_table(m["groups"]) + [""]
-        lines += ["Week sizes: " + ", ".join(str(w["vol"]) for w in m["weeks"])] + [""]
+        body += [f"## {m['name']} ({m['phase']}) - {m['vol']} lifts", ""]
+        body += group_table(m["groups"]) + [""]
+        body += ["Week sizes: " + ", ".join(str(w["vol"]) for w in m["weeks"]), ""]
         for wi, w in enumerate(m["weeks"]):
-            lines += [f"### Week {wi + 1} - {w['vol']} lifts", ""]
-            lines += week_table(w["groups"], w["bins"]) + [""]
-            lines += [
+            body += [f"### Week {wi + 1} - {w['vol']} lifts", ""]
+            body += week_table(w["groups"], w["bins"]) + [""]
+            body += [
                 "Day sizes: " + ", ".join(str(s["vol"]) for s in w["sessions"]),
                 "",
             ]
             for i, s in enumerate(w["sessions"], 1):
-                lines += [f"#### Session {i} - {s['vol']} lifts", ""]
-                lines += scheme_lines(s) + [""]
-    return "\n".join(lines)
+                body += [f"#### Session {i} - {s['vol']} lifts", ""]
+                body += scheme_lines(s) + [""]
+    contents = ["## Contents", ""]
+    for level, title, anchor in toc_entries(body):
+        contents.append(("  " if level == 3 else "") + f"- [{title}](#{anchor})")
+    contents.append("")
+    return "\n".join(lines + contents + body)
 
 
 def write_outputs(path="outputs"):

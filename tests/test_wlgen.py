@@ -44,6 +44,7 @@ from wlgen import (
     slot_match,
     spread,
     to_markdown,
+    toc_entries,
     week_bin_lifts,
     week_bins,
     week_quota,
@@ -437,12 +438,33 @@ def test_markdown_tables_at_every_level():
     md = to_markdown(build_plan("I"))
     assert md.startswith("# Soviet year (I)")
     assert "| Group | Lifts |" in md.split("\n## ")[0]
-    for chunk in md.split("\n## ")[1:]:
+    sections = md.split("\n## ")[1:]
+    assert sections[0].startswith("Contents")
+    for chunk in sections[1:]:
         assert "| Group | Lifts |" in chunk
     micro = md.split("\n### ")[1:]
     assert len(micro) == 20
     for chunk in micro:
         assert "| Group | Lifts |" in chunk
+
+
+def test_markdown_toc():
+    md = to_markdown(build_plan("I"))
+    assert "## Contents" in md
+    assert "- [Prep 4-2 (prep) - 1151 lifts](#prep-4-2-prep---1151-lifts)" in md
+    assert "  - [Week 1 - 242 lifts](#week-1---242-lifts)" in md
+    assert "- [Comp 2 (comp) - 863 lifts](#comp-2-comp---863-lifts)" in md
+    assert md.count("\n- [") == 5
+    assert md.count("\n  - [") == 20
+
+
+def test_toc_anchors_disambiguate_duplicates():
+    headings = ["## A (x) - 1 lifts", "### Week 1 - 2 lifts", "## A (x) - 1 lifts"]
+    assert toc_entries(headings) == [
+        (2, "A (x) - 1 lifts", "a-x---1-lifts"),
+        (3, "Week 1 - 2 lifts", "week-1---2-lifts"),
+        (2, "A (x) - 1 lifts", "a-x---1-lifts-1"),
+    ]
 
 
 def test_markdown_tables_have_matching_columns():
@@ -470,7 +492,7 @@ def test_sizes_at_every_level():
     assert "Meso sizes:" in macro
     assert "Day sizes:" not in macro
     assert "Meso sizes: 1151, 1266, 1438, 1035, 863" in macro
-    chunk = md.split("\n## ")[1]
+    chunk = md.split("\n## ")[2]
     rows = [line for line in chunk.splitlines() if line.startswith("Week sizes:")]
     assert rows == ["Week sizes: 242, 322, 196, 391"]
     weeks = chunk.split("\n### ")[1:]
