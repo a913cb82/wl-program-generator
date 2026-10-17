@@ -176,26 +176,35 @@ def week_bin_lifts(cls, meso, week, group, lifts):
 def ipf(prior, rows, cols, iters=1000):
     """Fractional matrix with the given margins, shaped by prior. Returns None
     when the margins cannot be met (structural zeros or bad supply/demand)."""
-    nr, nc = len(rows), len(cols)
+    nr = len(rows)
     m = [[float(x) for x in row] for row in prior]
+    rng = range(nr)
     for it in range(iters):
-        for i in range(nr):
-            s = sum(m[i])
+        for i in rng:
+            row = m[i]
+            s = sum(row)
             if s:
-                m[i] = [x * rows[i] / s for x in m[i]]
-        for j in range(nc):
-            s = sum(m[i][j] for i in range(nr))
+                f = rows[i]
+                m[i] = [x * f / s for x in row]
+        for j, col in enumerate(zip(*m)):
+            s = sum(col)
             if s:
-                for i in range(nr):
-                    m[i][j] *= cols[j] / s
-        if (
-            it % 10 == 9
-            and all(abs(sum(m[i]) - rows[i]) < 1e-6 for i in range(nr))
-            and all(
-                abs(sum(m[i][j] for i in range(nr)) - cols[j]) < 1e-6 for j in range(nc)
-            )
-        ):
-            return m
+                factor = cols[j] / s
+                for row in m:
+                    row[j] *= factor
+        if it % 10 == 9:
+            ok = True
+            for i in rng:
+                if abs(sum(m[i]) - rows[i]) >= 1e-6:
+                    ok = False
+                    break
+            if ok:
+                for j, col in enumerate(zip(*m)):
+                    if abs(sum(col) - cols[j]) >= 1e-6:
+                        ok = False
+                        break
+            if ok:
+                return m
     return None
 
 
@@ -225,8 +234,10 @@ def feasible(prior, rows, cols):
         parent: list = [None] * n
         parent[src] = (src, -1)
         queue = [src]
-        while queue and parent[sink] is None:
-            u = queue.pop(0)
+        head = 0
+        while head < len(queue) and parent[sink] is None:
+            u = queue[head]
+            head += 1
             for k, (v, cap, _) in enumerate(graph[u]):
                 if cap > 0 and parent[v] is None:
                     parent[v] = (u, k)
@@ -252,12 +263,12 @@ def feasible(prior, rows, cols):
 def fit(prior, rows, cols):
     """Integer matrix with exact row/column sums, shaped by prior. Prior zeros
     are structural; returns None when the margins cannot be met."""
+    if not feasible(prior, rows, cols):
+        return None
     m = ipf(prior, rows, cols)
     if m is None:
         return None
     nr, nc = len(rows), len(cols)
-    if not feasible(prior, rows, cols):
-        return None
     out = [[int(x) for x in row] for row in m]
     for i in range(nr):
         order = sorted(
@@ -1082,11 +1093,14 @@ def phrases(seq):
         j += 1
     best = min(best, 1 + phrases(seq[j:]))
     for p in range(2, n // 2 + 1):
+        if seq[p] != seq[0]:
+            continue
+        unit = seq[:p]
         k = 1
-        while (k + 1) * p <= n and seq[k * p : (k + 1) * p] == seq[:p]:
+        while (k + 1) * p <= n and seq[k * p : (k + 1) * p] == unit:
             k += 1
         if k >= 2:
-            best = min(best, phrases(seq[:p]) + phrases(seq[k * p :]))
+            best = min(best, phrases(unit) + phrases(seq[k * p :]))
     return best
 
 
@@ -1151,14 +1165,15 @@ def _parse(seq):
     while j < len(seq) and seq[j] == first:
         j += 1
     rest = _parse(seq[j:])
-    take(
-        1 + rest[0],
-        _normalize((("group", first[0], ((first[1], j),)),) + rest[2]),
-    )
+    count = 1 + rest[0]
+    if best is None or count <= best[1]:
+        take(count, _normalize((("group", first[0], ((first[1], j),)),) + rest[2]))
     for i in range(1, len(seq)):
         left = _parse(seq[:i])
         right = _parse(seq[i:])
-        take(left[0] + right[0], _normalize(left[2] + right[2]))
+        count = left[0] + right[0]
+        if best is None or count <= best[1]:
+            take(count, _normalize(left[2] + right[2]))
     for p in range(1, len(seq) // 2 + 1):
         k = 1
         while (k + 1) * p <= len(seq) and seq[k * p : (k + 1) * p] == seq[:p]:
@@ -1166,7 +1181,9 @@ def _parse(seq):
         if k >= 2:
             inner = _parse(seq[:p])
             rest = _parse(seq[k * p :])
-            take(inner[0] + rest[0], _normalize((("wave", k, inner[2]),) + rest[2]))
+            count = inner[0] + rest[0]
+            if best is None or count <= best[1]:
+                take(count, _normalize((("wave", k, inner[2]),) + rest[2]))
     assert best is not None
     return best[1], best[2], best[3]
 
