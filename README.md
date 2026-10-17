@@ -72,11 +72,10 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 
 ### Volume
 
-- Working volume counts lifts above 50% of your best in that movement. All 12 Soviet groups get planned: Snatch, Clean, Jerk, Squat, SnPull, ClPull, Press, Fundamental, and the Other variants of the first four.
-- The macrocycle splits into five mesos: three prep and two comp. `MACRO` holds the weight of each meso and its weekly split.
-- Each week's group volumes start from the class ratio table. To make whole lifts and fill sessions, the tool can shift a share between weeks. Each group stays within ±20% of its share, and the whole week within 10% of its target. The meso total stays exact. See `III_II`, `I_CMS` and `MS_R`.
-- A session fills six optional slots: Snatch, Clean, Jerk, Squat or pull, Other Squat or Press, and Fundamental (general strength). A trained movement gets at least 6 lifts when the week allows. See `DAY`.
-- A slot trains one movement. When it offers `X|Y`, the week splits them across days.
+- Volume counts lifts above 50% of your best in that movement. The plan covers all 12 Soviet groups.
+- The block is five 4-week mesos: three prep, two comp. `MACRO` holds the meso weights and weekly splits.
+- Weekly group volumes follow the class ratio table. The tool shifts a little volume between weeks (±20% per group, 10% per week) so lifts stay whole, sessions fit, and the meso sums exactly. See `III_II`, `I_CMS` and `MS_R`.
+- A session draws from six optional slots, one movement each. `X|Y` options split across the week, and each movement gets a minimum dose (6 lifts). See `DAY`.
 
 ### Intensity
 
