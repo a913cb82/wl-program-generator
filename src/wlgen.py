@@ -70,6 +70,7 @@ def expand(slots):
     return out
 
 
+@cache
 def map_zone_index(zlo, group):
     """Member bin index for a reference zone label.
 
@@ -161,6 +162,31 @@ def taper(bins, bt):
     return [b / total for b in out]
 
 
+def _canon(cls):
+    """Zone-work key shared by classes with the same bins, gap and fan."""
+    return (BIN_CLASS[cls], GAP[cls], cls in FAN)
+
+
+@cache
+def _week_bins_keyed(binkey, gap, fan, meso, week, group):
+    bt = BIN_GROUP[group]
+    zones = BIN_ZONES[bt]
+    bins = BINS[binkey][bt]
+    wp = sum(m[3] for m in MACRO if m[1] == "prep")
+    wc = sum(m[3] for m in MACRO if m[1] == "comp")
+    n_prep = sum(1 for m in MACRO if m[1] == "prep")
+    if meso < n_prep:
+        ramp = (-gap, 0, 0.8 * gap) if fan else (0, 0, 0)
+        delta = -wc * gap + ramp[meso]
+    elif meso < len(MACRO) - 1:
+        delta = wp * gap
+    else:
+        if week == 3:
+            return taper(bins, bt)
+        delta = wp * gap + (gap if week == 2 else 0)
+    return shift(bins, zones, ari(bins, zones) + delta)
+
+
 def week_bins(cls, meso, week, group):
     """Zone fractions for one microcycle (0-based meso and week index).
 
@@ -168,23 +194,7 @@ def week_bins(cls, meso, week, group):
     volume-weighted mixture over the 5 mesos reproduces the yearly bins. A
     single class gap applies to every group. Only the last meso tapers.
     """
-    bt = BIN_GROUP[group]
-    zones = BIN_ZONES[bt]
-    bins = BINS[BIN_CLASS[cls]][bt]
-    g = GAP[cls]
-    wp = sum(m[3] for m in MACRO if m[1] == "prep")
-    wc = sum(m[3] for m in MACRO if m[1] == "comp")
-    n_prep = sum(1 for m in MACRO if m[1] == "prep")
-    if meso < n_prep:
-        fan = (-g, 0, 0.8 * g) if cls in FAN else (0, 0, 0)
-        delta = -wc * g + fan[meso]
-    elif meso < len(MACRO) - 1:
-        delta = wp * g
-    else:
-        if week == 3:
-            return taper(bins, bt)
-        delta = wp * g + (g if week == 2 else 0)
-    return shift(bins, zones, ari(bins, zones) + delta)
+    return _week_bins_keyed(*_canon(cls), meso, week, group)
 
 
 def close_bins(counts):
@@ -202,9 +212,20 @@ def close_bins(counts):
     return out
 
 
+@cache
+def _week_bin_lifts_keyed(binkey, gap, fan, meso, week, group, lifts):
+    return tuple(
+        close_bins(
+            allocate(
+                lifts, _week_bins_keyed(binkey, gap, fan, meso, week, group)
+            )
+        )
+    )
+
+
 def week_bin_lifts(cls, meso, week, group, lifts):
     """Split a group's weekly lifts across its zones (largest remainder)."""
-    return close_bins(allocate(lifts, week_bins(cls, meso, week, group)))
+    return list(_week_bin_lifts_keyed(*_canon(cls), meso, week, group, lifts))
 
 
 def ipf(prior, rows, cols, iters=1000):
@@ -249,58 +270,74 @@ def _ipf(prior, rows, cols, iters):
 
 
 def feasible(prior, rows, cols):
-    """True when the margins fit the support: an exact max-flow check."""
-    return _feasible(tuple(tuple(r) for r in prior), tuple(rows), tuple(cols))
+    """True when the margins fit the support: an exact max-flow check.
+
+    Only the support (zero vs positive) matters, so the cache key carries
+    0/1 flags: quota weights (1, epsilon, boundary) that share a support
+    share one max-flow run."""
+    return _feasible(
+        tuple(tuple(1 if x > 0 else 0 for x in row) for row in prior),
+        tuple(rows),
+        tuple(cols),
+    )
 
 
 @cache
-def _feasible(prior, rows, cols):
+def _feasible(support, rows, cols):
+    # support holds 0/1 flags, so any correct max-flow answers the same:
+    # Edmonds-Karp here, built without per-edge closures.
     nr, nc = len(rows), len(cols)
     n = nr + nc + 2
     src, sink = n - 2, n - 1
     graph: list = [[] for _ in range(n)]
-
-    def edge(a, b, cap):
-        graph[a].append([b, cap, len(graph[b])])
-        graph[b].append([a, 0, len(graph[a]) - 1])
-
-    for i in range(nr):
-        if rows[i]:
-            edge(src, i, rows[i])
-    for j in range(nc):
-        if cols[j]:
-            edge(nr + j, sink, cols[j])
-    for i in range(nr):
-        for j in range(nc):
-            if prior[i][j] > 0:
-                edge(i, nr + j, 10**9)
-    flow, total = 0, sum(rows)
-    while total == sum(cols) and flow < total:
+    for i, r in enumerate(rows):
+        if r:
+            graph[src].append([i, r, len(graph[i])])
+            graph[i].append([src, 0, len(graph[src]) - 1])
+    for j, c in enumerate(cols):
+        if c:
+            u = nr + j
+            graph[u].append([sink, c, len(graph[sink])])
+            graph[sink].append([u, 0, len(graph[u]) - 1])
+    for i, row in enumerate(support):
+        gi = graph[i]
+        for j, bit in enumerate(row):
+            if bit:
+                v = nr + j
+                gi.append([v, 10**9, len(graph[v])])
+                graph[v].append([i, 0, len(gi) - 1])
+    total = sum(rows)
+    sumcols = sum(cols)
+    flow = 0
+    while total == sumcols and flow < total:
         parent: list = [None] * n
-        parent[src] = (src, -1)
+        edge_to: list = [None] * n
+        parent[src] = src
         queue = [src]
         head = 0
         while head < len(queue) and parent[sink] is None:
             u = queue[head]
             head += 1
-            for k, (v, cap, _) in enumerate(graph[u]):
-                if cap > 0 and parent[v] is None:
-                    parent[v] = (u, k)
-                    queue.append(v)
+            for e in graph[u]:
+                if e[1] and parent[e[0]] is None:
+                    parent[e[0]] = u
+                    edge_to[e[0]] = e
+                    queue.append(e[0])
         if parent[sink] is None:
             break
         aug = total
         v = sink
         while v != src:
-            u, k = parent[v]
-            aug = min(aug, graph[u][k][1])
-            v = u
+            cap = edge_to[v][1]
+            if cap < aug:
+                aug = cap
+            v = parent[v]
         v = sink
         while v != src:
-            u, k = parent[v]
-            graph[u][k][1] -= aug
-            graph[v][graph[u][k][2]][1] += aug
-            v = u
+            e = edge_to[v]
+            e[1] -= aug
+            graph[v][e[2]][1] += aug
+            v = parent[v]
         flow += aug
     return flow == total
 
@@ -964,13 +1001,10 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
 
 
 @cache
-def week_units(cls, mi, wi, t, ref="Clean"):
-    """Paired units in the heavy, mid and light ratio tiers.
-
-    Tiers follow the reference member's zones (the classic lift limits the
-    complex), so mixed pairs share the classic's heavy/mid/light split."""
+@cache
+def _week_units_keyed(binkey, gap, fan, mi, wi, t, ref="Clean"):
     lo = BIN_ZONES[BIN_GROUP[ref]]
-    counts = week_bin_lifts(cls, mi, wi, ref, t)
+    counts = _week_bin_lifts_keyed(binkey, gap, fan, mi, wi, ref, t)
     return (
         sum(c for c, z in zip(counts, lo) if z >= 90),
         sum(c for c, z in zip(counts, lo) if z == 80),
@@ -978,17 +1012,30 @@ def week_units(cls, mi, wi, t, ref="Clean"):
     )
 
 
-def pair_options(c, h, cls, mi, wi, ref="Clean"):
-    """Legal tier schedules for one session, closest to (c, h) first."""
+def week_units(cls, mi, wi, t, ref="Clean"):
+    """Paired units in the heavy, mid and light ratio tiers.
+
+    Tiers follow the reference member's zones (the classic lift limits the
+    complex), so mixed pairs share the classic's heavy/mid/light split."""
+    return _week_units_keyed(*_canon(cls), mi, wi, t, ref)
+
+
+@cache
+def _pair_options_keyed(c, h, binkey, gap, fan, mi, wi, ref="Clean"):
     out = []
     for t in range(max(1, (c + h) // 5 - 2), (c + h) // 2 + 2):
-        heavy, mid, light = week_units(cls, mi, wi, t, ref)
+        heavy, mid, light = _week_units_keyed(binkey, gap, fan, mi, wi, t, ref)
         for rh, rm, rl in SCHEDULES:
             ac = rh[0] * heavy + rm[0] * mid + rl[0] * light
             aj = rh[1] * heavy + rm[1] * mid + rl[1] * light
             out.append((abs(ac - c) + abs(aj - h), -(ac + aj), ac, aj, t, (rh, rm, rl)))
     out.sort()
-    return out
+    return tuple(out)
+
+
+def pair_options(c, h, cls, mi, wi, ref="Clean"):
+    """Legal tier schedules for one session, closest to (c, h) first."""
+    return list(_pair_options_keyed(c, h, *_canon(cls), mi, wi, ref))
 
 
 def cover_session(hosted):
@@ -1766,6 +1813,7 @@ def atom_text(value):
     return str(value) if isinstance(value, int) else f"{value[0]}+{value[1]}"
 
 
+@cache
 def ladder(reps):
     """Allowed set sizes: the prescribed ladder plus every smaller size.
 
@@ -1774,6 +1822,7 @@ def ladder(reps):
     return tuple(sorted(set(reps) | set(range(1, min(reps))), reverse=True))
 
 
+@cache
 def pref_min(family, zlo):
     """Smallest set size that counts as work, i.e. what a fallback is
     measured against. A ladder of bare singles has no work size, so a
@@ -1782,6 +1831,7 @@ def pref_min(family, zlo):
     return min((s for s in sizes if s > 1), default=1)
 
 
+@cache
 def prilepin_capacity(zlo):
     """Reps a session may spend at one intensity before it is past the top
     of Prilepin's range for that band. Interpolated, flat outside it."""
@@ -2018,10 +2068,17 @@ def compact_text(seq):
 
 
 def _transition_ok(prev_zone, prev_value, zone, value, seen, present):
-    if zone not in seen and seen and zone < max(seen):
-        return False
+    if seen and zone not in seen:
+        top = seen
+        # max() over the small hosted set; kept exact, just hoisted.
+        if zone < max(top):
+            return False
     if prev_zone is not None and zone > prev_zone:
-        nxt = next((z for z in present if z > prev_zone), None)
+        nxt = None
+        for z in present:
+            if z > prev_zone:
+                nxt = z
+                break
         if zone != nxt:
             return False
     if prev_zone is None or zone < prev_zone:
@@ -2048,6 +2105,7 @@ def single_zones(counts, family):
     )
 
 
+@cache
 def pair_choices(a_ref, b_ref, a_group, b_group, ref_group):
     """A+X zones for the beam search: size is the shared unit count, value
     is the complex. Zones and tiers follow the reference member."""

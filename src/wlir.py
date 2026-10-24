@@ -8,16 +8,25 @@ holds the movement name, the atom scheme and its parsed items, all
 tuple-restored the same way.
 """
 
+from functools import cache
+
 MACRO_DAYS_PER_WEEK = 7
 
 
-def allocate(total, weights):
+@cache
+def _allocate_cached(total, weights):
     raw = [total * w / sum(weights) for w in weights]
     out = [int(x) for x in raw]
     order = sorted(range(len(weights)), key=lambda i: raw[i] - out[i], reverse=True)
     for i in order[: total - sum(out)]:
         out[i] += 1
-    return out
+    return tuple(out)
+
+
+def allocate(total, weights):
+    """Largest-remainder split of total over weights. Memoized: week, meso
+    and day cuts repeat the same shares across groups and classes."""
+    return list(_allocate_cached(total, tuple(weights)))
 
 
 def macro_days(macro):
