@@ -129,7 +129,7 @@ Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the interm
 - **Rhythm** — how far the median week is from a 2.75 contrast, plus missing turns and peaks away from one. A turn is a change of direction between days. A peak is a day heavier than its neighbors. Only moves of at least a tenth of the week's range steer the turns and the peaks.
 - **Drift** — everything off plan. Group and total misses at week, mesocycle, and program scale. Group misses count only beyond the band. Total misses count in full. Illegal sets, clashes, gaps, idle movements, uneven spacing, and pace.
 
-The divisors (150, 9300, 25, 0.25) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on illegal sets, clashes, and idle movements. Bin gaps are nonzero in current comps. The generator must fill or drop the holed zones.
+The divisors (150, 9300, 25, 0.25) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on clashes and idle movements. Hard openers and bin gaps are nonzero in current plans. The generator must narrow the openers and fill or drop the holed zones.
 
 ## Guarantees
 

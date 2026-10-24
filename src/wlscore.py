@@ -138,7 +138,8 @@ def _bin_gaps(bins):
 def _step_ok(prev_zone, prev_value, zone, value, seen, present):
     """One set may follow another: rises are capped (a set may revisit a
     lower zone only once seen), climbs step to the next zone present, and
-    reps stay flat or fall as weight rises."""
+    a complex may not flip sides on a flat total. Rep rises on climbs are
+    free up to the ladder caps; Takano ramps 50/2 into 60/3."""
     if zone not in seen and seen and zone < max(seen):
         return False
     if prev_zone is not None and zone > prev_zone:
@@ -148,8 +149,10 @@ def _step_ok(prev_zone, prev_value, zone, value, seen, present):
     if prev_zone is None or zone < prev_zone:
         return True
     if isinstance(value, tuple) and isinstance(prev_value, tuple):
+        if sum(value) > sum(prev_value):
+            return True
         return not any(v > p for v, p in zip(value, prev_value))
-    return _atom_total(value) <= _atom_total(prev_value)
+    return True
 
 
 def _nominal(cls, phase, week_vol):
@@ -218,12 +221,18 @@ def _entry_problems(text, seq, items, session):
         present = sorted({zlo for zlo, _ in seq})
         seen: set = set()
         prev = None
+        first = True
         for zlo, value in seq:
             if prev is not None and not _step_ok(
                 prev[0], prev[1], zlo, value, seen, present
             ):
                 problems.append(f"{text}: illegal order at {zlo}%")
                 break
+            if first and _atom_total(value) > 5:
+                # Takano opens 1-5 in 848/848 slots; more is work
+                problems.append(f"{text}: opener too hard")
+                break
+            first = False
             seen.add(zlo)
             prev = (zlo, value)
         if _slot_total(items) != sum(session["movements"].get(g, [])):
@@ -254,12 +263,17 @@ def _entry_problems(text, seq, items, session):
         present = sorted({zlo for zlo, _ in seq})
         seen = set()
         prev = None
+        first = True
         for zlo, value in seq:
             if prev is not None and not _step_ok(
                 prev[0], prev[1], zlo, value, seen, present
             ):
                 problems.append(f"{text}: illegal order at {zlo}%")
                 break
+            if first and _atom_total(value) > 5:
+                problems.append(f"{text}: opener too hard")
+                break
+            first = False
             seen.add(zlo)
             prev = (zlo, value)
         want = sum(session["movements"].get(a, [])) + sum(

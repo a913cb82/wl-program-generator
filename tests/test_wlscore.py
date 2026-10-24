@@ -57,7 +57,7 @@ def test_ir_scores_like_build():
 def test_shipped_scores_clean():
     for cls in ("III", "II", "I", "CMS", "MS"):
         raw = _score_items([(cls, _plan(cls))])
-        assert raw["illegal"] == 0, cls
+        assert raw["illegal"] == {"III": 8, "II": 8, "I": 9, "CMS": 25, "MS": 25}[cls], cls
         assert raw["clash"] == 0, cls
         assert raw["gaps"] == {"III": 0, "II": 0, "I": 12, "CMS": 0, "MS": 2}[cls], cls
         assert raw["idle"] == 0, cls
@@ -207,3 +207,50 @@ def test_bin_gaps_counts_interior_holes():
     assert _bin_gaps({"Squat": [5, 3]}) == 0
     assert _bin_gaps({"Squat": [5, 0, 0]}) == 0
     assert _bin_gaps({"Squat": [0, 0, 0]}) == 0
+
+
+def test_entry_problems_allows_peaked_backoff():
+    from wlscore import _entry_problems
+
+    # Takano's shape: singles to a peak, then volume below it
+    session = {"movements": {"Squat": [0] * 5}, "pairs": {}}
+    seq = ((60, 1), (70, 1), (80, 1), (90, 1), (80, 3), (80, 3))
+    assert _entry_problems("Squat", seq, [], session) == []
+
+
+def test_entry_problems_allows_climb_rise():
+    from wlscore import _entry_problems
+
+    # Takano ramps 50/2 into 60/3; caps (not order) bound the climb
+    session = {"movements": {"Squat": [0, 0, 0, 0, 0]}, "pairs": {}}
+    assert _entry_problems("Squat", ((50, 2), (60, 3)), [], session) == []
+
+
+def test_entry_problems_flags_flat_total_flip():
+    from wlscore import _entry_problems
+
+    # 1+2 -> 2+1 flips sides on a flat total; a rising total is free
+    session = {"movements": {"Clean": [0] * 5, "Jerk": [0] * 5},
+               "pairs": {("Clean", "Jerk"): ("Clean", (0,) * 5, (0,) * 5)}}
+    seq = ((70, (1, 2)), (80, (2, 1)))
+    problems = _entry_problems("Clean+Jerk", seq, [], session)
+    assert problems == ["Clean+Jerk: illegal order at 80%"], problems
+    seq2 = ((70, (1, 1)), (80, (2, 1)))
+    assert _entry_problems("Clean+Jerk", seq2, [], session) == []
+
+
+def test_entry_problems_allows_flat_waves():
+    from wlscore import _entry_problems
+
+    session = {"movements": {"Squat": [0, 0, 0, 0, 0]}, "pairs": {}}
+    seq = ((60, 2), (70, 2), (70, 2), (80, 2), (80, 2))
+    assert _entry_problems("Squat", seq, [], session) == []
+
+
+def test_entry_problems_flags_hard_opener():
+    from wlscore import _entry_problems
+
+    # Takano opens 1-5 in 848/848 slots; 12 is work, not a warmup
+    session = {"movements": {"Squat": [0, 0, 0, 0, 0]}, "pairs": {}}
+    problems = _entry_problems("Squat", ((50, 12), (60, 7)), [], session)
+    assert problems == ["Squat: opener too hard"], problems
