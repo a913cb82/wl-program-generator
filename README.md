@@ -88,7 +88,7 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 
 ### Sessions and sets
 
-- A session orders its sets like a warm-up. Zones first appear from light to heavy. Each jump up goes to the next zone in the session. Reps stay flat or drop as weight rises. At one weight, a single may lead into work sets. A drop back down can add reps.
+- A session orders its sets like a warm-up. Zones first appear from light to heavy. Each jump up goes to the next zone in the session. Reps stay flat or drop as weight rises. A drop back down can add reps.
 - Two paired movements sharing a day follow a fixed rep ratio (eg 2 pulls per snatch, 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises. Pair volume counts toward both movements' bins.
 - The tool packs each movement's reps at a zone into as few sets as possible (`70%/3*2,2`), using the zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
 

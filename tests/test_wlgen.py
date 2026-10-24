@@ -674,15 +674,6 @@ def test_beam_order_warmup_and_no_skip():
     assert sum(v for _, v in order) == 22
 
 
-def test_beam_builds_up_within_a_zone():
-    # A lone 60% single forces the ramp base to singles; the climb may
-    # still build to doubles at a fixed weight instead of stranding a
-    # whole zone as singles.
-    _ordered, text = best_scheme((1, 11, 12, 0, 0), "CJ")
-    assert "80%/1×12" not in text
-    assert "80%/2" in text
-
-
 def test_beam_prefers_separated_rep_change():
     _ordered, text = best_scheme(_snatch_counts(), "Snatch")
     assert text == "60%/2, 70%/2*2, 3*(80%/2, 70%/3), 80%/1"
@@ -763,7 +754,7 @@ def test_pair_orders_never_raise_side_reps_with_weight():
                     for (a, b), (ref, va, vb) in s.get("pairs", {}).items():
                         ordered, _ = best_pair_scheme(tuple(va), tuple(vb), a, b, ref)
                         for (z0, (p0, q0)), (z1, (p1, q1)) in zip(ordered, ordered[1:]):
-                            if z1 > z0:
+                            if z1 >= z0:
                                 assert p1 <= p0 and q1 <= q0, (
                                     cls,
                                     a,
@@ -771,13 +762,6 @@ def test_pair_orders_never_raise_side_reps_with_weight():
                                     (z0, p0, q0),
                                     (z1, p1, q1),
                                 )
-                            elif z1 == z0:
-                                # Same weight may build up or taper off, but
-                                # never swap sides.
-                                assert not (p1 > p0 and q1 < q0) and not (
-                                    p1 < p0 and q1 > q0
-                                ), (cls, a, b, (z0, p0, q0), (z1, p1, q1))
-                            # Drops keep full freedom (back-off may add reps).
 
 
 def test_two_reps_at_low_zones_are_one_set():
