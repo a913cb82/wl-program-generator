@@ -224,7 +224,9 @@ def test_spread_avoids_back_to_back_sessions():
                     boundary += len(prev_last & set(ss[0]["movements"]))
                 prev_last = set(ss[-1]["movements"])
         assert short < 130, (cls, short)
-        assert boundary <= 8, (cls, boundary)
+        # The minimum-dose floor concentrates stray doses into sibling
+        # sessions, costing a carryover or two at week edges in I.
+        assert boundary <= 10, (cls, boundary)
 
 
 def test_spread_covers_the_main_lifts():
@@ -441,6 +443,48 @@ def test_prune_doses_keeps_sessions_matchable():
     # Other Snatch is droppable by the margins (it also trains day two)
     # but day one needs it to share SnPull's slot.
     assert pruned[idx["Other Snatch"]][0] == 1
+
+
+def test_session_group_doses_meet_minimum():
+    """Every unpaired (group, session) dose is 0 or >= MIN_DOSE lifts.
+
+    Paired complexes prescribe as one movement, so only unpaired cells
+    are judged per group. Regression: pair_fit's refit and the drift
+    absorption stranded 1-5 lift doses after prune_doses did its job."""
+    for cls in ANNUALS:
+        plan = build_plan(cls)
+        for m in plan["mesos"]:
+            for w in m["weeks"]:
+                for s in w["sessions"]:
+                    paired_here = {g for a, b in s.get("pairs", {}) for g in (a, b)}
+                    for g, counts in s["movements"].items():
+                        if g in paired_here:
+                            continue
+                        total = sum(counts)
+                        assert total == 0 or total >= MIN_DOSE, (
+                            cls,
+                            m["name"],
+                            g,
+                            total,
+                        )
+
+
+def test_consolidate_doses_folds_stranded_cells():
+    # Squat strands 3 lifts in session 0 while holding 8 in session 1;
+    # Press completes the 4-cycle so weekly totals and session sizes
+    # stay exact and both sessions stay slot-matchable.
+    si, pi = GROUPS.index("Squat"), GROUPS.index("Press")
+    moved = [[0] * 2 for _ in GROUPS]
+    moved[si] = [3, 8]
+    moved[pi] = [10, 10]
+    assert wlgen.consolidate_doses(moved, {}) is True
+    assert moved[si] == [0, 11]
+    assert moved[pi] == [13, 7]
+    # A weekly total of 5 cannot be placed legally anywhere.
+    moved = [[0] * 2 for _ in GROUPS]
+    moved[si] = [5, 0]
+    assert wlgen.consolidate_doses(moved, {}) is False
+    assert moved[si] == [5, 0]
 
 
 def test_render_html():
@@ -1058,11 +1102,40 @@ def test_sessions_respect_slot_xor():
 def test_day_patterns_keep_canonical_first():
     for n, patterns in VARIANTS.items():
         assert patterns[0] == PATTERNS[n]
+    # Weeks whose canonical sizes cannot host every dose at >= MIN_DOSE
+    # use the first variant that can (the dose floor outranks pattern
+    # preference); all other weeks keep canonical sizes.
+    exceptions = {
+        ("III", "Comp 1", 3): "MLM",
+        ("III", "Comp 2", 3): "LSL",
+        ("II", "Comp 1", 3): "MLM",
+        ("II", "Comp 2", 3): "LSL",
+        ("I", "Prep 2-4", 0): "LMLM",
+        ("I", "Prep 2-4", 3): "LMLM",
+        ("I", "Prep 3-1", 1): "LMLM",
+        ("I", "Prep 3-1", 3): "LMLM",
+        ("I", "Comp 1", 1): "LMLM",
+        ("I", "Comp 2", 1): "LMLM",
+        ("I", "Comp 2", 3): "MLM",
+        ("CMS", "Prep 2-4", 0): "LMLM",
+        ("CMS", "Prep 2-4", 3): "LMLM",
+        ("CMS", "Prep 3-1", 1): "LMLM",
+        ("CMS", "Prep 3-1", 3): "LMLM",
+        ("CMS", "Comp 1", 2): "MLM",
+        ("CMS", "Comp 2", 0): "MLM",
+        ("CMS", "Comp 2", 3): "MLM",
+        ("MS", "Prep 2-4", 3): "MSLMM",
+        ("MS", "Prep 3-1", 3): "MSLMM",
+        ("MS", "Comp 1", 0): "MSLMM",
+        ("MS", "Comp 1", 3): "LSL",
+    }
     for cls in ANNUALS:
         for m in build_plan(cls)["mesos"]:
-            for w in m["weeks"]:
-                sizes = [s["size"] for s in w["sessions"]]
-                assert "".join(sizes) == PATTERNS[len(sizes)]
+            for wi, w in enumerate(m["weeks"]):
+                sizes = "".join(s["size"] for s in w["sessions"])
+                assert sizes == exceptions.get(
+                    (cls, m["name"], wi), PATTERNS[len(sizes)]
+                )
 
 
 def pair_dose(s, g):

@@ -469,15 +469,52 @@ def prune_doses(support, rows, cols, groups=None):
 
 def fit_session(prior, rows, cols):
     """Session fit: pick a matchable group set per session (one movement per
-    slot), then drop cells below a usable dose."""
+    slot), then drop cells below a usable dose.
+
+    Stranded sub-minimum cells are banned and the hosted sets re-resolved,
+    so the matrix holds 0 or >= MIN_DOSE per cell wherever the margins
+    allow it; the least-stranded matrix wins. Rows whose weekly total is
+    itself below the minimum cannot be placed legally and are left for
+    the weekly repair."""
     idx = {g: i for i, g in enumerate(GROUPS)}
-    p = resolve_slots(prior, rows, cols, idx, [0], limit=2000)
-    if p is None:
-        return None
-    p = prune_doses(p, rows, cols, GROUPS)
-    if p is None:
-        return None
-    return fit(p, rows, cols)
+    base = [row[:] for row in prior]
+    banned: set[tuple[int, int]] = set()
+    best = None
+    best_key = None
+    for _ in range(20):
+        trial = [row[:] for row in base]
+        for i, j in banned:
+            trial[i][j] = 0
+        support = resolve_slots(trial, rows, cols, idx, [0], limit=2000)
+        if support is None:
+            break
+        p = prune_doses(support, rows, cols, GROUPS)
+        m = fit(p, rows, cols) if p is not None else None
+        if m is None:
+            break
+        key = sum(
+            1
+            for i in range(len(rows))
+            for j in range(len(cols))
+            if 0 < m[i][j] < MIN_DOSE
+        )
+        if best_key is None or key < best_key:
+            best, best_key = m, key
+        if key == 0:
+            break
+        target = next(
+            (
+                (i, j)
+                for i in range(len(rows))
+                for j in range(len(cols))
+                if 0 < m[i][j] < MIN_DOSE and rows[i] >= MIN_DOSE
+            ),
+            None,
+        )
+        if target is None:
+            break
+        banned.add(target)
+    return best
 
 
 def resolve_slots(prior, rows, cols, idx, calls, limit):
@@ -785,19 +822,119 @@ def sessions(vol):
             return session_list
 
 
+def count_dose_violations(sessions):
+    """Unpaired (group, session) cells holding 1-5 lifts."""
+    n = 0
+    for s in sessions:
+        paired_here = {g for a, b in s.get("pairs", {}) for g in (a, b)}
+        for g, counts in s["movements"].items():
+            if g in paired_here:
+                continue
+            if 0 < sum(counts) < MIN_DOSE:
+                n += 1
+    return n
+
+
+def repair_week_doses(week_groups, nominals):
+    """Fold sub-minimum weekly group totals into sibling weeks.
+
+    A weekly total of 1-5 lifts cannot be placed legally in any session
+    split, so it forces a session violation downstream. Set it to the
+    nearest placeable dose (0 or 6), completing the 4-cycle with a second
+    group so meso totals and week volumes stay exact. Every landing must
+    also stay inside its nominal week band, so the repair never breaks
+    the weekly shape; every move strictly reduces the stranded count, so
+    this terminates."""
+    rows = [[wg[g] for wg in week_groups] for g in GROUPS]
+    nr, nc = len(rows), len(rows[0])
+
+    def dose_ok(v):
+        return v == 0 or v >= MIN_DOSE
+
+    def band_ok(i, j, v):
+        n = nominals[j][GROUPS[i]]
+        slack = 2 if GROUPS[i] in PAIRED_GROUPS else 0
+        return abs(v - n) <= max(1, round(TOL * n)) + slack
+
+    for _ in range(nr * nc):
+        target = next(
+            ((i, j) for i in range(nr) for j in range(nc) if 0 < rows[i][j] < MIN_DOSE),
+            None,
+        )
+        if target is None:
+            for i, g in enumerate(GROUPS):
+                for j, wg in enumerate(week_groups):
+                    wg[g] = rows[i][j]
+            return True
+        i, j = target
+        for t in (0, MIN_DOSE):
+            d = t - rows[i][j]
+            if d == 0 or not band_ok(i, j, t):
+                continue
+            for j2 in range(nc):
+                if j2 == j or not dose_ok(rows[i][j2] - d):
+                    continue
+                if not band_ok(i, j2, rows[i][j2] - d):
+                    continue
+                for i2 in range(nr):
+                    if i2 == i:
+                        continue
+                    if not dose_ok(rows[i2][j2] + d):
+                        continue
+                    if not dose_ok(rows[i2][j] - d):
+                        continue
+                    if not band_ok(i2, j2, rows[i2][j2] + d):
+                        continue
+                    if not band_ok(i2, j, rows[i2][j] - d):
+                        continue
+                    rows[i][j] += d
+                    rows[i][j2] -= d
+                    rows[i2][j2] += d
+                    rows[i2][j] -= d
+                    break
+                else:
+                    continue
+                break
+            else:
+                continue
+            break
+    return False
+
+
 def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
     """First session-size variant the week can host: the cap-driven day count
-    first, source variants in table order, canonical (first) pattern preferred."""
-    for n in range(len(sessions(vol)), 7):
-        for pattern in VARIANTS[n]:
-            vols, session_list = day_split(vol, pattern)
-            if max(vols) > CAP and n != 6:
-                continue
-            try:
-                return plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last)
-            except ValueError:
-                continue
-    raise ValueError("week has no feasible session-size variant")
+    first, source variants in table order, canonical (first) pattern preferred.
+
+    Weeks whose first feasible variant strands sub-minimum doses try the
+    remaining variants and keep the least-stranded; violation-free weeks
+    are unaffected."""
+    best = None
+    best_key = None
+    variants = [
+        (n, pattern) for n in range(len(sessions(vol)), 7) for pattern in VARIANTS[n]
+    ]
+    for idx, (n, pattern) in enumerate(variants):
+        vols, session_list = day_split(vol, pattern)
+        if max(vols) > CAP and n != 6:
+            continue
+        attempt = dict(targets)
+        try:
+            planned = plan_sessions(session_list, attempt, nom, cls, mi, wi, prev_last)
+        except ValueError:
+            continue
+        v = count_dose_violations(planned)
+        if v == 0:
+            targets.clear()
+            targets.update(attempt)
+            return planned
+        key = (v, idx)
+        if best_key is None or key < best_key:
+            best_key, best = key, (planned, attempt)
+    if best is None:
+        raise ValueError("week has no feasible session-size variant")
+    targets.clear()
+    targets.update(best[1])
+    return best[0]
 
 
 @cache
@@ -1037,15 +1174,46 @@ def pair_fit(moved, vols, targets, nom, prior, cls, mi, wi):
                         occ |= SINGLE_SLOTS.get(h, set())
                 if need_slots <= occ:
                     block[i][j] = 0.0
-        support = resolve_slots(block, fixed, cols, idx, [0], limit=2000)
-        if support is None:
+        base = [row[:] for row in block]
+        banned: set[tuple[int, int]] = set()
+        best = None
+        best_key = None
+        for _ in range(20):
+            trial = [row[:] for row in base]
+            for i, j in banned:
+                trial[i][j] = 0
+            support = resolve_slots(trial, fixed, cols, idx, [0], limit=2000)
+            if support is None:
+                break
+            pruned = prune_doses(support, fixed, cols)
+            rest = fit(pruned, fixed, cols) if pruned is not None else None
+            if rest is None:
+                break
+            key = sum(
+                1
+                for i in range(len(fixed))
+                for j in range(len(cols))
+                if 0 < rest[i][j] < MIN_DOSE
+            )
+            if best_key is None or key < best_key:
+                best, best_key = rest, key
+            if key == 0:
+                break
+            target = next(
+                (
+                    (i, j)
+                    for i in range(len(fixed))
+                    for j in range(len(cols))
+                    if 0 < rest[i][j] < MIN_DOSE and fixed[i] >= MIN_DOSE
+                ),
+                None,
+            )
+            if target is None:
+                break
+            banned.add(target)
+        if best is None:
             return None
-        support = prune_doses(support, fixed, cols)
-        if support is None:
-            return None
-        rest = fit(support, fixed, cols)
-        if rest is None:
-            return None
+        rest = best
         for i in free:
             for j in range(len(vols)):
                 work[i][j] = rest[i][j]
@@ -1130,6 +1298,72 @@ def pair_zones(cls, mi, wi, pairs):
     return out, actual, refdata
 
 
+def consolidate_doses(moved, pairs):
+    """Fold sub-minimum unpaired session doses into sibling sessions.
+
+    Every (group, session) cell must hold 0 or >= MIN_DOSE lifts, but the
+    fitters strand 1-5 lifts where margins force them. Move a stranded
+    dose into another session hosting the same group, completing the
+    4-cycle with a second group so weekly totals and session sizes stay
+    exact. Paired cells are frozen (their zone splits are assigned); a
+    session's hosted set may only gain slot-matchable groups. Every move
+    strictly reduces the stranded count, so this terminates."""
+    nr, nc = len(moved), len(moved[0])
+    designated = {}
+    for j, plist in pairs.items():
+        designated[j] = {g for a, b, *_ in plist for g in (a, b)}
+
+    def dose_ok(v):
+        return v == 0 or v >= MIN_DOSE
+
+    def hosted(j):
+        return {GROUPS[i] for i in range(nr) if moved[i][j] > 0}
+
+    def free_cell(i, j):
+        return moved[i][j] == 0 or GROUPS[i] not in designated.get(j, set())
+
+    for _ in range(nr * nc):
+        target = next(
+            (
+                (i, j)
+                for i in range(nr)
+                for j in range(nc)
+                if 0 < moved[i][j] < MIN_DOSE and free_cell(i, j)
+            ),
+            None,
+        )
+        if target is None:
+            return True
+        i, j = target
+        v = moved[i][j]
+        for j2 in range(nc):
+            if j2 == j or not free_cell(i, j2):
+                continue
+            if not dose_ok(moved[i][j2] + v):
+                continue
+            for i2 in range(nr):
+                if i2 == i or not free_cell(i2, j) or not free_cell(i2, j2):
+                    continue
+                if not dose_ok(moved[i2][j2] - v):
+                    continue
+                if moved[i2][j] + v < MIN_DOSE:
+                    continue
+                moved[i][j] -= v
+                moved[i][j2] += v
+                moved[i2][j] += v
+                moved[i2][j2] -= v
+                if slot_match(hosted(j)) and slot_match(hosted(j2)):
+                    break
+                moved[i][j] += v
+                moved[i][j2] -= v
+                moved[i2][j] -= v
+                moved[i2][j2] += v
+            else:
+                continue
+            break
+    return False
+
+
 def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
     """Fill each day with the day template and exact group x zone lifts."""
     vols = [s["vol"] for s in session_list]
@@ -1180,10 +1414,16 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
                 continue
             moved[idx[a]][j] = ac
             moved[idx[b]][j] = aj
+
+            def absorb_ok(i, delta):
+                v = moved[i][j] + delta
+                return v == 0 or v >= MIN_DOSE
+
             while need > 0:
                 here = [i for i in free if moved[i][j] > 0]
+                safe = [i for i in here if absorb_ok(i, 1)]
                 i = max(
-                    here,
+                    safe or here,
                     key=lambda i: (
                         nom[GROUPS[i]]
                         + max(1, round(TOL * nom[GROUPS[i]]))
@@ -1197,8 +1437,9 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
                 need -= 1
             while need < 0:
                 here = [i for i in free if moved[i][j] > 0]
+                safe = [i for i in here if absorb_ok(i, -1)]
                 i = max(
-                    here,
+                    safe or here,
                     key=lambda i: (
                         sum(moved[i])
                         - nom[GROUPS[i]]
@@ -1210,6 +1451,7 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
                     break
                 moved[i][j] -= 1
                 need += 1
+    consolidate_doses(moved, pairs)
     for i, g in enumerate(GROUPS):
         targets[g] = sum(moved[i])
     for i, g in enumerate(GROUPS):
@@ -1328,20 +1570,28 @@ def build_plan(cls):
         ]
         targets = {g: sum(n[g] for n in nominal) for g in GROUPS}
         planned = {g: 0 for g in GROUPS}
-        weeks = []
+        week_groups = []
         for wi, (wv, nom) in enumerate(zip(week_vols, nominal)):
             tail = {g: sum(n[g] for n in nominal[wi:]) for g in GROUPS}
             remaining = {g: targets[g] - planned[g] for g in GROUPS}
-            groups = dict(
-                zip(
-                    GROUPS,
-                    spread(
-                        [nom[g] for g in GROUPS],
-                        [remaining[g] for g in GROUPS],
-                        [tail[g] for g in GROUPS],
-                    ),
+            week_groups.append(
+                dict(
+                    zip(
+                        GROUPS,
+                        spread(
+                            [nom[g] for g in GROUPS],
+                            [remaining[g] for g in GROUPS],
+                            [tail[g] for g in GROUPS],
+                        ),
+                    )
                 )
             )
+            for g in GROUPS:
+                planned[g] += week_groups[-1][g]
+        repair_week_doses(week_groups, nominal)
+        weeks = []
+        for wi, (wv, nom) in enumerate(zip(week_vols, nominal)):
+            groups = week_groups[wi]
             sessions = week_sessions(wv, groups, nom, cls, mi, wi, prev_last)
             prev_last = set(sessions[-1]["movements"]) if sessions else None
             weeks.append(
