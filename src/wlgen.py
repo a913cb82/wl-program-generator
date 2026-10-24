@@ -1754,20 +1754,22 @@ def stray(seq, family):
 
 
 def warmup(seq):
-    """Warm-up cost of a zone run followed by a heavier zone. A 1-set run is
-    free once the heavier zone has already been visited; 3+ sets still cost."""
+    """Warm-up cost of climbing out of a zone having done less than two
+    reps there: one rep is a touch, a double is a start. Climbs into a
+    zone already visited are free, so drops and waves cost nothing."""
     runs: list = []
-    for zlo, _ in seq:
+    for zlo, value in seq:
+        reps = atom_total(value)
         if runs and runs[-1][0] == zlo:
-            runs[-1][1] += 1
+            runs[-1][1] += reps
         else:
-            runs.append([zlo, 1])
+            runs.append([zlo, reps])
     total = 0
     seen = set()
-    for i, (zlo, n) in enumerate(runs):
+    for i, (zlo, reps) in enumerate(runs):
         seen.add(zlo)
         if i + 1 < len(runs) and runs[i + 1][0] > zlo and runs[i + 1][0] not in seen:
-            total += 1 if n == 1 else 0 if n == 2 else n - 1
+            total += 1 if reps < 2 else 0
     return total
 
 
@@ -2034,11 +2036,8 @@ def beam_search(zones, family):
                             and zone > last_zone
                             and zone not in seen
                         ):
-                            n = run_len
-                            new_warmup = warmup + (
-                                1 if n == 1 else 0 if n == 2 else n - 1
-                            )
-                        new_run_len = 1
+                            new_warmup = warmup + (1 if run_len < 2 else 0)
+                        new_run_len = amount
                     nxt.append(
                         (
                             tuple(new_caps),
@@ -2080,16 +2079,16 @@ def beam_search(zones, family):
         for _approx, _things, prefix in ranked:
             cost, _, _, cx = scheme_cost(prefix, family)
             text = compact_text(prefix)
-            pick = (cost, cx, len(text), text)
+            pick = (cost, cx, len(prefix), len(text), text)
             if best is None or pick < best[0]:
                 best = (pick, prefix)
         assert best is not None
         base = best[1]
     base_cost, _, _, base_cx = scheme_cost(base, family)
-    base_rank = (base_cost, base_cx, len(compact_text(base)))
+    base_rank = (base_cost, base_cx, len(base), len(compact_text(base)))
     for seed in seed_orders(zones):
         cost, _, _, cx = scheme_cost(seed, family)
-        seed_pick = (cost, cx, len(compact_text(seed)))
+        seed_pick = (cost, cx, len(seed), len(compact_text(seed)))
         if seed_pick < base_rank:
             base, base_rank = seed, seed_pick
     return base
@@ -2295,9 +2294,8 @@ def fixed_beam(types, family):
                 else:
                     new_count = 1
                     if last_zone is not None and zone > last_zone and zone not in seen:
-                        n = run_len
-                        new_warmup = warmup + (1 if n == 1 else 0 if n == 2 else n - 1)
-                    new_run_len = 1
+                        new_warmup = warmup + (1 if run_len < 2 else 0)
+                    new_run_len = amount
                 nxt.append(
                     (
                         tuple(new_rem),
@@ -2331,7 +2329,7 @@ def fixed_beam(types, family):
     for _approx, _things, prefix in ranked:
         cost, _, _, cx = scheme_cost(prefix, family)
         text = compact_text(prefix)
-        rank = (cost, cx, len(text), text)
+        rank = (cost, cx, len(prefix), len(text), text)
         if best is None or rank < best[0]:
             best = (rank, prefix)
     assert best is not None

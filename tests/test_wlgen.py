@@ -682,6 +682,16 @@ def test_complexity_and_compact_text():
     assert compact_text(same_zone) == "80%/2*3,1"
 
 
+def test_warmup_counts_reps_not_sets():
+    # A double is a start, not a touch: only leaving a zone after a single
+    # rep is rushed, so a one-set-per-zone ramp is free.
+    assert wlgen.warmup(((50, 2), (60, 2), (70, 2))) == 0
+    assert wlgen.warmup(((50, 1), (60, 2), (70, 2))) == 1
+    assert wlgen.warmup(((50, 1), (60, 1))) == 1
+    # climbs into a zone already visited are free (drops, waves, back-offs)
+    assert wlgen.warmup(((50, 1), (60, 2), (50, 2), (60, 2))) == 1
+
+
 def test_scheme_cost_stray_warmup_complexity():
     seq = ((60, 1), (60, 1), (70, 1), (60, 1), (70, 1))
     cost, stray, warmup, cx = scheme_cost(seq, "Snatch")
