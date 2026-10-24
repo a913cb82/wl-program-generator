@@ -25,3 +25,11 @@
 9. polish-pairs (stack-1): wave-polish won on single-side sets; try the
    round-robin polish on PAIR complex orders (two-sided zone totals).
    Same strict gate: identical totals, no stray/warmup regression.
+
+10. finish-scan (stack-1): FINISH_SCAN 2->1 (beam-trim's cheaper
+    follow-up; narrowing proved load-bearing, but rescoring fewer
+    survivors may be free).
+11. quota-cap (stack-1): week_quota caps (targets//6) — untried knob
+    shaping per-group hosting days. Audit-only nudges.
+12. pair-ratio (stack-1): RATIOS/SCHEDULES tuning for pair schemes;
+    size/strain lever, never probed.
