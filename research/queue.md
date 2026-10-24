@@ -42,3 +42,6 @@
 STANDING RULE (two inverted verdicts): report quality terms first,
 pace last. Pace deltas under ~0.05 are noise until replicated
 back-to-back on one box. Never keep a change on pace alone.
+
+- clpull-spill + ms70-spill: spill peak singles to light days, same
+  weekly totals, nothing gated (single-exc cells #1/#2).
