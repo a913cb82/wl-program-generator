@@ -86,3 +86,8 @@ Rule from now on: every explorer gets a 5-minute budget.
   scorer changes). longest-cut NULL (recon only; the three 21-set slots
   are mapped in its notes for the next attempt).
 - Launched env-c / env-t (audit-only knob probes on stack) + beam-wide.
+
+- env-t + env-c: both knobs DEAD in the default path (quality terms
+  byte-identical; only pace wiggles). 5-minute audit-only probes work
+  well as filler. Launched cap-refits (next live knob).
+- beam-wide still running.
