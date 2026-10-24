@@ -221,3 +221,10 @@ Rule from now on: every explorer gets a 5-minute budget.
   stack-1 book 0.847, strain 0.98. First spill success after 4
   orientation deaths — the fix was co-host-only + inline briefs.
 - Launched fund-spill-2 (top-k, then other classes, rhythm-gated).
+
+- fund-spill-3 NO-GO, reverted (no-stretch filter too strict: gaps are
+  week-relative, my "range only shrinks" theory was wrong). Lesson
+  recorded. The gap-guard is load-bearing for the 144.7 win.
+- Launched fund-spill-4 (move the gap helper to wlconfig, the module
+  both sides import; byte-identical gate) + pair-next (recon: next
+  non-gating lever on the paired 84%).
