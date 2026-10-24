@@ -238,3 +238,11 @@ Rule from now on: every explorer gets a 5-minute budget.
   sched-lock (pair-next rec: light-tier 1:1 lock, I Other Snatch 70%,
   re-coupling fenced) + snatch-spill (clone the spill for MS Other
   Snatch singles, rhythm-gated).
+
+- layer-fix-2 PASS, VERIFIED (byte-identical exc 144.7/instr 9282/
+  rhythm 2.09) and STACKED: stack-1 book 0.841, strain 0.96, 136 green.
+  Generator<->scorer private coupling gone (shared wlconfig helper).
+- sched-lock + snatch-spill died in recon again. New doctrine: I do
+  recon (exact anchors), agents get mechanical briefs (<=2 edits).
+  Relaunched sched-lock-2 (3-line global 1:1 lock below 80) +
+  snatch-spill-2 (verbatim clone for MS Other Snatch, top-1).
