@@ -99,8 +99,8 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 - Every paired-movement ratio stays legal, and each side's reps stay flat or fall as weight rises.
 - Each session's zone profile is contiguous from its own base; a gap stands only where the week cannot cover every session spanning it.
 - A session touches the week's base zone, and each zone below its top the week holds in force, whenever the week holds enough to share.
-- Every session trains each hosted movement for 0 or at least 6 lifts
-  (paired complexes count as one movement).
+- Every session slot prescribes 0 or at least 6 total reps: one
+  movement's sets, or one complex counted across both sides.
 - Same input, same output.
 
 ## Open

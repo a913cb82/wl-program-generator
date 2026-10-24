@@ -445,26 +445,42 @@ def test_prune_doses_keeps_sessions_matchable():
     assert pruned[idx["Other Snatch"]][0] == 1
 
 
-def test_session_group_doses_meet_minimum():
-    """Every unpaired (group, session) dose is 0 or >= MIN_DOSE lifts.
+def slot_total(items):
+    """Total reps prescribed by parsed scheme items; waves repeat."""
+    total = 0
+    for item in items:
+        if item[0] == "wave":
+            total += item[1] * slot_total(item[2])
+        else:
+            _, _, pairs = item
+            for value, count in pairs:
+                reps = value
+                while isinstance(reps, tuple):
+                    reps = sum(reps)
+                reps = sum(int(x) for x in str(reps).split("+"))
+                total += reps * count
+    return total
 
-    Paired complexes prescribe as one movement, so only unpaired cells
-    are judged per group. Regression: pair_fit's refit and the drift
-    absorption stranded 1-5 lift doses after prune_doses did its job."""
+
+def test_session_group_doses_meet_minimum():
+    """Every session slot prescribes 0 or >= MIN_DOSE total reps.
+
+    The slot is the scheme entry: one movement's sets, or one complex
+    counted across both sides (SnPull+Snatch (2+2)x3 is 12). Fragments
+    inside a legal slot may ramp or taper below the floor."""
+    assert slot_total(wlgen._parse(((70, 1),))[2]) == 1
+    assert slot_total(wlgen._parse(((70, (2, 2)),))[2]) == 4
     for cls in ANNUALS:
         plan = build_plan(cls)
         for m in plan["mesos"]:
             for w in m["weeks"]:
                 for s in w["sessions"]:
-                    paired_here = {g for a, b in s.get("pairs", {}) for g in (a, b)}
-                    for g, counts in s["movements"].items():
-                        if g in paired_here:
-                            continue
-                        total = sum(counts)
+                    for text, seq in scheme_entries(s):
+                        total = slot_total(wlgen._parse(tuple(seq))[2])
                         assert total == 0 or total >= MIN_DOSE, (
                             cls,
                             m["name"],
-                            g,
+                            text,
                             total,
                         )
 
