@@ -30,3 +30,11 @@ doubling under the frozen scorer, fixable only via support-level host
 control. Amount-shaping/peak-skip/host-spread all backfire.
 
 Rule from now on: every explorer gets a 5-minute budget.
+
+## Round 2 (from main @ 157e7ab, 5-min budgets, no merges to main)
+
+| Agent | Branch | Direction |
+|-------|--------|-----------|
+| r2-host | research/r2-host | support-level host control for paired doubling |
+| r2-hotspot | research/r2-hotspot | profile current build, cut top CPU hotspot, byte-identical output |
+| r2-shape | research/r2-shape | weekly shape: day counts, peak placement, peak patterns |
