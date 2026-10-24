@@ -82,3 +82,12 @@ One entry per round. Never edit an old entry.
 - what changed: _bin_gaps at 3 levels; rep-memory tried and dropped (815 flags vs ladder design)
 - what you learned: widening ladders are intentional (c51d889); the scorer must not defect them
 - next: fill the 14 comp holes (generator work, strain-neutral?)
+
+## 9 — Takano-calibrated scorer, stack rebased (2026-10-24)
+- commit: 7f5e254 (main), stack-1 merged green (145)
+- score: exc 142.5 flat; drift prices 75 hard openers + 14 bin gaps
+- best: exc 142.5, gaps 14, hard openers 75 (all Squat@50% x6-10)
+- verdict: keep (opener rule Takano-unanimous; climb relaxation deletes a false ban)
+- what changed: _step_ok frees climb rises, pair guard is flip-only, opener>5 defect
+- what learned: ruler banned Takano's own ramps; unpeaked-rise parked (550 us vs 1 Takano)
+- next: narrow Squat openers (generator), fill 14 bin holes

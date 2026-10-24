@@ -15,3 +15,6 @@
   ms-rhythm: +2.3 exc). Tails above median have zero leverage.
 - Noise: score spread 0.008, pace 0.03 (6 repeats). Quality bit-stable.
 - Gates are book-gated, always. Exc-only gates banned.
+- Ladder widening (+1/wave) violates Takano 847/848; parked as generator redesign, not scorer defect.
+- Takano opens 1-5 (848/848), never exceeds 5/set below 100%; pairs open 3+3 max per side.
+- The old climb rule banned Takano's own ramps (50/2->60/3); deleted. Flip guard kept (his 1 flip flags too).
