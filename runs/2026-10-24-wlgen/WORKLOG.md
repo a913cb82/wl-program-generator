@@ -73,3 +73,12 @@ One entry per round. Never edit an old entry.
 - what changed: book-gate held (both failed all four conditions)
 - what you learned: concentrating lean weeks spikes strain AND pace; the thesis inverted
 - next: shapediff recon (borrowable demand features, not transplants)
+
+## 8 — scorer upgraded, stack rebased (2026-10-24)
+- commit: 5bc35c5 (main), stack-1 merged
+- score: exc 142.5 flat, drift +69.8 (14 bin gaps x5), 140 green
+- best: exc 142.5, gaps 14 (I 12, MS 2)
+- verdict: keep (bin gaps are true comp holes: 90 with no 80)
+- what changed: _bin_gaps at 3 levels; rep-memory tried and dropped (815 flags vs ladder design)
+- what you learned: widening ladders are intentional (c51d889); the scorer must not defect them
+- next: fill the 14 comp holes (generator work, strain-neutral?)

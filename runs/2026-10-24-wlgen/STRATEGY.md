@@ -3,7 +3,7 @@
 ## Best
 
 Top-k co-host-only Fundamental spill, all classes, with the gap helper in
-wlconfig (stack-1 @ 215004c): exc 144.7, 136 green, zero defects.
+wlconfig (stack-1 @ 215004c): exc 142.5, 140 green, 14 bin gaps (priced, not gating).
 
 ## Good play
 

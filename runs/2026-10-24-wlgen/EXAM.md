@@ -3,7 +3,7 @@
 - exam command: `.venv/bin/wlgen audit` + `pytest -q -p no:cacheprovider` (orchestrator runs both, on the orchestrator box, back-to-back for close calls)
 - gate command: `pytest -q -p no:cacheprovider` (~6s, blind, explorer runs in-tree)
 - budget: suite + audit per step, ~10 min wall per round
-- budget tag: `audit+pytest136`
+- budget tag: `audit+pytest140+bingaps` (scorer now counts week/meso/macro bin gaps)
 - seed policy: deterministic build (no seeds); replicate close calls back-to-back on one box
 - score file: `runs/2026-10-24-wlgen/PROGRESS.jsonl`
 - result log: `runs/2026-10-24-wlgen/games.log` (append-only, never edit)
@@ -15,7 +15,7 @@
 - explorer budget: HARD 5 min (mechanical briefs) to 15 min (hard lines)
 - queue target: 1 waiting while 1 exam runs
 - stop: 10 tries, 2 h, or 3 in-noise in a row on a line; stop the loop on empty queue + 3 in-noise rounds
-- gate: keep iff BOOK SCORE improves AND exc does not regress AND zero defects AND suite green. Exc-only gates are banned (perclass-T: exc -13.7, book +0.2 on pace).
+- gate: keep iff EXC improves and DRIFT (minus bin gaps) does not regress and BOOK SCORE improves AND exc does not regress AND zero defects AND suite green. Exc-only gates are banned (perclass-T: exc -13.7, book +0.2 on pace).
 - forbidden:
   - ratio locks on paired families (shape breaks; scoped lock is a no-op)
   - gating or support-shaping pairs (support is the shape; 3 kills)
