@@ -47,3 +47,9 @@ Rule from now on: every explorer gets a 5-minute budget.
   an untried lead: MSLMM / MSLSMM canonical patterns.
 - Launched: shape-patterns (that lead), pair-freq (gate pair formation),
   size-again (next instruction cut). All from main, 5-min budgets.
+
+- shape-patterns REJECTED (rhythm -0.09, strain +0.16; follow-up: 6-day
+  only, keep trailing S). pair-freq FALSIFIED (render-level singles-first
+  kills pair_fit discipline; +1.2 exc). Both notes harvested, worktrees
+  cleared. Launched shape-6day + floor-retry (bounded floor retry now
+  that caches are cheap) alongside size-again.
