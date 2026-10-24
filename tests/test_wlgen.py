@@ -803,6 +803,19 @@ def test_seed_spine_opens_with_work_sets():
         assert prefix[:5] == ((50, 2), (60, 2), (70, 2), (80, 2), (90, 2))
 
 
+def test_seed_bulk_climbs_after_big_drop():
+    # The top flushes first, then the bulk climbs from the bottom instead
+    # of fading down zone by zone; reps never rise along the way.
+    zones = single_zones((12, 15, 14, 7, 7), "Squat")
+    grouped = wlgen.seed_orders(zones)[0]
+    zs = [z for z, _ in grouped]
+    drops = [i for i in range(6, len(zs)) if zs[i] < zs[i - 1]]
+    assert len(drops) == 1
+    assert zs[drops[0] :] == sorted(zs[drops[0] :])
+    for (za, va), (zb, vb) in zip(grouped[5:], grouped[6:]):
+        assert zb < za or vb <= va
+
+
 def test_seed_orders_are_legal_and_exact():
     cases = [
         single_zones((1, 11, 12, 0, 0), "CJ"),

@@ -2149,12 +2149,12 @@ def _count_items(seq):
 def seed_orders(zones):
     """Deterministic candidate orders the joint beam misses.
 
-    Ramp spine (smallest set per zone, ascending), then either grouped
-    bulk (top remainder as singles, lower zones largest-first, drops are
-    free) or a top-pair wave ((U,s),(T,s) alternating after parity
-    singles). Every step is checked against _transition_ok and zone
-    totals must match exactly; invalid seeds are dropped. Pure (no RNG),
-    so beam_search stays @cache-safe."""
+    Work-set spine (doubles where the zone holds them, flat-or-fall),
+    then either grouped bulk or a top-pair wave. The top is flushed
+    first, then the lower zones climb from the bottom, so the bulk
+    ramps up instead of fading down. Every step is checked against
+    _transition_ok and zone totals must match exactly; invalid seeds are
+    dropped. Pure (no RNG), so beam_search stays @cache-safe."""
     present = tuple(z for z, _, _ in zones)
     if not present:
         return ()
@@ -2206,15 +2206,26 @@ def seed_orders(zones):
                 emit(below, s)
                 if ok:
                     emit(top, s)
-        for z in sorted(present, reverse=True):
-            if not ok or rem[z] <= 0:
+        cap = None
+        if ok and rem[top] > 0:
+            arrival = next(k for k, v in values[top].items() if v == last_value)
+            for size in sorted(
+                fill(rem[top], tuple(s for s in sizes[top] if s <= arrival)),
+                reverse=True,
+            ):
+                emit(top, size)
+        for z in sorted(present):
+            if z == top or not ok or rem[z] <= 0:
                 continue
-            if z == last_zone:
-                while rem[z] > 0 and ok:
-                    emit(z, 1)
+            if cap is None:
+                allowed = tuple(sizes[z])
             else:
-                for size in sorted(fill(rem[z], tuple(sizes[z])), reverse=True):
-                    emit(z, size)
+                allowed = tuple(s for s in sizes[z] if s <= cap)
+            parts = sorted(fill(rem[z], allowed), reverse=True)
+            for size in parts:
+                emit(z, size)
+            if parts:
+                cap = parts[-1]
         if ok and all(r == 0 for r in rem.values()) and seq:
             tup = tuple(seq)
             if tup not in out:
