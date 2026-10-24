@@ -2166,6 +2166,7 @@ def seed_orders(zones):
         seen: set = set()
         rem = {z: c for z, c, _ in zones}
         last_zone, last_value = None, None
+        prev_size = 2
         ok = True
 
         def emit(z, size):
@@ -2184,7 +2185,10 @@ def seed_orders(zones):
             rem[z] -= size
 
         for z, _, ch in zones:
-            emit(z, ch[-1][0])
+            want = min(2, rem[z], prev_size)
+            size = max(s for s in sizes[z] if s <= want)
+            emit(z, size)
+            prev_size = size
         top = present[-1]
         below = present[-2] if len(present) >= 2 else None
         s = 2

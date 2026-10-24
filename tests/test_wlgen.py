@@ -795,6 +795,14 @@ def test_beam_prefers_separated_rep_change():
     assert text == "60%/2, 70%/2*2, 3*(80%/2, 70%/3), 80%/1"
 
 
+def test_seed_spine_opens_with_work_sets():
+    # One-rep openers are too light to warm up on; the spine opens with
+    # doubles wherever the zone holds at least two lifts.
+    zones = single_zones((12, 15, 14, 7, 7), "Squat")
+    for prefix in wlgen.seed_orders(zones):
+        assert prefix[:5] == ((50, 2), (60, 2), (70, 2), (80, 2), (90, 2))
+
+
 def test_seed_orders_are_legal_and_exact():
     cases = [
         single_zones((1, 11, 12, 0, 0), "CJ"),
