@@ -112,3 +112,10 @@ Rule from now on: every explorer gets a 5-minute budget.
 - mindose-tol: all four values REVERTED (pinned-test breakage, no
   quality signal). Launched sizeweight-nudge (last knob-scan lead).
   Running: split-20, demand-cheap, sizeweight-nudge.
+
+- split-20 NULL with teeth: post-pass split is illegal under frozen
+  cell-match, and additive counting would hold instr flat anyway.
+  demand-cheap KILLED (capped demand: strain 0.73/0.79 but pace never
+  neutral; demand strain win is real but unreachable).
+  Launched day-rebalance (move mass, not patterns) + feasible-trim.
+  Running: sizeweight-nudge, day-rebalance, feasible-trim.
