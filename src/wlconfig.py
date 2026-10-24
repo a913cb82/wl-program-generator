@@ -48,6 +48,10 @@ DAY_T = float(_os.environ.get("WLGEN_T", "5"))
 # Heavy days run three times the light ones, every other day.
 DAY_C = float(_os.environ.get("WLGEN_C", "3"))  # 0 means scale with the week
 DAY_CMAX = float(_os.environ.get("WLGEN_CMAX", "3"))
+# "peak" gives the week one peak with mid-size shoulders; "alt" gives every
+# other day a peak. Tuned: one peak keeps contrast three for 20% less
+# over-capacity work than alternating peaks, which concentrate twice as much.
+DAY_SHAPE = _os.environ.get("WLGEN_SHAPE", "peak")
 
 TOL = 0.2  # a microcycle's group targets may sit +/- this far from the nominal split
 CAP_DEV = 0.1  # ... and its total deviation may not exceed this share of volume

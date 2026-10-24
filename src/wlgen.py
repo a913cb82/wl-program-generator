@@ -23,6 +23,7 @@ from wlconfig import (
     DAY_C,
     DAY_CMAX,
     DAY_RULE,
+    DAY_SHAPE,
     DAY_T,
     EPS,
     FAN,
@@ -873,12 +874,21 @@ def demand_days(demand, vol):
 
 
 def rhythm(n, demand):
-    """Heavy days every other day, never adjacent. Contrast scales with the
-    week's demand when DAY_C is 0, else it is fixed."""
+    """Weights for the week's days: a single peak with mid-size shoulders, or
+    a peak every other day. Contrast scales with the week's demand when DAY_C
+    is 0, else it is fixed."""
     c = DAY_C
     if c <= 0:
         total = sum(demand.values())
         c = min(DAY_CMAX, 2.0 + 1.0 * min(1.0, total / 29.0))
+    if DAY_SHAPE == "peak":
+        w = [1.0] * n
+        mid = (n - 1) // 2
+        w[mid] = c
+        if n >= 4:
+            w[mid - 1] = 2.0
+            w[min(n - 1, mid + 1)] = 2.0
+        return w
     return [c if j % 2 else 1.0 for j in range(n)]
 
 
