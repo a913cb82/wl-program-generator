@@ -151,3 +151,8 @@ Rule from now on: every explorer gets a 5-minute budget.
 - perclass-half SPLIT: MS-only M+0.5 audit-GO (-0.027, real strain),
   I/CMS dead. Launched perclass-impl + finish-scan (FINISH_SCAN 2->1).
   Running: meso-split, perclass-impl, finish-scan.
+
+- meso-split NO WIN (MACRO split is a local optimum for single-meso
+  ±0.02; every nudge raised strain/size). Launched quota-cap
+  (untried week_quota divisor). Running: perclass-impl, finish-scan,
+  quota-cap.
