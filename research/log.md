@@ -78,3 +78,11 @@ Rule from now on: every explorer gets a 5-minute budget.
   for pace/size work; main stays untouched.
 - Launched beam-narrow (queued hypothesis, stack base), longest-cut
   (attack the 21-set block), knob-scan (coordinate descent on stack).
+
+- beam-narrow REJECTED (beams load-bearing; narrowing changes all five
+  JSONs). Its stale-outputs flag checked on main: regen is
+  byte-identical, no staleness — artifact of its own worktree.
+- size-again notes rule out wider waves/fraction merging (would need
+  scorer changes). longest-cut NULL (recon only; the three 21-set slots
+  are mapped in its notes for the next attempt).
+- Launched env-c / env-t (audit-only knob probes on stack) + beam-wide.
