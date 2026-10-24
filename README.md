@@ -46,7 +46,7 @@ A plan has four parts:
 - A week table with lifts per group and zone, per microcycle.
 - A training plan table per mesocycle: weeks go across, sessions and slots go down.
 
-Each training plan slot gets one row with two columns per week: the movement name, then its scheme with the zone over the reps, fraction-style (a real stacked fraction with a vinculum, e.g. 80% over 1+2):
+Each training plan slot gets one row with two columns per week: the movement name, then its scheme with the zone over the reps, fraction-style (a real stacked fraction with a vinculum, e.g. 80% over 1+2; repeated sets show as ×N beside the fraction):
 
 ```
 | | Week 1 | |

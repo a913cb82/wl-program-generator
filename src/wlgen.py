@@ -1661,7 +1661,7 @@ def _parse(seq):
 
 @cache
 def _render_html(items):
-    """One HTML phrase per item: stacked zone-over-reps fractions."""
+    """One HTML phrase per item: zone-over-reps fractions, sets as a ×N suffix."""
     out = []
     for item in items:
         if item[0] == "wave":
@@ -1669,14 +1669,16 @@ def _render_html(items):
             out.append(f'<span class="rep">{item[1]}×</span>({inner})')
         else:
             _, zlo, pairs = item
-            body = ",".join(
-                f"{atom_text(value)}*{count}" if count > 1 else atom_text(value)
-                for value, count in pairs
-            )
-            out.append(
-                f'<span class="frac"><span class="zone">{zlo}%</span>'
-                f'<span class="reps">{body}</span></span>'
-            )
+            parts = []
+            for value, count in pairs:
+                frac = (
+                    f'<span class="frac"><span class="zone">{zlo}%</span>'
+                    f'<span class="reps">{atom_text(value)}</span></span>'
+                )
+                if count > 1:
+                    frac += f'<span class="sets">×{count}</span>'
+                parts.append(frac)
+            out.append(", ".join(parts))
     return tuple(out)
 
 
@@ -2133,8 +2135,8 @@ def training_table(meso):
                     cells += ["<td></td>", "<td></td>"]
                     continue
                 movement, seq = entries[k]
-                phrases = "".join(
-                    f'<div class="phrase">{p}</div>'
+                phrases = " ".join(
+                    f'<span class="phrase">{p}</span>'
                     for p in _render_html(_parse(tuple(seq))[2])
                 )
                 cells += [
@@ -2188,11 +2190,12 @@ td.num { text-align: right; }
 tbody tr:nth-child(even) { background: #fafafa; }
 p.sizes { color: var(--muted); margin: 0.25rem 0 1rem; }
 td.move { white-space: nowrap; font-weight: 600; }
-td.scheme { min-width: 10rem; }
-.phrase { margin: 0.1em 0; }
+td.scheme { min-width: 10rem; white-space: nowrap; }
+table.plan { width: 100%; }
 .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0.1em 0.25em; }
 .frac .zone { border-bottom: 1.5px solid currentColor; padding: 0 0.4em; font-weight: 600; }
 .frac .reps { padding: 0 0.4em; }
+.sets { font-weight: 600; vertical-align: middle; }
 .rep { font-weight: 600; }
 """
 

@@ -318,8 +318,8 @@ def test_training_plan_tables():
                         continue
                     movement, seq = entries[k]
                     assert cells[base + 2 * wi] == movement
-                    assert cells[base + 2 * wi + 1] == "".join(
-                        f'<div class="phrase">{p}</div>'
+                    assert cells[base + 2 * wi + 1] == " ".join(
+                        f'<span class="phrase">{p}</span>'
                         for p in wlgen._render_html(wlgen._parse(tuple(seq))[2])
                     )
                 idx += 1
@@ -444,7 +444,10 @@ def test_prune_doses_keeps_sessions_matchable():
 def test_render_html():
     assert wlgen._render_html((("group", 80, ((3, 2), (2, 1))),)) == (
         '<span class="frac"><span class="zone">80%</span>'
-        '<span class="reps">3*2,2</span></span>',
+        '<span class="reps">3</span></span>'
+        '<span class="sets">×2</span>, '
+        '<span class="frac"><span class="zone">80%</span>'
+        '<span class="reps">2</span></span>',
     )
     assert wlgen._render_html((("group", 70, ((1, 1),)),)) == (
         '<span class="frac"><span class="zone">70%</span>'
@@ -512,10 +515,17 @@ def test_training_table_exact():
         '<th scope="col" colspan="2">Week 1</th>'
         '<th scope="col" colspan="2">Week 2</th></tr></thead>\n'
         "<tbody>\n"
-        f'<tr><th scope="row" rowspan="1">1</th><td class="move">Clean+Jerk</td><td class="scheme"><div class="phrase">{cj}</div></td><td class="move">Squat</td><td class="scheme"><div class="phrase">{sq3}</div></td></tr>\n'
-        f'<tr><th scope="row" rowspan="1">2</th><td class="move">Squat</td><td class="scheme"><div class="phrase">{sq1}</div></td><td></td><td></td></tr>\n'
+        f'<tr><th scope="row" rowspan="1">1</th><td class="move">Clean+Jerk</td><td class="scheme"><span class="phrase">{cj}</span></td><td class="move">Squat</td><td class="scheme"><span class="phrase">{sq3}</span></td></tr>\n'
+        f'<tr><th scope="row" rowspan="1">2</th><td class="move">Squat</td><td class="scheme"><span class="phrase">{sq1}</span></td><td></td><td></td></tr>\n'
         "</tbody>\n</table>"
     )
+
+
+def test_plan_table_uses_full_width_without_wrapping():
+    html = to_html(build_plan("I"))
+    assert "table.plan { width: 100%; }" in html
+    assert "td.scheme { min-width: 10rem; white-space: nowrap; }" in html
+    assert '<div class="phrase">' not in html
 
 
 def test_scheme_entries_follow_slot_order():
