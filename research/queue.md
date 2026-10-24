@@ -38,3 +38,7 @@
     intensity mix feeds strain directly. Audit-only, revert at red.
 14. order-4day-2 (stack-1): disciplined retry of the 4-day reorder
     (forbid environment spelunking; 3 commands: audit, edit, audit).
+
+STANDING RULE (two inverted verdicts): report quality terms first,
+pace last. Pace deltas under ~0.05 are noise until replicated
+back-to-back on one box. Never keep a change on pace alone.
