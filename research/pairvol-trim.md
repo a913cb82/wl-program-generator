@@ -39,3 +39,31 @@ floor likely belongs on the resulting per-session `ac`/`aj` instead.
 Next session: implement the trim above with a TDD test, then apply the
 fence (partner-group excess delta ≤ half target fall; paired-session count
 must not rise) and gate (exc < 144.7, zero new defects, 136 green).
+
+---
+
+## Attempt 2026-10-24: 0.9x C1 light-tier trim in `_pair_options_keyed` — REVERTED
+
+Change (reverted): in `_pair_options_keyed` (wlgen.py:1043), `binkey` is the
+class key (`_canon("I") = ("C1", ...)`). Added
+`use_light = round(light * 0.9) if binkey == "C1" else light` for the
+`SCHEDULES` loop, with per-schedule fallback to untrimmed `light` when the
+trimmed `ac`/`aj` would strand a slot at `0 < v < MIN_DOSE` (6). Singles
+path untouched. TDD test (`tests/test_pairvol_trim.py`, since removed) went
+red pre-change, green post-change.
+
+Result (gate FAIL → fully reverted):
+- book exc 144.7 → 161.3 (+16.6); target class I exc 44.0 → 60.6 (+16.6).
+- New defects: class I drift off 20.0 (was 0.0), longest 21 → 23 slots,
+  rhythm 3.09 → 3.00 with a collapsed 0.3 week; partners III/II/CMS/MS flat.
+- pytest 136 passed → 134 passed + 5 failed (day-patterns-canonical-first,
+  week-targets-near-nominal, fund-spill-top-slice, shipped-scores-clean,
+  book-numbers-match).
+- Re-coupling fence moot (target rose, no fall to halve); paired-session
+  count not separately tallied once the gate failed outright.
+
+Verdict: **REVERT** — tree restored to HEAD, baseline re-confirmed
+(exc 144.7, 136 green). Hypothesis dead: trimming light-tier units at the
+pair-options stage starves Class I sessions instead of trimming volume
+(pair-fit snaps to near targets, so smaller unit blocks force off-plan
+drift rather than less volume).

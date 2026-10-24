@@ -15,7 +15,9 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 | done | pairvol-trim (I 70% paired-volume x0.9) |
 | done | perclass-T (per-class day count) |
 | done | rhythm-price (recon: price rhythm components) |
-| trying | fund-bulk-2 (70% spill, no re-baseline) |
-| trying | pairvol-trim-2 (known insertion point) |
-| trying | perclass-T-2 (I+1 day) |
-| trying | fold-thu (Thursday fold, kill-lined) |
+| dropped | fund-bulk-2 (interior-70 always gaps; structural no-op) |
+| dropped | pairvol-trim-2 (starves sessions into drift; hypothesis dead) |
+| dropped | perclass-T-2 (exc -13.7 BUT pace +0.82, book +0.2; gate was exc-only) |
+| dropped | fold-thu (clash x24 as priced; kill line held) |
+| trying | lean-3 (III -1 day, book-gated) |
+| trying | lean-2 (II -1 day, book-gated) |

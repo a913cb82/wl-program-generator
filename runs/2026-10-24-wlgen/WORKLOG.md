@@ -55,3 +55,12 @@ One entry per round. Never edit an old entry.
 - what changed: MS week-vol rotation; harvested 5 notes
 - what you learned: discovery must be priced into the budget or done by me
 - next: fund-bulk-2, pairvol-trim-2, perclass-T-2, fold-thu
+
+## 6 — perclass-T rejected on book, gate fixed (2026-10-24)
+- commit: ff3692c (stack-1, unchanged)
+- score: exc 131.0 claimed but book 0.839->1.046 (pace +0.82)
+- best: exc 142.5
+- verdict: reject (book regressed; my exc-only gate was the bug)
+- what changed: EXAM gains a book-gate rule; exc-only gates banned
+- what you learned: more days = more CPU, structurally; strain gains can't repay pace at 0.2 vs 0.4 weights unless 4x
+- next: lean-3, lean-2 (inverse bet on lean classes, book-gated)

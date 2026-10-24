@@ -15,9 +15,11 @@
 - explorer budget: HARD 5 min (mechanical briefs) to 15 min (hard lines)
 - queue target: 1 waiting while 1 exam runs
 - stop: 10 tries, 2 h, or 3 in-noise in a row on a line; stop the loop on empty queue + 3 in-noise rounds
+- gate: keep iff BOOK SCORE improves AND exc does not regress AND zero defects AND suite green. Exc-only gates are banned (perclass-T: exc -13.7, book +0.2 on pace).
 - forbidden:
   - ratio locks on paired families (shape breaks; scoped lock is a no-op)
   - gating or support-shaping pairs (support is the shape; 3 kills)
   - generator importing scorer privates (use the wlconfig shared helper)
   - pace-only keeps (bar: pace delta > 0.03 / score > 0.008, measured)
   - editing wlscore weights or baselines (the ruler stays frozen)
+  - exc-only keep gates (book rules, always)
