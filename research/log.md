@@ -91,3 +91,8 @@ Rule from now on: every explorer gets a 5-minute budget.
   byte-identical; only pace wiggles). 5-minute audit-only probes work
   well as filler. Launched cap-refits (next live knob).
 - beam-wide still running.
+
+- beam-wide REJECTED (48 is pure pace tax; 5 fewer instructions do not
+  pay for +0.05 pace). Launched beam-joint (narrower blast radius) and
+  longest-surgical (attack the mapped 21-set slots). Running:
+  cap-refits, beam-joint, longest-surgical.
