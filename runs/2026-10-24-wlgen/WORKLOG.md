@@ -19,3 +19,12 @@ One entry per round. Never edit an old entry.
 - what changed: singles-host filter holds zero defects but finds no exc-positive move
 - what you learned: singles pools are dose-balanced; only Fundamental (dense peaks) spills
 - next: pace-prof; I Other Clean priced out (ceiling ~2)
+
+## 2 — pace-prof null (2026-10-24)
+- commit: 215004c (unchanged)
+- score: exc 144.7, pace -0.33 -> -0.31 (noise)
+- best: exc 144.7
+- verdict: drop (top self-time fns memoized with unique args; nothing safe to cut)
+- what changed: nothing (2 memo probes reverted)
+- what you learned: audit CPU is all unique-arg calls; pace floor is structural
+- next: jerk-spill, then stop the loop if neutral (5th miss in a row)

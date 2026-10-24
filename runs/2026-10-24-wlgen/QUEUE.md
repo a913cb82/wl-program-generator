@@ -8,4 +8,5 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 | dropped | cms-snatch-spill (neutral no-op) |
 | dropped | I Other Clean singles spill (priced: 48 lifts/7 sess, ceiling ~2 exc, recipe 0-for-3) |
 | done | host ubiquity mapped (Squat ubiquitous but exc-free; SnPull never singles) |
-| trying | pace-prof (profiler-driven CPU cut) |
+| dropped | pace-prof (top fns already memoized, unique args) |
+| trying | jerk-spill (I Jerk singles — last untested pool) |
