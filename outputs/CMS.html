@@ -45,6 +45,10 @@ td.scheme { min-width: 10rem; white-space: nowrap; }
 table.plan { width: 100%; }
 table.plan tr.sess > td, table.plan tr.sess > th { border-top: 2px solid var(--strong); }
 table.plan .wk { border-left: 2px solid var(--strong); }
+table.micro { width: 100%; }
+table.micro tr.grp > td, table.micro tr.grp > th { border-top: 2px solid var(--strong); }
+table.micro .meso { border-left: 2px solid var(--strong); }
+table.micro th, table.micro td { white-space: nowrap; }
 .frac { display: inline-flex; flex-direction: column; text-align: center; margin: 0.1em 0.25em; }
 .frac .zone { border-bottom: 1.5px solid currentColor; padding: 0 0.4em; font-weight: 600; }
 .frac .reps { padding: 0 0.4em; }
@@ -59,7 +63,7 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 <header><h1>Soviet year (CMS)</h1></header>
 <nav class="toc">
 <h2>Contents</h2>
-<ul><li><a href="#volumes">Volumes</a><ul><li><a href="#macrocycle">Macrocycle</a></li><li><a href="#mesocycles">Mesocycles</a></li><li><a href="#microcycles">Microcycles</a></li></ul></li><li><a href="#training-plan">Training Plan</a><ul><li><a href="#prep-4-2-prep-1">Prep 4-2 (prep)</a></li><li><a href="#prep-2-4-prep-1">Prep 2-4 (prep)</a></li><li><a href="#prep-3-1-prep-1">Prep 3-1 (prep)</a></li><li><a href="#comp-1-comp-1">Comp 1 (comp)</a></li><li><a href="#comp-2-comp-1">Comp 2 (comp)</a></li></ul></li></ul>
+<ul><li><a href="#volumes">Volumes</a><ul><li><a href="#macrocycle">Macrocycle</a></li><li><a href="#mesocycles">Mesocycles</a></li><li><a href="#microcycles">Microcycles</a></li></ul></li><li><a href="#training-plan">Training Plan</a><ul><li><a href="#prep-4-2-prep">Prep 4-2 (prep)</a></li><li><a href="#prep-2-4-prep">Prep 2-4 (prep)</a></li><li><a href="#prep-3-1-prep">Prep 3-1 (prep)</a></li><li><a href="#comp-1-comp">Comp 1 (comp)</a></li><li><a href="#comp-2-comp">Comp 2 (comp)</a></li></ul></li></ul>
 </nav>
 <section>
 <h1 id="volumes">Volumes</h1>
@@ -102,335 +106,88 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 <p class="sizes">Comp 1 (comp) - Week sizes: 373, 290, 248, 124</p>
 <p class="sizes">Comp 2 (comp) - Week sizes: 242, 285, 224, 112</p>
 <h2 id="microcycles">Microcycles</h2>
-<h3 id="prep-4-2-prep">Prep 4-2 (prep)</h3>
-<h4 id="week-1---242-lifts">Week 1 - 242 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
+<div class="scroll"><table class="micro">
+<thead><tr><th></th><th scope="col" colspan="4">Prep 4-2 (prep)</th><th scope="col" colspan="4" class="meso">Prep 2-4 (prep)</th><th scope="col" colspan="4" class="meso">Prep 3-1 (prep)</th><th scope="col" colspan="4" class="meso">Comp 1 (comp)</th><th scope="col" colspan="4" class="meso">Comp 2 (comp)</th></tr>
+<tr><th scope="col">Group</th><th scope="col">W1 · 242</th><th scope="col">W2 · 322</th><th scope="col">W3 · 196</th><th scope="col">W4 · 391</th><th scope="col" class="meso">W1 · 278</th><th scope="col">W2 · 418</th><th scope="col">W3 · 228</th><th scope="col">W4 · 342</th><th scope="col" class="meso">W1 · 388</th><th scope="col">W2 · 259</th><th scope="col">W3 · 460</th><th scope="col">W4 · 331</th><th scope="col" class="meso">W1 · 373</th><th scope="col">W2 · 290</th><th scope="col">W3 · 248</th><th scope="col">W4 · 124</th><th scope="col" class="meso">W1 · 242</th><th scope="col">W2 · 285</th><th scope="col">W3 · 224</th><th scope="col">W4 · 112</th></tr>
+</thead>
 <tbody>
-<tr><th scope="row">Snatch</th><td class="num">22</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">1</td><td></td><td></td><td></td><td class="num">70.1</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">27</td><td></td><td class="num">3</td><td class="num">21</td><td class="num">3</td><td></td><td></td><td></td><td class="num">71.0</td></tr>
-<tr><th scope="row">Clean</th><td class="num">14</td><td></td><td></td><td class="num">12</td><td class="num">2</td><td></td><td></td><td></td><td class="num">72.4</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">23</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.6</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">18</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">4</td><td></td><td></td><td></td><td class="num">72.1</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">12</td><td></td><td class="num">1</td><td class="num">8</td><td class="num">3</td><td></td><td></td><td></td><td class="num">72.7</td></tr>
-<tr><th scope="row">Squat</th><td class="num">55</td><td class="num">12</td><td class="num">15</td><td class="num">23</td><td class="num">5</td><td></td><td></td><td></td><td class="num">64.8</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">16</td><td></td><td></td><td></td><td class="num">16</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">12</td><td></td><td></td><td class="num">8</td><td class="num">4</td><td></td><td></td><td></td><td class="num">74.3</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">43</td><td class="num">3</td><td class="num">5</td><td class="num">16</td><td class="num">15</td><td class="num">4</td><td></td><td></td><td class="num">73.8</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-2---322-lifts">Week 2 - 322 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">29</td><td></td><td class="num">4</td><td class="num">22</td><td class="num">3</td><td></td><td></td><td></td><td class="num">70.7</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">35</td><td></td><td class="num">3</td><td class="num">30</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.7</td></tr>
-<tr><th scope="row">Clean</th><td class="num">20</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.5</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">29</td><td></td><td class="num">3</td><td class="num">20</td><td class="num">6</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">23</td><td></td><td class="num">2</td><td class="num">16</td><td class="num">5</td><td></td><td></td><td></td><td class="num">72.3</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">16</td><td></td><td class="num">2</td><td class="num">10</td><td class="num">4</td><td></td><td></td><td></td><td class="num">72.2</td></tr>
-<tr><th scope="row">Squat</th><td class="num">69</td><td class="num">15</td><td class="num">19</td><td class="num">29</td><td class="num">6</td><td></td><td></td><td></td><td class="num">64.8</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">28</td><td></td><td></td><td></td><td class="num">28</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">16</td><td></td><td></td><td class="num">4</td><td class="num">6</td><td class="num">6</td><td></td><td></td><td class="num">82.2</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">57</td><td class="num">4</td><td class="num">6</td><td class="num">22</td><td class="num">20</td><td class="num">5</td><td></td><td></td><td class="num">73.8</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-3---196-lifts">Week 3 - 196 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">19</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">1</td><td></td><td></td><td></td><td class="num">69.9</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">21</td><td></td><td class="num">2</td><td class="num">16</td><td class="num">3</td><td></td><td></td><td></td><td class="num">71.5</td></tr>
-<tr><th scope="row">Clean</th><td class="num">13</td><td></td><td></td><td class="num">12</td><td class="num">1</td><td></td><td></td><td></td><td class="num">71.8</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">17</td><td></td><td class="num">3</td><td class="num">12</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.4</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">14</td><td></td><td class="num">2</td><td class="num">8</td><td class="num">4</td><td></td><td></td><td></td><td class="num">72.4</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">10</td><td></td><td class="num">1</td><td class="num">7</td><td class="num">2</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Squat</th><td class="num">44</td><td class="num">10</td><td class="num">12</td><td class="num">18</td><td class="num">4</td><td></td><td></td><td></td><td class="num">64.6</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">14</td><td></td><td></td><td></td><td class="num">14</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">10</td><td></td><td></td><td class="num">8</td><td class="num">2</td><td></td><td></td><td></td><td class="num">73.0</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">34</td><td class="num">3</td><td class="num">4</td><td class="num">12</td><td class="num">12</td><td class="num">3</td><td></td><td></td><td class="num">73.4</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-4---391-lifts">Week 4 - 391 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">35</td><td></td><td class="num">3</td><td class="num">27</td><td class="num">5</td><td></td><td></td><td></td><td class="num">71.6</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">43</td><td></td><td class="num">3</td><td class="num">36</td><td class="num">4</td><td></td><td></td><td></td><td class="num">71.2</td></tr>
-<tr><th scope="row">Clean</th><td class="num">24</td><td></td><td class="num">2</td><td class="num">16</td><td class="num">6</td><td></td><td></td><td></td><td class="num">72.7</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">36</td><td></td><td class="num">4</td><td class="num">26</td><td class="num">6</td><td></td><td></td><td></td><td class="num">71.6</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">29</td><td></td><td class="num">3</td><td class="num">24</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.7</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">20</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.5</td></tr>
-<tr><th scope="row">Squat</th><td class="num">88</td><td class="num">19</td><td class="num">25</td><td class="num">37</td><td class="num">7</td><td></td><td></td><td></td><td class="num">64.6</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">28</td><td></td><td></td><td></td><td class="num">28</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">20</td><td></td><td></td><td class="num">5</td><td class="num">7</td><td class="num">7</td><td class="num">1</td><td></td><td class="num">83.0</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">68</td><td class="num">3</td><td class="num">8</td><td class="num">27</td><td class="num">24</td><td class="num">6</td><td></td><td></td><td class="num">74.2</td></tr>
-</tbody>
-</table></div>
-<h3 id="prep-2-4-prep">Prep 2-4 (prep)</h3>
-<h4 id="week-1---278-lifts">Week 1 - 278 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">24</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">3</td><td></td><td></td><td></td><td class="num">71.0</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">31</td><td></td><td class="num">3</td><td class="num">19</td><td class="num">9</td><td></td><td></td><td></td><td class="num">72.9</td></tr>
-<tr><th scope="row">Clean</th><td class="num">19</td><td></td><td class="num">1</td><td class="num">10</td><td class="num">8</td><td></td><td></td><td></td><td class="num">74.7</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">24</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">6</td><td></td><td></td><td></td><td class="num">72.2</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">19</td><td></td><td class="num">1</td><td class="num">10</td><td class="num">8</td><td></td><td></td><td></td><td class="num">74.7</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">15</td><td></td><td class="num">2</td><td class="num">10</td><td class="num">3</td><td></td><td></td><td></td><td class="num">71.7</td></tr>
-<tr><th scope="row">Squat</th><td class="num">61</td><td class="num">13</td><td class="num">17</td><td class="num">17</td><td class="num">14</td><td></td><td></td><td></td><td class="num">66.2</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">18</td><td></td><td></td><td></td><td class="num">18</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">14</td><td></td><td></td><td class="num">3</td><td class="num">5</td><td class="num">3</td><td class="num">3</td><td></td><td class="num">85.3</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">53</td><td class="num">2</td><td class="num">6</td><td class="num">21</td><td class="num">14</td><td class="num">7</td><td class="num">3</td><td></td><td class="num">76.1</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-2---418-lifts">Week 2 - 418 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">39</td><td></td><td class="num">4</td><td class="num">25</td><td class="num">10</td><td></td><td></td><td></td><td class="num">72.5</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">46</td><td></td><td class="num">5</td><td class="num">28</td><td class="num">13</td><td></td><td></td><td></td><td class="num">72.7</td></tr>
-<tr><th scope="row">Clean</th><td class="num">25</td><td></td><td class="num">2</td><td class="num">13</td><td class="num">10</td><td></td><td></td><td></td><td class="num">74.2</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">37</td><td></td><td class="num">4</td><td class="num">24</td><td class="num">9</td><td></td><td></td><td></td><td class="num">72.4</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">29</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">11</td><td></td><td></td><td></td><td class="num">73.8</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">23</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">9</td><td></td><td></td><td></td><td class="num">74.0</td></tr>
-<tr><th scope="row">Squat</th><td class="num">92</td><td class="num">20</td><td class="num">26</td><td class="num">25</td><td class="num">21</td><td></td><td></td><td></td><td class="num">66.1</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">30</td><td></td><td></td><td></td><td class="num">30</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">21</td><td></td><td></td><td class="num">5</td><td class="num">7</td><td class="num">5</td><td class="num">4</td><td></td><td class="num">84.8</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">76</td><td class="num">5</td><td class="num">8</td><td class="num">29</td><td class="num">20</td><td class="num">10</td><td class="num">4</td><td></td><td class="num">75.5</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-3---228-lifts">Week 3 - 228 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">21</td><td></td><td class="num">2</td><td class="num">13</td><td class="num">6</td><td></td><td></td><td></td><td class="num">72.9</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">25</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">4</td><td></td><td></td><td></td><td class="num">71.4</td></tr>
-<tr><th scope="row">Clean</th><td class="num">14</td><td></td><td class="num">2</td><td class="num">6</td><td class="num">6</td><td></td><td></td><td></td><td class="num">73.9</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">22</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">8</td><td></td><td></td><td></td><td class="num">73.7</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">15</td><td></td><td class="num">3</td><td class="num">9</td><td class="num">3</td><td></td><td></td><td></td><td class="num">71.0</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">11</td><td></td><td class="num">1</td><td class="num">6</td><td class="num">4</td><td></td><td></td><td></td><td class="num">73.7</td></tr>
-<tr><th scope="row">Squat</th><td class="num">52</td><td class="num">11</td><td class="num">15</td><td class="num">14</td><td class="num">12</td><td></td><td></td><td></td><td class="num">66.2</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">16</td><td></td><td></td><td></td><td class="num">16</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">11</td><td></td><td></td><td class="num">3</td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td></td><td class="num">83.7</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">41</td><td class="num">2</td><td class="num">5</td><td class="num">16</td><td class="num">11</td><td class="num">5</td><td class="num">2</td><td></td><td class="num">75.4</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-4---342-lifts">Week 4 - 342 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">31</td><td></td><td class="num">3</td><td class="num">24</td><td class="num">4</td><td></td><td></td><td></td><td class="num">71.3</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">38</td><td></td><td class="num">4</td><td class="num">23</td><td class="num">11</td><td></td><td></td><td></td><td class="num">72.8</td></tr>
-<tr><th scope="row">Clean</th><td class="num">20</td><td></td><td class="num">2</td><td class="num">10</td><td class="num">8</td><td></td><td></td><td></td><td class="num">74.0</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">32</td><td></td><td class="num">3</td><td class="num">21</td><td class="num">8</td><td></td><td></td><td></td><td class="num">72.6</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">22</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">4</td><td></td><td></td><td></td><td class="num">71.5</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">20</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">4</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Squat</th><td class="num">79</td><td class="num">18</td><td class="num">22</td><td class="num">21</td><td class="num">18</td><td></td><td></td><td></td><td class="num">65.9</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">24</td><td></td><td></td><td></td><td class="num">24</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">17</td><td></td><td></td><td class="num">4</td><td class="num">6</td><td class="num">4</td><td class="num">3</td><td></td><td class="num">84.5</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">59</td><td class="num">3</td><td class="num">6</td><td class="num">24</td><td class="num">15</td><td class="num">8</td><td class="num">3</td><td></td><td class="num">75.7</td></tr>
-</tbody>
-</table></div>
-<h3 id="prep-3-1-prep">Prep 3-1 (prep)</h3>
-<h4 id="week-1---388-lifts">Week 1 - 388 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">35</td><td></td><td class="num">3</td><td class="num">24</td><td class="num">7</td><td class="num">1</td><td></td><td></td><td class="num">72.7</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">42</td><td></td><td class="num">5</td><td class="num">24</td><td class="num">10</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">73.9</td></tr>
-<tr><th scope="row">Clean</th><td class="num">23</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">7</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">75.3</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">33</td><td></td><td class="num">3</td><td class="num">21</td><td class="num">8</td><td class="num">1</td><td></td><td></td><td class="num">73.1</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">27</td><td></td><td class="num">3</td><td class="num">14</td><td class="num">8</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">74.7</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">21</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">4</td><td class="num">1</td><td></td><td></td><td class="num">72.9</td></tr>
-<tr><th scope="row">Squat</th><td class="num">89</td><td class="num">20</td><td class="num">25</td><td class="num">22</td><td class="num">13</td><td class="num">9</td><td></td><td></td><td class="num">67.2</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">28</td><td></td><td></td><td></td><td class="num">26</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">82.1</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">19</td><td></td><td></td><td class="num">5</td><td class="num">7</td><td class="num">4</td><td class="num">1</td><td class="num">2</td><td class="num">84.7</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">71</td><td class="num">4</td><td class="num">8</td><td class="num">28</td><td class="num">18</td><td class="num">6</td><td class="num">1</td><td class="num">6</td><td class="num">76.8</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-2---259-lifts">Week 2 - 259 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">24</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">2</td><td class="num">1</td><td></td><td></td><td class="num">71.4</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">28</td><td></td><td class="num">3</td><td class="num">17</td><td class="num">6</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.9</td></tr>
-<tr><th scope="row">Clean</th><td class="num">16</td><td></td><td class="num">2</td><td class="num">10</td><td class="num">4</td><td></td><td></td><td></td><td class="num">72.2</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">22</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">5</td><td class="num">1</td><td></td><td></td><td class="num">73.3</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">20</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.5</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">14</td><td></td><td class="num">1</td><td class="num">7</td><td class="num">5</td><td class="num">1</td><td></td><td></td><td class="num">75.3</td></tr>
-<tr><th scope="row">Squat</th><td class="num">56</td><td class="num">12</td><td class="num">16</td><td class="num">14</td><td class="num">8</td><td class="num">6</td><td></td><td></td><td class="num">67.4</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">17</td><td></td><td></td><td></td><td class="num">16</td><td class="num">1</td><td></td><td></td><td class="num">81.6</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">13</td><td></td><td></td><td class="num">3</td><td class="num">5</td><td class="num">3</td><td class="num">1</td><td class="num">1</td><td class="num">84.8</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">49</td><td class="num">2</td><td class="num">5</td><td class="num">20</td><td class="num">13</td><td class="num">4</td><td class="num">1</td><td class="num">4</td><td class="num">77.3</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-3---460-lifts">Week 3 - 460 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">41</td><td></td><td class="num">4</td><td class="num">25</td><td class="num">9</td><td class="num">1</td><td class="num">2</td><td></td><td class="num">74.2</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">52</td><td></td><td class="num">5</td><td class="num">31</td><td class="num">12</td><td class="num">2</td><td class="num">2</td><td></td><td class="num">74.3</td></tr>
-<tr><th scope="row">Clean</th><td class="num">27</td><td></td><td class="num">2</td><td class="num">16</td><td class="num">8</td><td class="num">1</td><td></td><td></td><td class="num">74.0</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">41</td><td></td><td class="num">4</td><td class="num">22</td><td class="num">12</td><td class="num">1</td><td class="num">2</td><td></td><td class="num">74.9</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">32</td><td></td><td class="num">3</td><td class="num">24</td><td class="num">4</td><td class="num">1</td><td></td><td></td><td class="num">71.9</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">23</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">7</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">75.3</td></tr>
-<tr><th scope="row">Squat</th><td class="num">107</td><td class="num">23</td><td class="num">30</td><td class="num">27</td><td class="num">16</td><td class="num">11</td><td></td><td></td><td class="num">67.4</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">31</td><td></td><td></td><td></td><td class="num">30</td><td class="num">1</td><td></td><td></td><td class="num">81.3</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">23</td><td></td><td></td><td class="num">5</td><td class="num">8</td><td class="num">5</td><td class="num">2</td><td class="num">3</td><td class="num">86.7</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">83</td><td class="num">4</td><td class="num">9</td><td class="num">33</td><td class="num">22</td><td class="num">7</td><td class="num">1</td><td class="num">7</td><td class="num">77.0</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-4---331-lifts">Week 4 - 331 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">28</td><td></td><td class="num">3</td><td class="num">21</td><td class="num">3</td><td class="num">1</td><td></td><td></td><td class="num">71.7</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">36</td><td></td><td class="num">4</td><td class="num">22</td><td class="num">8</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Clean</th><td class="num">19</td><td></td><td class="num">2</td><td class="num">10</td><td class="num">6</td><td class="num">1</td><td></td><td></td><td class="num">74.2</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">29</td><td></td><td class="num">3</td><td class="num">16</td><td class="num">9</td><td class="num">1</td><td></td><td></td><td class="num">73.8</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">22</td><td></td><td class="num">3</td><td class="num">15</td><td class="num">3</td><td class="num">1</td><td></td><td></td><td class="num">71.9</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">17</td><td></td><td class="num">3</td><td class="num">12</td><td class="num">2</td><td></td><td></td><td></td><td class="num">70.4</td></tr>
-<tr><th scope="row">Squat</th><td class="num">81</td><td class="num">18</td><td class="num">23</td><td class="num">20</td><td class="num">12</td><td class="num">8</td><td></td><td></td><td class="num">67.2</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">21</td><td></td><td></td><td></td><td class="num">20</td><td class="num">1</td><td></td><td></td><td class="num">81.5</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">16</td><td></td><td></td><td class="num">4</td><td class="num">6</td><td class="num">3</td><td class="num">1</td><td class="num">2</td><td class="num">85.4</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">62</td><td class="num">3</td><td class="num">7</td><td class="num">25</td><td class="num">16</td><td class="num">5</td><td class="num">1</td><td class="num">5</td><td class="num">76.8</td></tr>
-</tbody>
-</table></div>
-<h3 id="comp-1-comp">Comp 1 (comp)</h3>
-<h4 id="week-1---373-lifts">Week 1 - 373 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">36</td><td></td><td class="num">4</td><td class="num">26</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">72.4</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">45</td><td></td><td class="num">4</td><td class="num">30</td><td class="num">8</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">73.4</td></tr>
-<tr><th scope="row">Clean</th><td class="num">22</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">6</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">75.1</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">32</td><td></td><td class="num">3</td><td class="num">21</td><td class="num">6</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">26</td><td></td><td class="num">3</td><td class="num">14</td><td class="num">7</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">74.5</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">21</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">3</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.9</td></tr>
-<tr><th scope="row">Squat</th><td class="num">82</td><td class="num">18</td><td class="num">23</td><td class="num">20</td><td class="num">10</td><td class="num">11</td><td></td><td></td><td class="num">67.7</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">22</td><td></td><td></td><td></td><td class="num">20</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">82.4</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">22</td><td></td><td></td><td class="num">5</td><td class="num">8</td><td class="num">5</td><td class="num">1</td><td class="num">3</td><td class="num">86.0</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">65</td><td class="num">3</td><td class="num">7</td><td class="num">26</td><td class="num">17</td><td class="num">4</td><td class="num">3</td><td class="num">5</td><td class="num">77.3</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-2---290-lifts">Week 2 - 290 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">26</td><td></td><td class="num">3</td><td class="num">16</td><td class="num">5</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.7</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">35</td><td></td><td class="num">4</td><td class="num">21</td><td class="num">7</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">73.9</td></tr>
-<tr><th scope="row">Clean</th><td class="num">16</td><td></td><td class="num">2</td><td class="num">6</td><td class="num">6</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">76.6</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">26</td><td></td><td class="num">2</td><td class="num">15</td><td class="num">7</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">74.8</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">17</td><td></td><td class="num">3</td><td class="num">9</td><td class="num">3</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.9</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">20</td><td></td><td></td><td class="num">18</td><td class="num">2</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Squat</th><td class="num">70</td><td class="num">15</td><td class="num">20</td><td class="num">18</td><td class="num">8</td><td class="num">9</td><td></td><td></td><td class="num">67.6</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">16</td><td></td><td></td><td></td><td class="num">16</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">17</td><td></td><td></td><td class="num">4</td><td class="num">6</td><td class="num">4</td><td class="num">1</td><td class="num">2</td><td class="num">85.7</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">47</td><td class="num">2</td><td class="num">5</td><td class="num">19</td><td class="num">12</td><td class="num">3</td><td class="num">2</td><td class="num">4</td><td class="num">77.6</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-3---248-lifts">Week 3 - 248 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">22</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">74.2</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">31</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">6</td><td class="num">2</td><td class="num">2</td><td></td><td class="num">75.2</td></tr>
-<tr><th scope="row">Clean</th><td class="num">14</td><td></td><td class="num">2</td><td class="num">6</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">76.0</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">22</td><td></td><td class="num">1</td><td class="num">14</td><td class="num">5</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">75.1</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">16</td><td></td><td class="num">3</td><td class="num">9</td><td class="num">2</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">16</td><td></td><td></td><td class="num">12</td><td class="num">4</td><td></td><td></td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Squat</th><td class="num">54</td><td class="num">12</td><td class="num">15</td><td class="num">14</td><td class="num">6</td><td class="num">7</td><td></td><td></td><td class="num">67.5</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">14</td><td></td><td></td><td></td><td class="num">12</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">83.1</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">15</td><td></td><td></td><td class="num">4</td><td class="num">5</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td class="num">84.3</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">44</td><td class="num">2</td><td class="num">5</td><td class="num">18</td><td class="num">11</td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">76.9</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-4---124-lifts">Week 4 - 124 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">11</td><td></td><td class="num">1</td><td class="num">7</td><td class="num">2</td><td class="num">1</td><td></td><td></td><td class="num">73.7</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">16</td><td></td><td class="num">3</td><td class="num">12</td><td class="num">1</td><td></td><td></td><td></td><td class="num">69.8</td></tr>
-<tr><th scope="row">Clean</th><td class="num">8</td><td></td><td></td><td class="num">6</td><td class="num">2</td><td></td><td></td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">9</td><td></td><td class="num">3</td><td class="num">3</td><td class="num">2</td><td class="num">1</td><td></td><td></td><td class="num">72.1</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">10</td><td></td><td></td><td class="num">9</td><td class="num">1</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">7</td><td></td><td class="num">1</td><td class="num">4</td><td class="num">2</td><td></td><td></td><td></td><td class="num">72.4</td></tr>
-<tr><th scope="row">Squat</th><td class="num">30</td><td class="num">7</td><td class="num">8</td><td class="num">7</td><td class="num">4</td><td class="num">4</td><td></td><td></td><td class="num">67.7</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">6</td><td></td><td></td><td></td><td class="num">6</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">6</td><td></td><td></td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td></td><td class="num">76.0</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">21</td><td class="num">1</td><td class="num">2</td><td class="num">8</td><td class="num">6</td><td class="num">1</td><td class="num">1</td><td class="num">2</td><td class="num">78.1</td></tr>
-</tbody>
-</table></div>
-<h3 id="comp-2-comp">Comp 2 (comp)</h3>
-<h4 id="week-1---242-lifts-1">Week 1 - 242 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">23</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">4</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">74.9</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">30</td><td></td><td class="num">5</td><td class="num">19</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">72.3</td></tr>
-<tr><th scope="row">Clean</th><td class="num">14</td><td></td><td class="num">2</td><td class="num">6</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">76.0</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">23</td><td></td><td class="num">1</td><td class="num">14</td><td class="num">7</td><td class="num">1</td><td></td><td></td><td class="num">74.5</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">16</td><td></td><td class="num">3</td><td class="num">9</td><td class="num">2</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">14</td><td></td><td></td><td class="num">12</td><td class="num">2</td><td></td><td></td><td></td><td class="num">72.4</td></tr>
-<tr><th scope="row">Squat</th><td class="num">55</td><td class="num">12</td><td class="num">15</td><td class="num">14</td><td class="num">7</td><td class="num">7</td><td></td><td></td><td class="num">67.7</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">10</td><td></td><td></td><td></td><td class="num">10</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">14</td><td></td><td></td><td class="num">3</td><td class="num">5</td><td class="num">3</td><td class="num">1</td><td class="num">2</td><td class="num">86.7</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">43</td><td class="num">2</td><td class="num">5</td><td class="num">17</td><td class="num">11</td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">77.0</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-2---285-lifts">Week 2 - 285 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">26</td><td></td><td class="num">2</td><td class="num">16</td><td class="num">5</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">74.8</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">34</td><td></td><td class="num">3</td><td class="num">21</td><td class="num">7</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">74.2</td></tr>
-<tr><th scope="row">Clean</th><td class="num">16</td><td></td><td class="num">2</td><td class="num">8</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">75.4</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">27</td><td></td><td class="num">3</td><td class="num">18</td><td class="num">6</td><td></td><td></td><td></td><td class="num">72.1</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">19</td><td></td><td class="num">3</td><td class="num">12</td><td class="num">2</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.1</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">17</td><td></td><td class="num">2</td><td class="num">12</td><td class="num">3</td><td></td><td></td><td></td><td class="num">71.6</td></tr>
-<tr><th scope="row">Squat</th><td class="num">66</td><td class="num">15</td><td class="num">18</td><td class="num">16</td><td class="num">8</td><td class="num">9</td><td></td><td></td><td class="num">67.7</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">16</td><td></td><td></td><td></td><td class="num">14</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">82.9</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">17</td><td></td><td></td><td class="num">4</td><td class="num">6</td><td class="num">4</td><td class="num">1</td><td class="num">2</td><td class="num">85.7</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">47</td><td class="num">2</td><td class="num">5</td><td class="num">19</td><td class="num">12</td><td class="num">3</td><td class="num">2</td><td class="num">4</td><td class="num">77.6</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-3---224-lifts">Week 3 - 224 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">20</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">2</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">27</td><td></td><td class="num">3</td><td class="num">16</td><td class="num">1</td><td class="num">6</td><td class="num">1</td><td></td><td class="num">75.8</td></tr>
-<tr><th scope="row">Clean</th><td class="num">13</td><td></td><td class="num">2</td><td class="num">8</td><td class="num">2</td><td class="num">1</td><td></td><td></td><td class="num">72.5</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">21</td><td></td><td class="num">2</td><td class="num">14</td><td class="num">1</td><td class="num">3</td><td class="num">1</td><td></td><td class="num">74.8</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">17</td><td></td><td class="num">3</td><td class="num">12</td><td class="num">1</td><td class="num">1</td><td></td><td></td><td class="num">71.0</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">13</td><td></td><td class="num">1</td><td class="num">7</td><td class="num">1</td><td class="num">3</td><td class="num">1</td><td></td><td class="num">77.9</td></tr>
-<tr><th scope="row">Squat</th><td class="num">51</td><td class="num">11</td><td class="num">14</td><td class="num">11</td><td class="num">2</td><td class="num">13</td><td></td><td></td><td class="num">69.4</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">11</td><td></td><td></td><td></td><td class="num">9</td><td class="num">1</td><td class="num">1</td><td></td><td class="num">83.7</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">13</td><td></td><td></td><td class="num">3</td><td class="num">5</td><td class="num">1</td><td class="num">2</td><td class="num">2</td><td class="num">87.2</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">38</td><td class="num">2</td><td class="num">4</td><td class="num">15</td><td class="num">7</td><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num">78.6</td></tr>
-</tbody>
-</table></div>
-<h4 id="week-4---112-lifts">Week 4 - 112 lifts</h4>
-<div class="scroll"><table class="data">
-<thead><tr><th scope="col">Group</th><th scope="col">Lifts</th><th scope="col">50%</th><th scope="col">60%</th><th scope="col">70%</th><th scope="col">80%</th><th scope="col">90%</th><th scope="col">100%</th><th scope="col">110%</th><th scope="col">ARI</th></tr></thead>
-<tbody>
-<tr><th scope="row">Snatch</th><td class="num">9</td><td></td><td class="num">1</td><td class="num">6</td><td class="num">2</td><td></td><td></td><td></td><td class="num">72.1</td></tr>
-<tr><th scope="row">Other Snatch</th><td class="num">13</td><td></td><td class="num">3</td><td class="num">9</td><td class="num">1</td><td></td><td></td><td></td><td class="num">69.5</td></tr>
-<tr><th scope="row">Clean</th><td class="num">10</td><td></td><td></td><td class="num">9</td><td class="num">1</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Other Clean</th><td class="num">10</td><td></td><td class="num">3</td><td class="num">3</td><td class="num">4</td><td></td><td></td><td></td><td class="num">72.0</td></tr>
-<tr><th scope="row">Jerk</th><td class="num">8</td><td></td><td></td><td class="num">6</td><td class="num">2</td><td></td><td></td><td></td><td class="num">73.5</td></tr>
-<tr><th scope="row">Other Jerk</th><td class="num">6</td><td></td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td></td><td></td><td></td><td class="num">71.0</td></tr>
-<tr><th scope="row">Squat</th><td class="num">25</td><td class="num">6</td><td class="num">7</td><td class="num">6</td><td class="num">5</td><td class="num">1</td><td></td><td></td><td class="num">66.2</td></tr>
-<tr><th scope="row">SnPull</th><td class="num">5</td><td></td><td></td><td></td><td class="num">5</td><td></td><td></td><td></td><td class="num">81.0</td></tr>
-<tr><th scope="row">ClPull</th><td class="num">7</td><td></td><td></td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">83.9</td></tr>
-<tr><th scope="row">Fundamental</th><td class="num">19</td><td class="num">1</td><td class="num">2</td><td class="num">8</td><td class="num">5</td><td class="num">2</td><td class="num">1</td><td></td><td class="num">75.2</td></tr>
+<tr class="grp"><th scope="row">Snatch</th><td class="num">22</td><td class="num">29</td><td class="num">19</td><td class="num">35</td><td class="num meso">24</td><td class="num">39</td><td class="num">21</td><td class="num">31</td><td class="num meso">35</td><td class="num">24</td><td class="num">41</td><td class="num">28</td><td class="num meso">36</td><td class="num">26</td><td class="num">22</td><td class="num">11</td><td class="num meso">23</td><td class="num">26</td><td class="num">20</td><td class="num">9</td></tr>
+<tr><th scope="row">60%</th><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num">3</td><td class="num meso">3</td><td class="num">4</td><td class="num">2</td><td class="num">3</td><td class="num meso">3</td><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num meso">4</td><td class="num">3</td><td class="num">2</td><td class="num">1</td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td class="num">1</td></tr>
+<tr><th scope="row">70%</th><td class="num">18</td><td class="num">22</td><td class="num">15</td><td class="num">27</td><td class="num meso">18</td><td class="num">25</td><td class="num">13</td><td class="num">24</td><td class="num meso">24</td><td class="num">18</td><td class="num">25</td><td class="num">21</td><td class="num meso">26</td><td class="num">16</td><td class="num">14</td><td class="num">7</td><td class="num meso">14</td><td class="num">16</td><td class="num">14</td><td class="num">6</td></tr>
+<tr><th scope="row">80%</th><td class="num">1</td><td class="num">3</td><td class="num">1</td><td class="num">5</td><td class="num meso">3</td><td class="num">10</td><td class="num">6</td><td class="num">4</td><td class="num meso">7</td><td class="num">2</td><td class="num">9</td><td class="num">3</td><td class="num meso">4</td><td class="num">5</td><td class="num">4</td><td class="num">2</td><td class="num meso">4</td><td class="num">5</td><td class="num">2</td><td class="num">2</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num meso">2</td><td class="num">2</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="meso"></td><td></td><td class="num">2</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">70.1</td><td class="num">70.7</td><td class="num">69.9</td><td class="num">71.6</td><td class="num meso">71.0</td><td class="num">72.5</td><td class="num">72.9</td><td class="num">71.3</td><td class="num meso">72.7</td><td class="num">71.4</td><td class="num">74.2</td><td class="num">71.7</td><td class="num meso">72.4</td><td class="num">73.7</td><td class="num">74.2</td><td class="num">73.7</td><td class="num meso">74.9</td><td class="num">74.8</td><td class="num">73.5</td><td class="num">72.1</td></tr>
+<tr class="grp"><th scope="row">Other Snatch</th><td class="num">27</td><td class="num">35</td><td class="num">21</td><td class="num">43</td><td class="num meso">31</td><td class="num">46</td><td class="num">25</td><td class="num">38</td><td class="num meso">42</td><td class="num">28</td><td class="num">52</td><td class="num">36</td><td class="num meso">45</td><td class="num">35</td><td class="num">31</td><td class="num">16</td><td class="num meso">30</td><td class="num">34</td><td class="num">27</td><td class="num">13</td></tr>
+<tr><th scope="row">60%</th><td class="num">3</td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num meso">3</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num meso">5</td><td class="num">3</td><td class="num">5</td><td class="num">4</td><td class="num meso">4</td><td class="num">4</td><td class="num">3</td><td class="num">3</td><td class="num meso">5</td><td class="num">3</td><td class="num">3</td><td class="num">3</td></tr>
+<tr><th scope="row">70%</th><td class="num">21</td><td class="num">30</td><td class="num">16</td><td class="num">36</td><td class="num meso">19</td><td class="num">28</td><td class="num">18</td><td class="num">23</td><td class="num meso">24</td><td class="num">17</td><td class="num">31</td><td class="num">22</td><td class="num meso">30</td><td class="num">21</td><td class="num">18</td><td class="num">12</td><td class="num meso">19</td><td class="num">21</td><td class="num">16</td><td class="num">9</td></tr>
+<tr><th scope="row">80%</th><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">4</td><td class="num meso">9</td><td class="num">13</td><td class="num">4</td><td class="num">11</td><td class="num meso">10</td><td class="num">6</td><td class="num">12</td><td class="num">8</td><td class="num meso">8</td><td class="num">7</td><td class="num">6</td><td class="num">1</td><td class="num meso">4</td><td class="num">7</td><td class="num">1</td><td class="num">1</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">2</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td></td><td class="num meso">1</td><td class="num">2</td><td class="num">6</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num meso">1</td><td class="num">1</td><td class="num">2</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">71.0</td><td class="num">70.7</td><td class="num">71.5</td><td class="num">71.2</td><td class="num meso">72.9</td><td class="num">72.7</td><td class="num">71.4</td><td class="num">72.8</td><td class="num meso">73.9</td><td class="num">73.9</td><td class="num">74.3</td><td class="num">73.5</td><td class="num meso">73.4</td><td class="num">73.9</td><td class="num">75.2</td><td class="num">69.8</td><td class="num meso">72.3</td><td class="num">74.2</td><td class="num">75.8</td><td class="num">69.5</td></tr>
+<tr class="grp"><th scope="row">Clean</th><td class="num">14</td><td class="num">20</td><td class="num">13</td><td class="num">24</td><td class="num meso">19</td><td class="num">25</td><td class="num">14</td><td class="num">20</td><td class="num meso">23</td><td class="num">16</td><td class="num">27</td><td class="num">19</td><td class="num meso">22</td><td class="num">16</td><td class="num">14</td><td class="num">8</td><td class="num meso">14</td><td class="num">16</td><td class="num">13</td><td class="num">10</td></tr>
+<tr><th scope="row">60%</th><td></td><td class="num">3</td><td></td><td class="num">2</td><td class="num meso">1</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td></td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td></td></tr>
+<tr><th scope="row">70%</th><td class="num">12</td><td class="num">15</td><td class="num">12</td><td class="num">16</td><td class="num meso">10</td><td class="num">13</td><td class="num">6</td><td class="num">10</td><td class="num meso">12</td><td class="num">10</td><td class="num">16</td><td class="num">10</td><td class="num meso">12</td><td class="num">6</td><td class="num">6</td><td class="num">6</td><td class="num meso">6</td><td class="num">8</td><td class="num">8</td><td class="num">9</td></tr>
+<tr><th scope="row">80%</th><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num">6</td><td class="num meso">8</td><td class="num">10</td><td class="num">6</td><td class="num">8</td><td class="num meso">7</td><td class="num">4</td><td class="num">8</td><td class="num">6</td><td class="num meso">6</td><td class="num">6</td><td class="num">4</td><td class="num">2</td><td class="num meso">4</td><td class="num">4</td><td class="num">2</td><td class="num">1</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td></td><td class="num">1</td><td class="num">1</td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td class="num">1</td><td></td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">72.4</td><td class="num">70.5</td><td class="num">71.8</td><td class="num">72.7</td><td class="num meso">74.7</td><td class="num">74.2</td><td class="num">73.9</td><td class="num">74.0</td><td class="num meso">75.3</td><td class="num">72.2</td><td class="num">74.0</td><td class="num">74.2</td><td class="num meso">75.1</td><td class="num">76.6</td><td class="num">76.0</td><td class="num">73.5</td><td class="num meso">76.0</td><td class="num">75.4</td><td class="num">72.5</td><td class="num">72.0</td></tr>
+<tr class="grp"><th scope="row">Other Clean</th><td class="num">23</td><td class="num">29</td><td class="num">17</td><td class="num">36</td><td class="num meso">24</td><td class="num">37</td><td class="num">22</td><td class="num">32</td><td class="num meso">33</td><td class="num">22</td><td class="num">41</td><td class="num">29</td><td class="num meso">32</td><td class="num">26</td><td class="num">22</td><td class="num">9</td><td class="num meso">23</td><td class="num">27</td><td class="num">21</td><td class="num">10</td></tr>
+<tr><th scope="row">60%</th><td class="num">3</td><td class="num">3</td><td class="num">3</td><td class="num">4</td><td class="num meso">3</td><td class="num">4</td><td class="num">2</td><td class="num">3</td><td class="num meso">3</td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td class="num meso">3</td><td class="num">2</td><td class="num">1</td><td class="num">3</td><td class="num meso">1</td><td class="num">3</td><td class="num">2</td><td class="num">3</td></tr>
+<tr><th scope="row">70%</th><td class="num">18</td><td class="num">20</td><td class="num">12</td><td class="num">26</td><td class="num meso">15</td><td class="num">24</td><td class="num">12</td><td class="num">21</td><td class="num meso">21</td><td class="num">14</td><td class="num">22</td><td class="num">16</td><td class="num meso">21</td><td class="num">15</td><td class="num">14</td><td class="num">3</td><td class="num meso">14</td><td class="num">18</td><td class="num">14</td><td class="num">3</td></tr>
+<tr><th scope="row">80%</th><td class="num">2</td><td class="num">6</td><td class="num">2</td><td class="num">6</td><td class="num meso">6</td><td class="num">9</td><td class="num">8</td><td class="num">8</td><td class="num meso">8</td><td class="num">5</td><td class="num">12</td><td class="num">9</td><td class="num meso">6</td><td class="num">7</td><td class="num">5</td><td class="num">2</td><td class="num meso">7</td><td class="num">6</td><td class="num">1</td><td class="num">4</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num meso">1</td><td></td><td class="num">3</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="meso"></td><td></td><td class="num">2</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="meso"></td><td></td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">70.6</td><td class="num">72.0</td><td class="num">70.4</td><td class="num">71.6</td><td class="num meso">72.2</td><td class="num">72.4</td><td class="num">73.7</td><td class="num">72.6</td><td class="num meso">73.1</td><td class="num">73.3</td><td class="num">74.9</td><td class="num">73.8</td><td class="num meso">73.5</td><td class="num">74.8</td><td class="num">75.1</td><td class="num">72.1</td><td class="num meso">74.5</td><td class="num">72.1</td><td class="num">74.8</td><td class="num">72.0</td></tr>
+<tr class="grp"><th scope="row">Jerk</th><td class="num">18</td><td class="num">23</td><td class="num">14</td><td class="num">29</td><td class="num meso">19</td><td class="num">29</td><td class="num">15</td><td class="num">22</td><td class="num meso">27</td><td class="num">20</td><td class="num">32</td><td class="num">22</td><td class="num meso">26</td><td class="num">17</td><td class="num">16</td><td class="num">10</td><td class="num meso">16</td><td class="num">19</td><td class="num">17</td><td class="num">8</td></tr>
+<tr><th scope="row">60%</th><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">3</td><td class="num meso">1</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td class="num meso">3</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td class="num meso">3</td><td class="num">3</td><td class="num">3</td><td></td><td class="num meso">3</td><td class="num">3</td><td class="num">3</td><td></td></tr>
+<tr><th scope="row">70%</th><td class="num">12</td><td class="num">16</td><td class="num">8</td><td class="num">24</td><td class="num meso">10</td><td class="num">15</td><td class="num">9</td><td class="num">15</td><td class="num meso">14</td><td class="num">15</td><td class="num">24</td><td class="num">15</td><td class="num meso">14</td><td class="num">9</td><td class="num">9</td><td class="num">9</td><td class="num meso">9</td><td class="num">12</td><td class="num">12</td><td class="num">6</td></tr>
+<tr><th scope="row">80%</th><td class="num">4</td><td class="num">5</td><td class="num">4</td><td class="num">2</td><td class="num meso">8</td><td class="num">11</td><td class="num">3</td><td class="num">4</td><td class="num meso">8</td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td class="num meso">7</td><td class="num">3</td><td class="num">2</td><td class="num">1</td><td class="num meso">2</td><td class="num">2</td><td class="num">1</td><td class="num">2</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td></td><td class="num">1</td><td class="num">1</td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td class="num">1</td><td></td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">72.1</td><td class="num">72.3</td><td class="num">72.4</td><td class="num">70.7</td><td class="num meso">74.7</td><td class="num">73.8</td><td class="num">71.0</td><td class="num">71.5</td><td class="num meso">74.7</td><td class="num">70.5</td><td class="num">71.9</td><td class="num">71.9</td><td class="num meso">74.5</td><td class="num">73.9</td><td class="num">73.5</td><td class="num">72.0</td><td class="num meso">73.5</td><td class="num">73.1</td><td class="num">71.0</td><td class="num">73.5</td></tr>
+<tr class="grp"><th scope="row">Other Jerk</th><td class="num">12</td><td class="num">16</td><td class="num">10</td><td class="num">20</td><td class="num meso">15</td><td class="num">23</td><td class="num">11</td><td class="num">20</td><td class="num meso">21</td><td class="num">14</td><td class="num">23</td><td class="num">17</td><td class="num meso">21</td><td class="num">20</td><td class="num">16</td><td class="num">7</td><td class="num meso">14</td><td class="num">17</td><td class="num">13</td><td class="num">6</td></tr>
+<tr><th scope="row">60%</th><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num">3</td><td class="num meso">2</td><td class="num">2</td><td class="num">1</td><td class="num">2</td><td class="num meso">2</td><td class="num">1</td><td class="num">2</td><td class="num">3</td><td class="num meso">2</td><td></td><td></td><td class="num">1</td><td class="meso"></td><td class="num">2</td><td class="num">1</td><td class="num">2</td></tr>
+<tr><th scope="row">70%</th><td class="num">8</td><td class="num">10</td><td class="num">7</td><td class="num">15</td><td class="num meso">10</td><td class="num">12</td><td class="num">6</td><td class="num">14</td><td class="num meso">14</td><td class="num">7</td><td class="num">12</td><td class="num">12</td><td class="num meso">14</td><td class="num">18</td><td class="num">12</td><td class="num">4</td><td class="num meso">12</td><td class="num">12</td><td class="num">7</td><td class="num">2</td></tr>
+<tr><th scope="row">80%</th><td class="num">3</td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td class="num meso">3</td><td class="num">9</td><td class="num">4</td><td class="num">4</td><td class="num meso">4</td><td class="num">5</td><td class="num">7</td><td class="num">2</td><td class="num meso">3</td><td class="num">2</td><td class="num">4</td><td class="num">2</td><td class="num meso">2</td><td class="num">3</td><td class="num">1</td><td class="num">2</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td></td><td></td><td></td><td class="meso"></td><td></td><td class="num">3</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="meso"></td><td></td><td class="num">1</td><td></td><td class="num meso">1</td><td></td><td></td><td></td><td class="meso"></td><td></td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">72.7</td><td class="num">72.2</td><td class="num">72.0</td><td class="num">70.5</td><td class="num meso">71.7</td><td class="num">74.0</td><td class="num">73.7</td><td class="num">72.0</td><td class="num meso">72.9</td><td class="num">75.3</td><td class="num">75.3</td><td class="num">70.4</td><td class="num meso">73.9</td><td class="num">72.0</td><td class="num">73.5</td><td class="num">72.4</td><td class="num meso">72.4</td><td class="num">71.6</td><td class="num">77.9</td><td class="num">71.0</td></tr>
+<tr class="grp"><th scope="row">Squat</th><td class="num">55</td><td class="num">69</td><td class="num">44</td><td class="num">88</td><td class="num meso">61</td><td class="num">92</td><td class="num">52</td><td class="num">79</td><td class="num meso">89</td><td class="num">56</td><td class="num">107</td><td class="num">81</td><td class="num meso">82</td><td class="num">70</td><td class="num">54</td><td class="num">30</td><td class="num meso">55</td><td class="num">66</td><td class="num">51</td><td class="num">25</td></tr>
+<tr><th scope="row">50%</th><td class="num">12</td><td class="num">15</td><td class="num">10</td><td class="num">19</td><td class="num meso">13</td><td class="num">20</td><td class="num">11</td><td class="num">18</td><td class="num meso">20</td><td class="num">12</td><td class="num">23</td><td class="num">18</td><td class="num meso">18</td><td class="num">15</td><td class="num">12</td><td class="num">7</td><td class="num meso">12</td><td class="num">15</td><td class="num">11</td><td class="num">6</td></tr>
+<tr><th scope="row">60%</th><td class="num">15</td><td class="num">19</td><td class="num">12</td><td class="num">25</td><td class="num meso">17</td><td class="num">26</td><td class="num">15</td><td class="num">22</td><td class="num meso">25</td><td class="num">16</td><td class="num">30</td><td class="num">23</td><td class="num meso">23</td><td class="num">20</td><td class="num">15</td><td class="num">8</td><td class="num meso">15</td><td class="num">18</td><td class="num">14</td><td class="num">7</td></tr>
+<tr><th scope="row">70%</th><td class="num">23</td><td class="num">29</td><td class="num">18</td><td class="num">37</td><td class="num meso">17</td><td class="num">25</td><td class="num">14</td><td class="num">21</td><td class="num meso">22</td><td class="num">14</td><td class="num">27</td><td class="num">20</td><td class="num meso">20</td><td class="num">18</td><td class="num">14</td><td class="num">7</td><td class="num meso">14</td><td class="num">16</td><td class="num">11</td><td class="num">6</td></tr>
+<tr><th scope="row">80%</th><td class="num">5</td><td class="num">6</td><td class="num">4</td><td class="num">7</td><td class="num meso">14</td><td class="num">21</td><td class="num">12</td><td class="num">18</td><td class="num meso">13</td><td class="num">8</td><td class="num">16</td><td class="num">12</td><td class="num meso">10</td><td class="num">8</td><td class="num">6</td><td class="num">4</td><td class="num meso">7</td><td class="num">8</td><td class="num">2</td><td class="num">5</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">9</td><td class="num">6</td><td class="num">11</td><td class="num">8</td><td class="num meso">11</td><td class="num">9</td><td class="num">7</td><td class="num">4</td><td class="num meso">7</td><td class="num">9</td><td class="num">13</td><td class="num">1</td></tr>
+<tr><th scope="row">ARI</th><td class="num">64.8</td><td class="num">64.8</td><td class="num">64.6</td><td class="num">64.6</td><td class="num meso">66.2</td><td class="num">66.1</td><td class="num">66.2</td><td class="num">65.9</td><td class="num meso">67.2</td><td class="num">67.4</td><td class="num">67.4</td><td class="num">67.2</td><td class="num meso">67.7</td><td class="num">67.6</td><td class="num">67.5</td><td class="num">67.7</td><td class="num meso">67.7</td><td class="num">67.7</td><td class="num">69.4</td><td class="num">66.2</td></tr>
+<tr class="grp"><th scope="row">SnPull</th><td class="num">16</td><td class="num">28</td><td class="num">14</td><td class="num">28</td><td class="num meso">18</td><td class="num">30</td><td class="num">16</td><td class="num">24</td><td class="num meso">28</td><td class="num">17</td><td class="num">31</td><td class="num">21</td><td class="num meso">22</td><td class="num">16</td><td class="num">14</td><td class="num">6</td><td class="num meso">10</td><td class="num">16</td><td class="num">11</td><td class="num">5</td></tr>
+<tr><th scope="row">80%</th><td class="num">16</td><td class="num">28</td><td class="num">14</td><td class="num">28</td><td class="num meso">18</td><td class="num">30</td><td class="num">16</td><td class="num">24</td><td class="num meso">26</td><td class="num">16</td><td class="num">30</td><td class="num">20</td><td class="num meso">20</td><td class="num">16</td><td class="num">12</td><td class="num">6</td><td class="num meso">10</td><td class="num">14</td><td class="num">9</td><td class="num">5</td></tr>
+<tr><th scope="row">90%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num meso">1</td><td></td><td class="num">1</td><td></td><td class="meso"></td><td class="num">1</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">1</td><td></td><td></td><td></td><td class="num meso">1</td><td></td><td class="num">1</td><td></td><td class="meso"></td><td class="num">1</td><td class="num">1</td><td></td></tr>
+<tr><th scope="row">110%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">81.0</td><td class="num">81.0</td><td class="num">81.0</td><td class="num">81.0</td><td class="num meso">81.0</td><td class="num">81.0</td><td class="num">81.0</td><td class="num">81.0</td><td class="num meso">82.1</td><td class="num">81.6</td><td class="num">81.3</td><td class="num">81.5</td><td class="num meso">82.4</td><td class="num">81.0</td><td class="num">83.1</td><td class="num">81.0</td><td class="num meso">81.0</td><td class="num">82.9</td><td class="num">83.7</td><td class="num">81.0</td></tr>
+<tr class="grp"><th scope="row">ClPull</th><td class="num">12</td><td class="num">16</td><td class="num">10</td><td class="num">20</td><td class="num meso">14</td><td class="num">21</td><td class="num">11</td><td class="num">17</td><td class="num meso">19</td><td class="num">13</td><td class="num">23</td><td class="num">16</td><td class="num meso">22</td><td class="num">17</td><td class="num">15</td><td class="num">6</td><td class="num meso">14</td><td class="num">17</td><td class="num">13</td><td class="num">7</td></tr>
+<tr><th scope="row">70%</th><td class="num">8</td><td class="num">4</td><td class="num">8</td><td class="num">5</td><td class="num meso">3</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num meso">5</td><td class="num">3</td><td class="num">5</td><td class="num">4</td><td class="num meso">5</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num meso">3</td><td class="num">4</td><td class="num">3</td><td class="num">2</td></tr>
+<tr><th scope="row">80%</th><td class="num">4</td><td class="num">6</td><td class="num">2</td><td class="num">7</td><td class="num meso">5</td><td class="num">7</td><td class="num">4</td><td class="num">6</td><td class="num meso">7</td><td class="num">5</td><td class="num">8</td><td class="num">6</td><td class="num meso">8</td><td class="num">6</td><td class="num">5</td><td class="num">1</td><td class="num meso">5</td><td class="num">6</td><td class="num">5</td><td class="num">2</td></tr>
+<tr><th scope="row">90%</th><td></td><td class="num">6</td><td></td><td class="num">7</td><td class="num meso">3</td><td class="num">5</td><td class="num">2</td><td class="num">4</td><td class="num meso">4</td><td class="num">3</td><td class="num">5</td><td class="num">3</td><td class="num meso">5</td><td class="num">4</td><td class="num">4</td><td class="num">1</td><td class="num meso">3</td><td class="num">4</td><td class="num">1</td><td class="num">2</td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td class="num">1</td><td class="num meso">3</td><td class="num">4</td><td class="num">2</td><td class="num">3</td><td class="num meso">1</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td></td><td class="num meso">1</td><td class="num">1</td><td class="num">2</td><td class="num">1</td></tr>
+<tr><th scope="row">110%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">2</td><td class="num">1</td><td class="num">3</td><td class="num">2</td><td class="num meso">3</td><td class="num">2</td><td class="num">1</td><td></td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">74.3</td><td class="num">82.2</td><td class="num">73.0</td><td class="num">83.0</td><td class="num meso">85.3</td><td class="num">84.8</td><td class="num">83.7</td><td class="num">84.5</td><td class="num meso">84.7</td><td class="num">84.8</td><td class="num">86.7</td><td class="num">85.4</td><td class="num meso">86.0</td><td class="num">85.7</td><td class="num">84.3</td><td class="num">76.0</td><td class="num meso">86.7</td><td class="num">85.7</td><td class="num">87.2</td><td class="num">83.9</td></tr>
+<tr class="grp"><th scope="row">Fundamental</th><td class="num">43</td><td class="num">57</td><td class="num">34</td><td class="num">68</td><td class="num meso">53</td><td class="num">76</td><td class="num">41</td><td class="num">59</td><td class="num meso">71</td><td class="num">49</td><td class="num">83</td><td class="num">62</td><td class="num meso">65</td><td class="num">47</td><td class="num">44</td><td class="num">21</td><td class="num meso">43</td><td class="num">47</td><td class="num">38</td><td class="num">19</td></tr>
+<tr><th scope="row">50%</th><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num">3</td><td class="num meso">2</td><td class="num">5</td><td class="num">2</td><td class="num">3</td><td class="num meso">4</td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td class="num meso">3</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num meso">2</td><td class="num">2</td><td class="num">2</td><td class="num">1</td></tr>
+<tr><th scope="row">60%</th><td class="num">5</td><td class="num">6</td><td class="num">4</td><td class="num">8</td><td class="num meso">6</td><td class="num">8</td><td class="num">5</td><td class="num">6</td><td class="num meso">8</td><td class="num">5</td><td class="num">9</td><td class="num">7</td><td class="num meso">7</td><td class="num">5</td><td class="num">5</td><td class="num">2</td><td class="num meso">5</td><td class="num">5</td><td class="num">4</td><td class="num">2</td></tr>
+<tr><th scope="row">70%</th><td class="num">16</td><td class="num">22</td><td class="num">12</td><td class="num">27</td><td class="num meso">21</td><td class="num">29</td><td class="num">16</td><td class="num">24</td><td class="num meso">28</td><td class="num">20</td><td class="num">33</td><td class="num">25</td><td class="num meso">26</td><td class="num">19</td><td class="num">18</td><td class="num">8</td><td class="num meso">17</td><td class="num">19</td><td class="num">15</td><td class="num">8</td></tr>
+<tr><th scope="row">80%</th><td class="num">15</td><td class="num">20</td><td class="num">12</td><td class="num">24</td><td class="num meso">14</td><td class="num">20</td><td class="num">11</td><td class="num">15</td><td class="num meso">18</td><td class="num">13</td><td class="num">22</td><td class="num">16</td><td class="num meso">17</td><td class="num">12</td><td class="num">11</td><td class="num">6</td><td class="num meso">11</td><td class="num">12</td><td class="num">7</td><td class="num">5</td></tr>
+<tr><th scope="row">90%</th><td class="num">4</td><td class="num">5</td><td class="num">3</td><td class="num">6</td><td class="num meso">7</td><td class="num">10</td><td class="num">5</td><td class="num">8</td><td class="num meso">6</td><td class="num">4</td><td class="num">7</td><td class="num">5</td><td class="num meso">4</td><td class="num">3</td><td class="num">3</td><td class="num">1</td><td class="num meso">3</td><td class="num">3</td><td class="num">3</td><td class="num">2</td></tr>
+<tr><th scope="row">100%</th><td></td><td></td><td></td><td></td><td class="num meso">3</td><td class="num">4</td><td class="num">2</td><td class="num">3</td><td class="num meso">1</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num meso">3</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num meso">2</td><td class="num">2</td><td class="num">4</td><td class="num">1</td></tr>
+<tr><th scope="row">110%</th><td></td><td></td><td></td><td></td><td class="meso"></td><td></td><td></td><td></td><td class="num meso">6</td><td class="num">4</td><td class="num">7</td><td class="num">5</td><td class="num meso">5</td><td class="num">4</td><td class="num">3</td><td class="num">2</td><td class="num meso">3</td><td class="num">4</td><td class="num">3</td><td></td></tr>
+<tr><th scope="row">ARI</th><td class="num">73.8</td><td class="num">73.8</td><td class="num">73.4</td><td class="num">74.2</td><td class="num meso">76.1</td><td class="num">75.5</td><td class="num">75.4</td><td class="num">75.7</td><td class="num meso">76.8</td><td class="num">77.3</td><td class="num">77.0</td><td class="num">76.8</td><td class="num meso">77.3</td><td class="num">77.6</td><td class="num">76.9</td><td class="num">78.1</td><td class="num meso">77.0</td><td class="num">77.6</td><td class="num">78.6</td><td class="num">75.2</td></tr>
 </tbody>
 </table></div>
 </section>
 <section>
 <h1 id="training-plan">Training Plan</h1>
-<h2 id="prep-4-2-prep-1">Prep 4-2 (prep)</h2>
+<h2 id="prep-4-2-prep">Prep 4-2 (prep)</h2>
 <div class="scroll"><table class="plan">
 <thead><tr><th></th><th scope="col" colspan="2">Week 1</th><th scope="col" colspan="2" class="wk">Week 2</th><th scope="col" colspan="2" class="wk">Week 3</th><th scope="col" colspan="2" class="wk">Week 4</th></tr></thead>
 <tbody>
@@ -453,7 +210,7 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 <tr><td></td><td></td><td class="wk"></td><td></td><td class="wk"></td><td></td><td class="move wk">Squat</td><td class="scheme"><span class="phrase"><span class="dose"><span class="frac"><span class="zone">50%</span><span class="reps">2</span></span><span class="sets">×2</span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">60%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">2</span></span><span class="sets">×2</span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">60%</span><span class="reps">3</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">2</span></span><span class="sets">×2</span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">80%</span><span class="reps">1</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">1</span></span></span></span></td></tr>
 </tbody>
 </table></div>
-<h2 id="prep-2-4-prep-1">Prep 2-4 (prep)</h2>
+<h2 id="prep-2-4-prep">Prep 2-4 (prep)</h2>
 <div class="scroll"><table class="plan">
 <thead><tr><th></th><th scope="col" colspan="2">Week 1</th><th scope="col" colspan="2" class="wk">Week 2</th><th scope="col" colspan="2" class="wk">Week 3</th><th scope="col" colspan="2" class="wk">Week 4</th></tr></thead>
 <tbody>
@@ -478,7 +235,7 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 <tr><td></td><td></td><td class="move wk">Squat</td><td class="scheme"><span class="phrase"><span class="dose"><span class="frac"><span class="zone">50%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">60%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">1</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">80%</span><span class="reps">1</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">80%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">60%</span><span class="reps">1</span></span></span></span></td><td class="wk"></td><td></td><td class="wk"></td><td></td></tr>
 </tbody>
 </table></div>
-<h2 id="prep-3-1-prep-1">Prep 3-1 (prep)</h2>
+<h2 id="prep-3-1-prep">Prep 3-1 (prep)</h2>
 <div class="scroll"><table class="plan">
 <thead><tr><th></th><th scope="col" colspan="2">Week 1</th><th scope="col" colspan="2" class="wk">Week 2</th><th scope="col" colspan="2" class="wk">Week 3</th><th scope="col" colspan="2" class="wk">Week 4</th></tr></thead>
 <tbody>
@@ -507,7 +264,7 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 <tr><td></td><td></td><td class="wk"></td><td></td><td class="move wk">ClPull</td><td class="scheme"><span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">3</span></span></span> <span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="wave"><span class="pl">(</span><span class="dose"><span class="frac"><span class="zone">80%</span><span class="reps">2</span></span><span class="sets">×2</span></span> <span class="dose"><span class="frac"><span class="zone">90%</span><span class="reps">2</span></span></span><span class="pr">)</span><span class="rep">×2</span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">100%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">110%</span><span class="reps">2</span></span></span> <span class="dose"><span class="frac"><span class="zone">110%</span><span class="reps">1</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">90%</span><span class="reps">1</span></span></span></span></td><td class="wk"></td><td></td></tr>
 </tbody>
 </table></div>
-<h2 id="comp-1-comp-1">Comp 1 (comp)</h2>
+<h2 id="comp-1-comp">Comp 1 (comp)</h2>
 <div class="scroll"><table class="plan">
 <thead><tr><th></th><th scope="col" colspan="2">Week 1</th><th scope="col" colspan="2" class="wk">Week 2</th><th scope="col" colspan="2" class="wk">Week 3</th><th scope="col" colspan="2" class="wk">Week 4</th></tr></thead>
 <tbody>
@@ -532,7 +289,7 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 <tr><td class="move">Squat</td><td class="scheme"><span class="phrase"><span class="dose"><span class="frac"><span class="zone">50%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">60%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">70%</span><span class="reps">2</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">80%</span><span class="reps">1</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">90%</span><span class="reps">1</span></span></span></span> <span class="phrase"><span class="dose"><span class="frac"><span class="zone">60%</span><span class="reps">1</span></span></span></span></td><td class="wk"></td><td></td><td class="wk"></td><td></td><td class="wk"></td><td></td></tr>
 </tbody>
 </table></div>
-<h2 id="comp-2-comp-1">Comp 2 (comp)</h2>
+<h2 id="comp-2-comp">Comp 2 (comp)</h2>
 <div class="scroll"><table class="plan">
 <thead><tr><th></th><th scope="col" colspan="2">Week 1</th><th scope="col" colspan="2" class="wk">Week 2</th><th scope="col" colspan="2" class="wk">Week 3</th><th scope="col" colspan="2" class="wk">Week 4</th></tr></thead>
 <tbody>

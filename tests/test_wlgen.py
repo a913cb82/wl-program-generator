@@ -37,6 +37,7 @@ from wlgen import (
     fit_session,
     macro_days,
     map_zone_index,
+    micro_table,
     pair_choices,
     pair_fill,
     phrases,
@@ -702,6 +703,85 @@ def test_count_items_matches_rendered():
                         )
 
 
+def test_micro_table_exact():
+    mesos = [
+        {
+            "name": "Prep 4-2",
+            "phase": "prep",
+            "weeks": [
+                {
+                    "vol": 10,
+                    "groups": {"Squat": 6, "Snatch": 4},
+                    "bins": {
+                        "Squat": [1, 2, 3, 0, 0],
+                        "Snatch": [1, 1, 1, 1, 0],
+                    },
+                },
+                {
+                    "vol": 12,
+                    "groups": {"Squat": 12},
+                    "bins": {"Squat": [0, 0, 4, 8, 0]},
+                },
+            ],
+        },
+        {
+            "name": "Comp 1",
+            "phase": "comp",
+            "weeks": [
+                {
+                    "vol": 8,
+                    "groups": {"Squat": 8},
+                    "bins": {"Squat": [0, 0, 0, 4, 4]},
+                },
+            ],
+        },
+    ]
+    assert micro_table(mesos) == (
+        '<table class="micro">\n'
+        "<thead><tr><th></th>"
+        '<th scope="col" colspan="2">Prep 4-2 (prep)</th>'
+        '<th scope="col" class="meso">Comp 1 (comp)</th></tr>\n'
+        '<tr><th scope="col">Group</th><th scope="col">W1 · 10</th>'
+        '<th scope="col">W2 · 12</th>'
+        '<th scope="col" class="meso">W1 · 8</th></tr>\n'
+        "</thead>\n<tbody>\n"
+        '<tr class="grp"><th scope="row">Snatch</th>'
+        '<td class="num">4</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">60%</th>'
+        '<td class="num">1</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">70%</th>'
+        '<td class="num">1</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">80%</th>'
+        '<td class="num">1</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">90%</th>'
+        '<td class="num">1</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">100%</th>'
+        "<td></td><td></td>"
+        '<td class="meso"></td></tr>\n'
+        '<tr><th scope="row">ARI</th>'
+        '<td class="num">76.0</td><td></td><td class="meso"></td></tr>\n'
+        '<tr class="grp"><th scope="row">Squat</th>'
+        '<td class="num">6</td><td class="num">12</td>'
+        '<td class="num meso">8</td></tr>\n'
+        '<tr><th scope="row">50%</th>'
+        '<td class="num">1</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">60%</th>'
+        '<td class="num">2</td><td></td><td class="meso"></td></tr>\n'
+        '<tr><th scope="row">70%</th>'
+        '<td class="num">3</td><td class="num">4</td>'
+        '<td class="meso"></td></tr>\n'
+        '<tr><th scope="row">80%</th>'
+        '<td></td><td class="num">8</td>'
+        '<td class="num meso">4</td></tr>\n'
+        '<tr><th scope="row">90%</th>'
+        '<td></td><td></td><td class="num meso">4</td></tr>\n'
+        '<tr><th scope="row">ARI</th>'
+        '<td class="num">64.3</td><td class="num">77.7</td>'
+        '<td class="num meso">86.0</td></tr>\n'
+        "</tbody>\n</table>"
+    )
+
+
 def test_beam_prefers_separated_rep_change():
     _ordered, text = best_scheme(_snatch_counts(), "Snatch")
     assert text == "60%/2, 70%/2*2, 3*(80%/2, 70%/3), 80%/1"
@@ -848,10 +928,12 @@ def test_html_tables_at_every_level():
     assert "Meso sizes:" in macro
     assert "Prep 4-2 (prep)</th>" in vols
     micro = vols.split('<h2 id="microcycles">')[1]
-    assert micro.count("<h3") == 5
-    assert micro.count("<h4") == 20
-    for chunk in micro.split("<h4")[1:]:
-        assert '<th scope="col">Group</th>' in chunk
+    assert "<h3" not in micro
+    assert "<h4" not in micro
+    assert micro.count('<table class="micro">') == 1
+    assert "Prep 4-2 (prep)</th>" in micro
+    assert "W1 · 242" in micro
+    assert '<th scope="col">Group</th>' in micro
     plan = html.split('<h1 id="training-plan">')[1]
     assert plan.count('<table class="plan">') == 5
     assert plan.count("<h2") == 5
@@ -865,7 +947,7 @@ def test_html_toc():
     assert 'href="#macrocycle"' in html
     assert 'href="#mesocycles"' in html
     assert 'href="#microcycles"' in html
-    assert 'href="#prep-4-2-prep-1"' in html
+    assert 'href="#prep-4-2-prep"' in html
     assert 'href="#week-1---242-lifts"' not in html
     assert html.count("<li>") == 10
 
@@ -877,7 +959,7 @@ def test_toc_nests_volumes_and_training_plan():
     assert vols.index('href="#volumes"') < vols.index('href="#macrocycle"')
     assert vols.index('href="#macrocycle"') < vols.index('href="#mesocycles"')
     assert vols.index('href="#mesocycles"') < vols.index('href="#microcycles"')
-    assert 'href="#prep-4-2-prep-1"' in plans
+    assert 'href="#prep-4-2-prep"' in plans
     assert "week-1" not in toc
     assert vols.count("<ul>") == 2
 
@@ -918,7 +1000,7 @@ def test_sizes_at_every_level():
     assert "Day sizes:" not in html
     assert html.count('class="sizes"') == 6
     assert "Prep 4-2 (prep) - Week sizes: 242, 322, 196, 391" in html
-    assert html.count("<h4") == 20
+    assert "<h4" not in html
 
 
 def test_write_outputs(tmp_path):
@@ -939,7 +1021,7 @@ def test_html():
     assert 'id="microcycles"' in html
     assert 'id="training-plan"' in html
     assert ">Prep 4-2 (prep)</h2>" in html
-    assert ">Week 1 - 290 lifts<" in html
+    assert ">W1 · 290<" in html
     assert ">Snatch<" in html
     assert 'class="frac"' in html
     assert "@" not in html
@@ -1091,27 +1173,17 @@ def test_week_bin_lifts():
 
 
 def test_html_week_bins():
-    header = "".join(
-        f'<th scope="col">{h}</th>'
-        for h in [
-            "Group",
-            "Lifts",
-            "50%",
-            "60%",
-            "70%",
-            "80%",
-            "90%",
-            "100%",
-            "110%",
-            "ARI",
-        ]
-    )
-    weeks = to_html(build_plan("I")).split("<h4")[1:]
-    assert len(weeks) == 20
-    assert all(header in chunk for chunk in weeks)
-    row = weeks[-1].split('<th scope="row">Snatch</th>')[1].split("</tr>")[0]
-    cells = re.findall(r"<td[^>]*>(.*?)</td>", row)
-    assert cells[5] == "" and cells[6] == ""  # 90% and 100% empty in comp taper
+    micro = to_html(build_plan("I")).split('<table class="micro">')[1]
+    micro = micro.split("</table>")[0]
+    head = micro.split("</thead>")[0]
+    assert head.count("colspan=") == 5
+    assert head.count(">W") == 20
+    assert "W1 · 242" in head
+    snatch = micro.split('<th scope="row">Snatch</th>')[1].split('<tr class="grp">')[0]
+    for zone in ("90%", "100%"):
+        row = snatch.split(f'<th scope="row">{zone}</th>')[1].split("</tr>")[0]
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", row)
+        assert cells[-1] == ""  # empty in comp taper
 
 
 def test_bounded_round():

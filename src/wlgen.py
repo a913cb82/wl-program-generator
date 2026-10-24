@@ -17,7 +17,6 @@ from wlconfig import (
     CAP_DEV,
     CLASSES,
     DAY,
-    DISPLAY_ZONES,
     EPS,
     FAN,
     FREE_SLOTS,
@@ -1632,8 +1631,14 @@ def _rowh(label, rowspan=1):
     return f'<th scope="row"{span}>{label}</th>'
 
 
-def _num(value):
-    return f'<td class="num">{value}</td>' if value else "<td></td>"
+def _num(value, cls=""):
+    if not value:
+        return f'<td class="{cls}"></td>' if cls else "<td></td>"
+    return (
+        f'<td class="num {cls}">{value}</td>'
+        if cls
+        else f'<td class="num">{value}</td>'
+    )
 
 
 def group_table(groups):
@@ -1644,38 +1649,6 @@ def group_table(groups):
         + _th("Group")
         + _th("Lifts")
         + "</tr></thead>\n<tbody>\n"
-        + "\n".join(rows)
-        + "\n</tbody>\n</table>"
-    )
-
-
-def bin_header(title):
-    cells = "".join(_th(f"{z}%") for z in DISPLAY_ZONES)
-    return (
-        "<thead><tr>" + _th(title) + _th("Lifts") + cells + _th("ARI") + "</tr></thead>"
-    )
-
-
-def bin_line(group, total, counts):
-    lo = BIN_ZONES[BIN_GROUP[group]]
-    cells = "".join(
-        _num(counts[lo.index(z)]) if z in lo and counts[lo.index(z)] else "<td></td>"
-        for z in DISPLAY_ZONES
-    )
-    return (
-        f"<tr>{_rowh(group)}{_num(total)}{cells}"
-        f"{_num(f'{ari(counts, lo) / total:.1f}')}"
-        "</tr>"
-    )
-
-
-def week_table(groups, bins):
-    """Week group totals with each group split across its intensity zones."""
-    rows = [bin_line(g, v, bins[g]) for g, v in groups.items() if v]
-    return (
-        '<table class="data">\n'
-        + bin_header("Group")
-        + "\n<tbody>\n"
         + "\n".join(rows)
         + "\n</tbody>\n</table>"
     )
@@ -2454,6 +2427,63 @@ def toc_entries(headings):
     return entries
 
 
+def micro_table(mesos):
+    """All microcycles in one table: weeks as columns, one row per
+    group total, group zone, and group ARI."""
+    top = ["<thead><tr><th></th>"]
+    for mi, m in enumerate(mesos):
+        n = len(m["weeks"])
+        span = f' colspan="{n}"' if n > 1 else ""
+        cls = ' class="meso"' if mi else ""
+        top[0] += f'<th scope="col"{span}{cls}>{escape(m["name"])} ({m["phase"]})</th>'
+    top[0] += "</tr>"
+    weeks = [
+        (mi, wi, w) for mi, m in enumerate(mesos) for wi, w in enumerate(m["weeks"])
+    ]
+    week_cells = [_th("Group")]
+    for mi, wi, w in weeks:
+        cls = ' class="meso"' if mi and not wi else ""
+        week_cells.append(f'<th scope="col"{cls}>W{wi + 1} · {w["vol"]}</th>')
+    top.append("<tr>" + "".join(week_cells) + "</tr>")
+    top.append("</thead>")
+    rows = []
+    for g in GROUPS:
+        totals = [w["groups"].get(g, 0) for _, _, w in weeks]
+        if not any(totals):
+            continue
+        firsts = [bool(mi and not wi) for mi, wi, _ in weeks]
+        lo = BIN_ZONES[BIN_GROUP[g]]
+        rows.append(
+            '<tr class="grp">'
+            + _rowh(g)
+            + "".join(
+                _num(v, "meso") if first else _num(v)
+                for v, first in zip(totals, firsts)
+            )
+            + "</tr>"
+        )
+        for zi, z in enumerate(lo):
+            cells = []
+            for (_, _, w), total, first in zip(weeks, totals, firsts):
+                counts = w["bins"].get(g)
+                v = counts[zi] if total and counts else 0
+                cells.append(_num(v, "meso") if first else _num(v))
+            rows.append("<tr>" + _rowh(f"{z}%") + "".join(cells) + "</tr>")
+        acells = []
+        for (_, _, w), total, first in zip(weeks, totals, firsts):
+            counts = w["bins"].get(g)
+            v = f"{ari(counts, lo) / total:.1f}" if total and counts else 0
+            acells.append(_num(v, "meso") if first else _num(v))
+        rows.append("<tr>" + _rowh("ARI") + "".join(acells) + "</tr>")
+    return (
+        '<table class="micro">\n'
+        + "\n".join(top)
+        + "\n<tbody>\n"
+        + "\n".join(rows)
+        + "\n</tbody>\n</table>"
+    )
+
+
 def meso_table(mesos):
     """One group row with a volume column per mesocycle."""
     names = [f"{m['name']} ({m['phase']})" for m in mesos]
@@ -2568,6 +2598,10 @@ td.scheme { min-width: 10rem; white-space: nowrap; }
 table.plan { width: 100%; }
 table.plan tr.sess > td, table.plan tr.sess > th { border-top: 2px solid var(--strong); }
 table.plan .wk { border-left: 2px solid var(--strong); }
+table.micro { width: 100%; }
+table.micro tr.grp > td, table.micro tr.grp > th { border-top: 2px solid var(--strong); }
+table.micro .meso { border-left: 2px solid var(--strong); }
+table.micro th, table.micro td { white-space: nowrap; }
 .frac { display: inline-flex; flex-direction: column; text-align: center; margin: 0.1em 0.25em; }
 .frac .zone { border-bottom: 1.5px solid currentColor; padding: 0 0.4em; font-weight: 600; }
 .frac .reps { padding: 0 0.4em; }
@@ -2609,12 +2643,8 @@ def to_html(plan):
         (2, "Macrocycle"),
         (2, "Mesocycles"),
         (2, "Microcycles"),
+        (1, "Training Plan"),
     ]
-    for m in plan["mesos"]:
-        headings.append((3, f"{m['name']} ({m['phase']})"))
-        for wi, w in enumerate(m["weeks"]):
-            headings.append((4, f"Week {wi + 1} - {w['vol']} lifts"))
-    headings.append((1, "Training Plan"))
     for m in plan["mesos"]:
         headings.append((2, f"{m['name']} ({m['phase']})"))
     anchors = iter(anchor for _, _, anchor in toc_entries(headings))
@@ -2635,15 +2665,7 @@ def to_html(plan):
             + "</p>"
         )
     body.append(f'<h2 id="{next(anchors)}">Microcycles</h2>')
-    for m in plan["mesos"]:
-        title = f"{m['name']} ({m['phase']})"
-        body.append(f'<h3 id="{next(anchors)}">{escape(title)}</h3>')
-        for wi, w in enumerate(m["weeks"]):
-            wtitle = f"Week {wi + 1} - {w['vol']} lifts"
-            body.append(f'<h4 id="{next(anchors)}">{escape(wtitle)}</h4>')
-            body.append(
-                '<div class="scroll">' + week_table(w["groups"], w["bins"]) + "</div>"
-            )
+    body.append('<div class="scroll">' + micro_table(plan["mesos"]) + "</div>")
     body.append("</section>")
     body.append("<section>")
     body.append(f'<h1 id="{next(anchors)}">Training Plan</h1>')
