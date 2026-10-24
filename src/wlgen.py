@@ -1887,6 +1887,16 @@ def _render_html(items):
             )
         else:
             _, zlo, pairs = item
+            if all(count == 1 for _, count in pairs):
+                # Every rep count is a single set, so one fraction carries
+                # them all (80%/3,2) instead of repeating the zone.
+                reps = ",".join(atom_text(value) for value, _ in pairs)
+                frac = (
+                    f'<span class="frac"><span class="zone">{zlo}%</span>'
+                    f'<span class="reps">{reps}</span></span>'
+                )
+                out.append(f'<span class="dose">{frac}</span>')
+                continue
             parts = []
             for value, count in pairs:
                 frac = (

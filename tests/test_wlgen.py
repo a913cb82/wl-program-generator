@@ -327,7 +327,10 @@ def test_training_plan_tables():
                         f'<span class="phrase">{p}</span>'
                         for p in wlgen._render_html(wlgen._parse(tuple(seq))[2])
                     )
-                    assert "," not in scheme
+                    # set-groups are space-separated; a comma only joins rep
+                    # counts inside one fraction (80%/3,2)
+                    outside = re.sub(r'<span class="reps">[^<]*</span>', "", scheme)
+                    assert "," not in outside
                 idx += 1
         assert idx == len(body)
 
@@ -506,6 +509,10 @@ def test_consolidate_doses_folds_stranded_cells():
 
 
 def test_render_html():
+    assert wlgen._render_html((("group", 80, ((3, 1), (2, 1))),)) == (
+        '<span class="dose"><span class="frac"><span class="zone">80%</span>'
+        '<span class="reps">3,2</span></span></span>',
+    )
     assert wlgen._render_html((("group", 80, ((3, 2), (2, 1))),)) == (
         '<span class="dose"><span class="frac"><span class="zone">80%</span>'
         '<span class="reps">3</span></span>'
