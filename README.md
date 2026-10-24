@@ -22,7 +22,7 @@ Generates a 20-week Soviet-style Olympic weightlifting macrocycle from an annual
 - A gap is a missing intensity step inside one session. An illegal set breaks a training rule. A clash puts together movements that cannot share a day. Idle describes a movement that should train in a week but trains zero days.
 - Spacing is how evenly training spreads across days and weeks.
 - Defects are the drift items below.
-- A slow build takes more than 3 seconds.
+- Pace is the build cost in the score. It is the square of the book's CPU seconds over 3.6, minus one. Halving the build is minus three quarters. Zero-cost builds score minus one, so speed can never buy more than one point.
 
 ## Run
 
@@ -127,9 +127,9 @@ Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the interm
 - **Strain** — dose health. Work over the tolerance plus work under the 0.25 floor, in session units, divided by 150.
 - **Size** — instructions to follow plus the longest single slot.
 - **Rhythm** — how far the median week is from a 2.75 contrast, plus missing turns and peaks away from one. A turn is a change of direction between days. A peak is a day heavier than its neighbors. Only moves of at least a tenth of the week's range steer the turns and the peaks.
-- **Drift** — everything off plan. Group and total misses at week, mesocycle, and program scale. Group misses count only beyond the band. Total misses count in full. Illegal sets, clashes, gaps, idle movements, uneven spacing, and slow builds.
+- **Drift** — everything off plan. Group and total misses at week, mesocycle, and program scale. Group misses count only beyond the band. Total misses count in full. Illegal sets, clashes, gaps, idle movements, uneven spacing, and pace.
 
-The divisors (150, 9300, 25, 0.25) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on every defect term. Only spacing is nonzero today.
+The divisors (150, 9300, 25, 0.25) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on every defect term. Only spacing and pace are nonzero today.
 
 ## Guarantees
 

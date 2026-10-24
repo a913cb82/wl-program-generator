@@ -161,6 +161,7 @@ def test_generate_json_writes_scorable_files(tmp_path):
     scored = score_json(paths[0])
     assert scored["score"] == score_class("III")["score"]
     assert scored["score"] >= 0
+    assert scored["pace"] == 0
 
 
 def test_score_needs_no_generator(tmp_path):
@@ -176,3 +177,16 @@ def test_score_needs_no_generator(tmp_path):
     )
     assert proc.returncode == 0, proc.stderr
     assert float(proc.stdout.strip()) == score_class("III")["score"]
+
+
+def test_pace_is_zero_without_cpu():
+    assert score_class("III")["pace"] == 0
+
+
+def test_pace_prices_ratio():
+    from wlscore import CPU_BOOK
+
+    plan = _plan()
+    assert score_class("III", plan, cpu=CPU_BOOK)["pace"] == 0
+    assert score_class("III", plan, cpu=2 * CPU_BOOK)["pace"] == 3
+    assert score_class("III", plan, cpu=CPU_BOOK / 2)["pace"] == -0.75

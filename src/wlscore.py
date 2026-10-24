@@ -30,6 +30,7 @@ from wlconfig import (
 from wlir import allocate, from_ir, macro_days
 
 FLOOR = 0.25  # smallest useful dose in one session, in session units
+CPU_BOOK = 3.6  # frozen baseline: CPU-seconds to build the book today
 TOL_CLASSIC = 1.5
 TOL_STRENGTH = 2.0
 
@@ -67,13 +68,13 @@ def generate_json(path="outputs", classes=None, jobs=None):
     return out
 
 
-def score_json(source, seconds=None):
+def score_json(source, cpu=None):
     """Score an intermediate-representation dict or the JSON file holding
     it. Needs no generator: the file is the whole input."""
     if isinstance(source, (str, Path)):
         with open(source) as fh:
             source = json.load(fh)
-    return score_class(source["class"], from_ir(source), seconds)
+    return score_class(source["class"], from_ir(source), cpu)
 
 
 def _tolerance(family):
@@ -319,7 +320,7 @@ def _unjustified_gaps(session, sessions, week_bins):
     return count
 
 
-def _score_items(items, seconds=None):
+def _score_items(items, cpu=None):
     """Additive breakdown over (cls, plan) pairs; the book total is just
     the same loop over more classes. Plans are restored IR: sessions carry
     their stored slots, so no generator call is needed."""
@@ -434,12 +435,12 @@ def _score_items(items, seconds=None):
                 - _band(macro_nom[g], 20, g in PAIRED_GROUPS),
             )
         out["iv_macro"] += abs(sum(macro_act.values()) - _macro_vol(cls))
-    if seconds is not None:
-        out["seconds"] = seconds
+    if cpu is not None:
+        out["cpu"] = cpu
     return out
 
 
-def _finalize(raw, seconds=None):
+def _finalize(raw, cpu=None):
     strain = (raw["excess"] + raw["shortfall"]) / 150
     size = (raw["instructions"] / 9300 + raw["longest"] / 25) / 2
     rhythm = median(raw["rhythms"]) if raw["rhythms"] else 0.0
@@ -449,7 +450,8 @@ def _finalize(raw, seconds=None):
         if raw["meso_spread_den"]
         else 0.0
     )
-    slow = max(0.0, (seconds if seconds is not None else 0.0) - 3) / 6
+    ratio = cpu / CPU_BOOK if cpu else 1.0
+    pace = ratio * ratio - 1.0
     drift = (
         raw["ob_micro"] / 40
         + raw["iv_micro"] / 40
@@ -462,7 +464,7 @@ def _finalize(raw, seconds=None):
         + 4 * raw["idle_meso"]
         + spread_micro
         + spread_meso
-        + slow
+        + pace
     )
     return {
         "excess": raw["excess"],
@@ -487,33 +489,32 @@ def _finalize(raw, seconds=None):
         "idle_meso": raw["idle_meso"],
         "spread_micro": spread_micro,
         "spread_meso": spread_meso,
-        "slow": slow,
+        "pace": pace,
         "drift": drift,
         "score": 0.4 * strain + 0.3 * size + 0.1 * rhythm + 0.2 * drift,
     }
 
 
-def score_class(cls, plan=None, seconds=None):
+def score_class(cls, plan=None, cpu=None):
     """Score one class from a restored plan (from_ir output). Builds it
     only when none is given, through the generator's front door."""
     if plan is None:
-        from wlgen import build_plan, ir_with_slots
-
-        plan = from_ir(ir_with_slots(build_plan(cls)))
-    return _finalize(_score_items([(cls, plan)], seconds), seconds)
+        plan = _plan_for(cls)
+    return _finalize(_score_items([(cls, plan)], cpu), cpu)
 
 
-def score_book(items=None, seconds=None):
+def score_book(items=None, cpu=None):
     """Score the whole book; the totals are the same loop over classes."""
     if items is None:
         items = [(cls, _plan_for(cls)) for cls in CLASSES]
-    return _finalize(_score_items(items, seconds), seconds)
+    return _finalize(_score_items(items, cpu), cpu)
 
 
-def _plan_for(cls):
+def _plan_for(cls, raw=False):
     from wlgen import build_plan, ir_with_slots
 
-    return from_ir(ir_with_slots(build_plan(cls)))
+    ir = ir_with_slots(build_plan(cls))
+    return ir if raw else from_ir(ir)
 
 
 def _row(label, r):
@@ -525,7 +526,8 @@ def _row(label, r):
         f"{r['drift']:6.2f} (off {r['ob_micro'] + r['ob_meso'] + r['ob_macro']:5.1f} "
         f"vol {r['iv_micro'] + r['iv_meso'] + r['iv_macro']:5.1f} "
         f"bad {r['illegal'] + r['clash'] + r['gaps'] + r['idle'] + r['idle_meso']:d} "
-        f"spread {r['spread_micro'] + r['spread_meso']:4.2f}) | "
+        f"spread {r['spread_micro'] + r['spread_meso']:4.2f} "
+        f"pace {r['pace']:+.2f}) | "
         f"score {r['score']:.3f}"
     )
 
@@ -539,16 +541,23 @@ def print_breakdown(r, label="plan"):
     )
 
 
-def audit(classes=None, seconds=None):
-    """Score every class plus the book and print the scoreboard."""
-    import time
+def audit(classes=None):
+    """Score every class plus the book and print the scoreboard.
 
+    The book builds serially in one process, so caches shared across
+    classes count: more sharing means less CPU, which pace rewards."""
     classes = list(classes or CLASSES)
-    t0 = time.perf_counter()
-    plans = [(cls, _plan_for(cls)) for cls in classes]
-    if seconds is None:
-        seconds = time.perf_counter() - t0
+    t0 = os.times()
+    kept = [(cls, _plan_for(cls, raw=True)) for cls in classes]
+    t1 = os.times()
+    total = (
+        (t1.user - t0.user)
+        + (t1.system - t0.system)
+        + (t1.children_user - t0.children_user)
+        + (t1.children_system - t0.children_system)
+    )
+    plans = [(cls, from_ir(ir)) for cls, ir in kept]
     for cls, plan in plans:
         print_breakdown(score_class(cls, plan), cls)
-    print_breakdown(score_book(plans), "book")
-    return seconds
+    print_breakdown(score_book(plans, cpu=total), "book")
+    return total
