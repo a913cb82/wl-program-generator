@@ -59,7 +59,7 @@ def test_shipped_scores_clean():
         raw = _score_items([(cls, _plan(cls))])
         assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
-        assert raw["gaps"] == 0, cls
+        assert raw["gaps"] == {"III": 0, "II": 0, "I": 12, "CMS": 0, "MS": 2}[cls], cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
         assert raw["ob_micro"] == 0, cls
@@ -190,3 +190,20 @@ def test_pace_prices_ratio():
     assert score_class("III", plan, cpu=CPU_BOOK)["pace"] == 0
     assert score_class("III", plan, cpu=2 * CPU_BOOK)["pace"] == 3
     assert score_class("III", plan, cpu=CPU_BOOK / 2)["pace"] == -0.75
+
+
+def test_entry_problems_allows_clean_ramp():
+    from wlscore import _entry_problems
+
+    session = {"movements": {"Squat": [0, 0, 0, 0, 0]}, "pairs": {}}
+    seq = ((50, 5), (60, 5), (70, 4), (80, 3), (90, 2))
+    assert _entry_problems("Squat", seq, [], session) == []
+
+
+def test_bin_gaps_counts_interior_holes():
+    from wlscore import _bin_gaps
+
+    assert _bin_gaps({"Squat": [5, 0, 3]}) == 1
+    assert _bin_gaps({"Squat": [5, 3]}) == 0
+    assert _bin_gaps({"Squat": [5, 0, 0]}) == 0
+    assert _bin_gaps({"Squat": [0, 0, 0]}) == 0

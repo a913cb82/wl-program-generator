@@ -123,6 +123,18 @@ def _atom_total(value):
     return value if isinstance(value, int) else value[0] + value[1]
 
 
+def _bin_gaps(bins):
+    """Interior holes in a ladder: used zones with an empty zone
+    between them. Top drops (tapers) are not holes."""
+    count = 0
+    for counts in bins.values():
+        used = [z for z, x in enumerate(counts) if x]
+        if len(used) < 2:
+            continue
+        count += sum(1 for z in range(used[0], used[-1] + 1) if not counts[z])
+    return count
+
+
 def _step_ok(prev_zone, prev_value, zone, value, seen, present):
     """One set may follow another: rises are capped (a set may revisit a
     lower zone only once seen), climbs step to the next zone present, and
@@ -350,8 +362,10 @@ def _score_items(items, cpu=None):
     for cls, plan in items:
         macro_nom = {g: 0 for g in GROUPS}
         macro_act = {g: 0 for g in GROUPS}
+        macro_bins: dict = {}
         for m in plan["mesos"]:
             meso_nom = {g: 0 for g in GROUPS}
+            meso_bins: dict = {}
             hosted_days: dict = {g: 0 for g in GROUPS}
             shares: dict = {g: [] for g in GROUPS}
             for w in m["weeks"]:
@@ -385,6 +399,12 @@ def _score_items(items, cpu=None):
                         out["spread_num"] += (max(gaps) - min(gaps)) / n
                         out["spread_den"] += 1
                 out["iv_micro"] += abs(week_tot - w["vol"])
+                out["gaps"] += _bin_gaps(w["bins"])
+                for g, vec in w["bins"].items():
+                    for acc in (meso_bins, macro_bins):
+                        row = acc.setdefault(g, [0] * len(vec))
+                        for z, n in enumerate(vec):
+                            row[z] += n
                 for s in w["sessions"]:
                     hosted = {g for g, z in s["movements"].items() if sum(z)}
                     if not slot_match(hosted):
@@ -428,6 +448,7 @@ def _score_items(items, cpu=None):
                     out["meso_spread_num"] += max(vals) - min(vals)
                     out["meso_spread_den"] += 1
             out["iv_meso"] += abs(sum(m["groups"].values()) - m["vol"])
+            out["gaps"] += _bin_gaps(meso_bins)
         for g in GROUPS:
             out["ob_macro"] += max(
                 0,
@@ -435,6 +456,7 @@ def _score_items(items, cpu=None):
                 - _band(macro_nom[g], 20, g in PAIRED_GROUPS),
             )
         out["iv_macro"] += abs(sum(macro_act.values()) - _macro_vol(cls))
+        out["gaps"] += _bin_gaps(macro_bins)
     if cpu is not None:
         out["cpu"] = cpu
     return out
