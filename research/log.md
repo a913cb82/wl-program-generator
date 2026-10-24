@@ -246,3 +246,11 @@ Rule from now on: every explorer gets a 5-minute budget.
   recon (exact anchors), agents get mechanical briefs (<=2 edits).
   Relaunched sched-lock-2 (3-line global 1:1 lock below 80) +
   snatch-spill-2 (verbatim clone for MS Other Snatch, top-1).
+
+- sched-lock-2: global 1:1 lock wins exc -13.9 but breaks MS shape
+  (defect + 8 red) -> reverted. Scope is everything: relaunched
+  scoped (I-only, pair-only, cls threading).
+- snatch-spill-2: clone wins exc -0.3 but trips a drift defect the
+  gap-guard never watches -> reverted. Relaunched with defect-first
+  discovery (name the component, then guard exactly that).
+- Doctrine holding: recon is mine (anchors), briefs mechanical.
