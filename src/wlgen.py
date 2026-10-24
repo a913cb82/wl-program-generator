@@ -1949,6 +1949,14 @@ def _transition_ok(prev_zone, prev_value, zone, value, seen, present):
             return False
     if prev_zone is None or zone < prev_zone:
         return True
+    if zone == prev_zone:
+        # Same weight: build up or taper off freely, but never swap
+        # sides (one side rising while the other falls).
+        if isinstance(value, tuple) and isinstance(prev_value, tuple):
+            rises = any(v > p for v, p in zip(value, prev_value))
+            falls = any(v < p for v, p in zip(value, prev_value))
+            return not (rises and falls)
+        return True
     if isinstance(value, tuple) and isinstance(prev_value, tuple):
         # Complexes: each member's per-set reps must hold flat or fall.
         # A flat complex total is not enough (1+2 -> 2+1 keeps 3 but
