@@ -119,3 +119,10 @@ Rule from now on: every explorer gets a 5-minute budget.
   neutral; demand strain win is real but unreachable).
   Launched day-rebalance (move mass, not patterns) + feasible-trim.
   Running: sizeweight-nudge, day-rebalance, feasible-trim.
+
+- sizeweight-nudge NO-GO (all 7 uniform moves lose; {1,2,3} is a local
+  optimum; closest M+1 at 1.042). Suggests per-class weights next.
+- Stack verified: stack-1 outputs differ from main on 4/5 classes
+  (size-again schemes), CMS identical; ipf-stall contributes no diff.
+- Launched spread-trim (nobody has attacked spread 0.17 directly).
+  Running: day-rebalance, feasible-trim, spread-trim.
