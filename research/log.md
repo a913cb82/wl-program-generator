@@ -64,3 +64,7 @@ Rule from now on: every explorer gets a 5-minute budget.
 - Launched support-cap (peak-day group cap, pair-free singles) and
   demand-sweep (proper demand-path attempt with pace guardrail).
   Running: ipf-stall, support-cap, demand-sweep.
+
+- ipf-stall WON (stall-abort at iter 400-600, byte-identical, pace
+  -0.04 -> -0.21, 5bac17d). Launched beam-trim (other half of CPU).
+  Running: support-cap, demand-sweep, beam-trim.
