@@ -843,6 +843,16 @@ def test_beam_prefers_separated_rep_change():
     assert text == "60%/2, 70%/2*2, 80%/1, 3*(70%/3, 80%/2)"
 
 
+def test_scheme_prefers_fewer_sets_when_close():
+    # The 100% single caps every 110% set at one rep, so the short order
+    # of 17 sets costs one instruction more than the shredded order of
+    # 25. The athlete reads eight fewer sets for one extra phrase.
+    seq, text = best_scheme((8, 16, 10, 1, 7), "ClPull")
+    assert sum(v for _, v in seq) == 42
+    assert len(seq) <= 17
+    assert text == "70%/4*2, 80%/4*4, 90%/4,3*2, 100%/1, 110%/1*7"
+
+
 def test_seed_spine_opens_with_work_sets():
     # One-rep openers are too light to warm up on; the spine opens with
     # doubles wherever the zone holds at least two lifts.
@@ -862,6 +872,47 @@ def test_seed_bulk_climbs_after_big_drop():
     assert zs[drops[0] :] == sorted(zs[drops[0] :])
     for (za, va), (zb, vb) in zip(grouped[5:], grouped[6:]):
         assert zb < za or vb <= va
+
+
+def test_capped_order_packs_top_down():
+    # A lone 100% single caps every 110% set at one rep. Filling each zone
+    # with the largest sets that fit under the running cap keeps the slot
+    # to 17 sets instead of shredding every zone into doubles (25 sets).
+    zones = single_zones((8, 16, 10, 1, 7), "ClPull")
+    assert wlgen.capped_order(zones) == tuple(
+        [(70, 4)] * 2
+        + [(80, 4)] * 4
+        + [(90, 4)]
+        + [(90, 3)] * 2
+        + [(100, 1)]
+        + [(110, 1)] * 7
+    )
+
+
+def test_capped_order_is_legal_and_exact():
+    cases = [
+        single_zones((1, 11, 12, 0, 0), "CJ"),
+        single_zones((6, 14, 10, 14, 3), "Squat"),
+        pair_choices((0, 2, 2), (0, 2, 2), "Clean", "Jerk", "Clean"),
+    ]
+    for zones in cases:
+        order = wlgen.capped_order(zones)
+        assert order is not None
+        assert wlgen.capped_order(zones) == order
+        present = tuple(z for z, _, _ in zones)
+        idx = {z: i for i, (z, _, _) in enumerate(zones)}
+        sizemap = {z: {v: s for s, v in ch} for z, _, ch in zones}
+        seen = set()
+        last_zone, last_value = None, None
+        rem = [c for _, c, _ in zones]
+        for z, v in order:
+            assert wlgen._transition_ok(
+                last_zone, last_value, z, v, frozenset(seen), present
+            )
+            seen.add(z)
+            last_zone, last_value = z, v
+            rem[idx[z]] -= sizemap[z][v]
+        assert all(r == 0 for r in rem)
 
 
 def test_seed_orders_are_legal_and_exact():

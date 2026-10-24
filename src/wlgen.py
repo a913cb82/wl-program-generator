@@ -34,6 +34,7 @@ from wlconfig import (
     FREE_SLOTS,
     GAP,
     GROUPS,
+    LENGTH_COST,
     MACRO,
     MIN_DOSE,
     PAIR_BY_SET,
@@ -1902,6 +1903,14 @@ def scheme_cost(seq, family):
     return cost, stray_, warmup_, cx
 
 
+def _rank(cost, cx, seq, text):
+    """Final order choice: training cost first, then the read load.
+
+    The length price matches the beam's own pruning unit of one per set,
+    so a shorter order wins only when its training cost is close."""
+    return (cost + LENGTH_COST * len(seq), cx, len(seq), len(text), text)
+
+
 @cache
 def _render_items(items):
     parts = []
@@ -2205,16 +2214,22 @@ def beam_search(zones, family):
         for _approx, _things, prefix in ranked:
             cost, _, _, cx = scheme_cost(prefix, family)
             text = compact_text(prefix)
-            pick = (cost, cx, len(prefix), len(text), text)
+            pick = _rank(cost, cx, prefix, text)
             if best is None or pick < best[0]:
                 best = (pick, prefix)
         assert best is not None
         base = best[1]
     base_cost, _, _, base_cx = scheme_cost(base, family)
-    base_rank = (base_cost, base_cx, len(base), len(compact_text(base)))
-    for seed in seed_orders(zones):
+    base_rank = _rank(base_cost, base_cx, base, compact_text(base))
+    seeds = list(seed_orders(zones))
+    capped = capped_order(zones)
+    # Ranking a seed parses its phrases, so only pay for a capped order
+    # that is actually shorter than the beam's best.
+    if capped is not None and len(capped) < len(base) and capped not in seeds:
+        seeds.append(capped)
+    for seed in seeds:
         cost, _, _, cx = scheme_cost(seed, family)
-        seed_pick = (cost, cx, len(seed), len(compact_text(seed)))
+        seed_pick = _rank(cost, cx, seed, compact_text(seed))
         if seed_pick < base_rank:
             base, base_rank = seed, seed_pick
     return base
@@ -2351,6 +2366,50 @@ def seed_orders(zones):
     return tuple(out)
 
 
+@cache
+def capped_order(zones):
+    """Largest legal sets bottom-up under a running cap; None if stuck.
+
+    Each zone is filled with the largest sizes that fit under the last
+    set below it, so a small set low down (a lone single at 100%) caps
+    every zone above it instead of shredding the whole slot into small
+    sets. Zones climb in order with no drops, so every step is legal as
+    long as each zone fits under the cap; a zone that cannot fit drops
+    the seed. Pure (no RNG), so beam_search stays @cache-safe."""
+    present = tuple(z for z, _, _ in zones)
+    if not present:
+        return None
+    values = {z: {s: v for s, v in ch} for z, _, ch in zones}
+    seq = []
+    seen: set = set()
+    last_zone, last_value = None, None
+    for z, total, ch in zones:
+        if not total:
+            continue
+
+        def fits(size):
+            if last_value is None:
+                return True
+            v = values[z][size]
+            if isinstance(v, tuple):
+                return all(a <= b for a, b in zip(v, last_value))
+            return v <= last_value
+
+        allowed = tuple(s for s, _ in ch if fits(s))
+        if not allowed:
+            return None
+        for size in sorted(fill(total, allowed), reverse=True):
+            v = values[z][size]
+            if not _transition_ok(
+                last_zone, last_value, z, v, frozenset(seen), present
+            ):
+                return None
+            seen.add(z)
+            last_zone, last_value = z, v
+            seq.append((z, v))
+    return tuple(seq) if seq else None
+
+
 def fixed_beam(types, family):
     """Best legal order of a fixed atom multiset; None if impossible."""
     present = tuple(sorted({z for z, _, _ in types}))
@@ -2469,7 +2528,7 @@ def fixed_beam(types, family):
     for _approx, _things, prefix in ranked:
         cost, _, _, cx = scheme_cost(prefix, family)
         text = compact_text(prefix)
-        rank = (cost, cx, len(prefix), len(text), text)
+        rank = _rank(cost, cx, prefix, text)
         if best is None or rank < best[0]:
             best = (rank, prefix)
     assert best is not None

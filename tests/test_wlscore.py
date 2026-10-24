@@ -73,9 +73,9 @@ def test_book_numbers_match_research():
     assert round(book["excess"], 1) == 153.4
     # one hosted cell in the book lands just under the floor
     assert book["shortfall"] < 0.1
-    assert book["instructions"] == 9312
+    assert book["instructions"] == 9301
     assert book["slots"] == 1291
-    assert book["longest"] == 25
+    assert book["longest"] == 21
 
 
 def test_score_detects_gap():
