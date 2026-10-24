@@ -1,5 +1,6 @@
 import re
 from functools import cache
+from html import escape
 from math import gcd
 from pathlib import Path
 
@@ -1371,40 +1372,63 @@ def build_plan(cls):
     }
 
 
+def _th(label, colspan=1):
+    span = f' colspan="{colspan}"' if colspan > 1 else ""
+    return f'<th scope="col"{span}>{label}</th>'
+
+
+def _rowh(label, rowspan=1):
+    span = f' rowspan="{rowspan}"' if rowspan > 1 else ""
+    return f'<th scope="row"{span}>{label}</th>'
+
+
+def _num(value):
+    return f'<td class="num">{value}</td>' if value else "<td></td>"
+
+
 def group_table(groups):
-    return ["| Group | Lifts |", "|---|---|"] + [
-        f"| {g} | {v} |" for g, v in groups.items() if v
-    ]
+    """Group totals table."""
+    rows = [f"<tr>{_rowh(g)}{_num(v)}</tr>" for g, v in groups.items() if v]
+    return (
+        '<table class="data">\n<thead><tr>'
+        + _th("Group")
+        + _th("Lifts")
+        + "</tr></thead>\n<tbody>\n"
+        + "\n".join(rows)
+        + "\n</tbody>\n</table>"
+    )
 
 
 def bin_header(title):
-    labels = [f"{z}%" for z in DISPLAY_ZONES]
-    return [
-        f"| {title} | Lifts | " + " | ".join(labels) + " | ARI |",
-        "|" + "---|" * (len(DISPLAY_ZONES) + 3),
-    ]
+    cells = "".join(_th(f"{z}%") for z in DISPLAY_ZONES)
+    return (
+        "<thead><tr>" + _th(title) + _th("Lifts") + cells + _th("ARI") + "</tr></thead>"
+    )
 
 
 def bin_line(group, total, counts):
     lo = BIN_ZONES[BIN_GROUP[group]]
-    cells = [
-        str(counts[lo.index(z)]) if z in lo and counts[lo.index(z)] else ""
+    cells = "".join(
+        _num(counts[lo.index(z)]) if z in lo and counts[lo.index(z)] else "<td></td>"
         for z in DISPLAY_ZONES
-    ]
+    )
     return (
-        f"| {group} | {total} | "
-        + " | ".join(cells)
-        + f" | {ari(counts, lo) / total:.1f} |"
+        f"<tr>{_rowh(group)}{_num(total)}{cells}"
+        f"{_num(f'{ari(counts, lo) / total:.1f}')}"
+        "</tr>"
     )
 
 
 def week_table(groups, bins):
     """Week group totals with each group split across its intensity zones."""
-    lines = bin_header("Group")
-    for g, v in groups.items():
-        if v:
-            lines.append(bin_line(g, v, bins[g]))
-    return lines
+    rows = [bin_line(g, v, bins[g]) for g, v in groups.items() if v]
+    return (
+        '<table class="data">\n'
+        + bin_header("Group")
+        + "\n<tbody>\n"
+        + "\n".join(rows)
+        + "\n</tbody>\n</table>"
+    )
 
 
 def fill(n, reps):
@@ -1566,14 +1590,14 @@ def _render_items(items):
     parts = []
     for item in items:
         if item[0] == "wave":
-            parts.append(f"{item[1]}x({_render_items(item[2])})")
+            parts.append(f"{item[1]}*({_render_items(item[2])})")
         else:
             _, zlo, pairs = item
             body = ",".join(
-                f"{count}x{atom_text(value)}" if count > 1 else atom_text(value)
+                f"{atom_text(value)}*{count}" if count > 1 else atom_text(value)
                 for value, count in pairs
             )
-            parts.append(f"{body}@{zlo}%")
+            parts.append(f"{zlo}%/{body}")
     return ", ".join(parts)
 
 
@@ -1633,6 +1657,27 @@ def _parse(seq):
                 take(count, _normalize((("wave", k, inner[2]),) + rest[2]))
     assert best is not None
     return best[1], best[2], best[3]
+
+
+@cache
+def _render_html(items):
+    """One HTML phrase per item: stacked zone-over-reps fractions."""
+    out = []
+    for item in items:
+        if item[0] == "wave":
+            inner = ", ".join(_render_html(item[2]))
+            out.append(f'<span class="rep">{item[1]}×</span>({inner})')
+        else:
+            _, zlo, pairs = item
+            body = ",".join(
+                f"{atom_text(value)}*{count}" if count > 1 else atom_text(value)
+                for value, count in pairs
+            )
+            out.append(
+                f'<span class="frac"><span class="zone">{zlo}%</span>'
+                f'<span class="reps">{body}</span></span>'
+            )
+    return tuple(out)
 
 
 @cache
@@ -1971,13 +2016,12 @@ def best_pair_scheme(
     return order, compact_text(order)
 
 
-def scheme_lines(s):
-    """One session's movements as exact sets x reps bullets, slot-ordered.
+def scheme_entries(s):
+    """One (movement, atom seq) per slot, DAY-slot ordered.
 
     Stored pairs (from planning) render jointly from their reference-zone
     vectors; sessions built by hand fall back to auto-detecting same-zone
-    pairs with aligned support. Bullets follow DAY slot order, not GROUPS
-    order."""
+    pairs with aligned support."""
     stored = dict(s.get("pairs", {}))
     used: set = {g for p in stored for g in p}
     detected: dict = {}
@@ -2009,13 +2053,15 @@ def scheme_lines(s):
             a, b = first_of[g]
             ref, va, vb = pairs[(a, b)]
             slots = COMPLEX_SLOTS.get(frozenset((a, b)), ())
-            text = f"- {a}+{b}: {best_pair_scheme(tuple(va), tuple(vb), a, b, ref)[1]}"
+            seq = best_pair_scheme(tuple(va), tuple(vb), a, b, ref)[0]
+            text = f"{a}+{b}"
         else:
             slots = SINGLE_SLOTS.get(g, ())
-            text = f"- {g}: {best_scheme(tuple(counts), BIN_GROUP[g])[1]}"
-        entries.append((sorted(slots)[0] if slots else len(DAY), order, text))
+            seq = best_scheme(tuple(counts), BIN_GROUP[g])[0]
+            text = g
+        entries.append((sorted(slots)[0] if slots else len(DAY), order, text, seq))
     entries.sort(key=lambda entry: (entry[0], entry[1]))
-    return [text for _, _, text in entries]
+    return [(text, seq) for _, _, text, seq in entries]
 
 
 def _slug(text, seen):
@@ -2026,51 +2072,218 @@ def _slug(text, seen):
 
 
 def toc_entries(headings):
-    """GitHub-style (level, title, anchor) for each ## or ### heading."""
+    """(level, title, anchor) with duplicate-title disambiguation."""
     entries = []
     seen: dict = {}
-    for line in headings:
-        if line.startswith("### "):
-            level, title = 3, line[4:]
-        elif line.startswith("## "):
-            level, title = 2, line[3:]
-        else:
-            continue
+    for level, title in headings:
         entries.append((level, title, _slug(title, seen)))
     return entries
 
 
-def to_markdown(plan):
-    lines = [f"# {plan['macro']}", "", f"Annual: {plan['annual']} lifts", ""]
-    lines += group_table(plan["groups"]) + [""]
-    lines += ["Meso sizes: " + ", ".join(str(m["vol"]) for m in plan["mesos"]), ""]
+def meso_table(mesos):
+    """One group row with a volume column per mesocycle."""
+    names = [f"{m['name']} ({m['phase']})" for m in mesos]
+    head = (
+        "<thead><tr>" + _th("Group") + "".join(_th(n) for n in names) + "</tr></thead>"
+    )
+    rows = []
+    for g in GROUPS:
+        if any(m["groups"].get(g, 0) for m in mesos):
+            cells = "".join(_num(m["groups"].get(g, 0)) for m in mesos)
+            rows.append(f"<tr>{_rowh(g)}{cells}</tr>")
+    return (
+        '<table class="data">\n'
+        + head
+        + "\n<tbody>\n"
+        + "\n".join(rows)
+        + "\n</tbody>\n</table>"
+    )
+
+
+def training_table(meso):
+    """One mesocycle's sessions: weeks across, slots down.
+
+    Two columns per week: movement name, then its scheme (zone over
+    reps, fraction-style). Each movement slot in each session gets one
+    row; the session number spans its slot rows."""
+    weeks = meso["weeks"]
+    head = (
+        "<thead><tr><th></th>"
+        + "".join(
+            f'<th scope="col" colspan="2">Week {wi + 1}</th>'
+            for wi in range(len(weeks))
+        )
+        + "</tr></thead>"
+    )
     body = []
+    rows = max(len(w["sessions"]) for w in weeks)
+    for si in range(rows):
+        present = [w for w in weeks if si < len(w["sessions"])]
+        slots = max(
+            [len(scheme_entries(w["sessions"][si])) for w in present], default=0
+        )
+        for k in range(slots):
+            cells = []
+            for w in weeks:
+                if si >= len(w["sessions"]):
+                    cells += ["<td></td>", "<td></td>"]
+                    continue
+                entries = scheme_entries(w["sessions"][si])
+                if k >= len(entries):
+                    cells += ["<td></td>", "<td></td>"]
+                    continue
+                movement, seq = entries[k]
+                phrases = "".join(
+                    f'<div class="phrase">{p}</div>'
+                    for p in _render_html(_parse(tuple(seq))[2])
+                )
+                cells += [
+                    f'<td class="move">{escape(movement)}</td>',
+                    f'<td class="scheme">{phrases}</td>',
+                ]
+            first = f'<th scope="row" rowspan="{slots}">{si + 1}</th>' if k == 0 else ""
+            body.append("<tr>" + first + "".join(cells) + "</tr>")
+    return (
+        '<table class="plan">\n'
+        + head
+        + "\n<tbody>\n"
+        + "\n".join(body)
+        + "\n</tbody>\n</table>"
+    )
+
+
+STYLE = """
+:root {
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --ink: #27272a;
+  --muted: #71717a;
+  --line: #e4e4e7;
+  --accent: #9a3412;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+main { max-width: 80rem; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; }
+header h1 { font-size: 2.2rem; letter-spacing: -0.01em; margin: 0 0 1rem; }
+section > h1 { font-size: 1.8rem; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 2px solid var(--line); }
+h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; }
+h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: 0.75rem; padding: 1rem 1.5rem; }
+nav.toc h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+nav.toc ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+nav.toc a { color: var(--accent); text-decoration: none; }
+nav.toc a:hover { text-decoration: underline; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; background: var(--card); margin: 0.5rem 0 1.5rem; box-shadow: 0 1px 2px rgb(0 0 0 / 0.06); font-variant-numeric: tabular-nums; }
+th, td { border: 1px solid var(--line); padding: 0.3rem 0.65rem; vertical-align: top; }
+thead th { text-align: center; background: #fafafa; }
+tbody th[scope="row"] { text-align: left; background: #fafafa; white-space: nowrap; }
+td.num { text-align: right; }
+tbody tr:nth-child(even) { background: #fafafa; }
+p.sizes { color: var(--muted); margin: 0.25rem 0 1rem; }
+td.move { white-space: nowrap; font-weight: 600; }
+td.scheme { min-width: 10rem; }
+.phrase { margin: 0.1em 0; }
+.frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0.1em 0.25em; }
+.frac .zone { border-bottom: 1.5px solid currentColor; padding: 0 0.4em; font-weight: 600; }
+.frac .reps { padding: 0 0.4em; }
+.rep { font-weight: 600; }
+"""
+
+
+def to_html(plan):
+    headings: list = []
     for m in plan["mesos"]:
-        body += [f"## {m['name']} ({m['phase']}) - {m['vol']} lifts", ""]
-        body += group_table(m["groups"]) + [""]
-        body += ["Week sizes: " + ", ".join(str(w["vol"]) for w in m["weeks"]), ""]
+        headings.append((2, f"{m['name']} ({m['phase']})"))
         for wi, w in enumerate(m["weeks"]):
-            body += [f"### Week {wi + 1} - {w['vol']} lifts", ""]
-            body += week_table(w["groups"], w["bins"]) + [""]
-            body += [
-                "Day sizes: " + ", ".join(str(s["vol"]) for s in w["sessions"]),
-                "",
-            ]
-            for i, s in enumerate(w["sessions"], 1):
-                body += [f"#### Session {i} - {s['vol']} lifts", ""]
-                body += scheme_lines(s) + [""]
-    contents = ["## Contents", ""]
-    for level, title, anchor in toc_entries(body):
-        contents.append(("  " if level == 3 else "") + f"- [{title}](#{anchor})")
-    contents.append("")
-    return "\n".join(lines + contents + body)
+            headings.append((3, f"Week {wi + 1} - {w['vol']} lifts"))
+    for m in plan["mesos"]:
+        headings.append((2, f"{m['name']} ({m['phase']}) - training plan"))
+    anchors = iter(anchor for _, _, anchor in toc_entries(headings))
+    body = ['<section id="macrocycle">', "<h1>Macrocycle</h1>"]
+    body.append(group_table(plan["groups"]))
+    body.append(
+        '<p class="sizes">Meso sizes: '
+        + ", ".join(str(m["vol"]) for m in plan["mesos"])
+        + "</p>"
+    )
+    body.append("</section>")
+    body.append('<section id="mesocycles">')
+    body.append("<h1>Mesocycles</h1>")
+    body.append(meso_table(plan["mesos"]))
+    for m in plan["mesos"]:
+        body.append(
+            f'<p class="sizes">{escape(m["name"])} ({m["phase"]}) - Week sizes: '
+            + ", ".join(str(w["vol"]) for w in m["weeks"])
+            + "</p>"
+        )
+    body.append("</section>")
+    body.append('<section id="microcycles">')
+    body.append("<h1>Microcycles</h1>")
+    for m in plan["mesos"]:
+        title = f"{m['name']} ({m['phase']})"
+        body.append(f'<h2 id="{next(anchors)}">{escape(title)}</h2>')
+        for wi, w in enumerate(m["weeks"]):
+            wtitle = f"Week {wi + 1} - {w['vol']} lifts"
+            body.append(f'<h3 id="{next(anchors)}">{escape(wtitle)}</h3>')
+            body.append(
+                '<div class="scroll">' + week_table(w["groups"], w["bins"]) + "</div>"
+            )
+    body.append("</section>")
+    body.append('<section id="training-plan">')
+    body.append("<h1>Training Plan</h1>")
+    for m in plan["mesos"]:
+        title = f"{m['name']} ({m['phase']}) - training plan"
+        body.append(f'<h2 id="{next(anchors)}">{escape(title)}</h2>')
+        body.append('<div class="scroll">' + training_table(m) + "</div>")
+    body.append("</section>")
+    toc = ['<nav class="toc">', "<h2>Contents</h2>", "<ul>"]
+    open_sub = False
+    started = False
+    for level, title, anchor in toc_entries(headings):
+        link = f'<a href="#{anchor}">{escape(title)}</a>'
+        if level == 2:
+            if started:
+                if open_sub:
+                    toc.append("</ul>")
+                    open_sub = False
+                toc.append("</li>")
+            toc.append(f"<li>{link}")
+            started = True
+        else:
+            if not open_sub:
+                toc.append("<ul>")
+                open_sub = True
+            toc.append(f"<li>{link}</li>")
+    if open_sub:
+        toc.append("</ul>")
+    if started:
+        toc.append("</li>")
+    toc += ["</ul>", "</nav>"]
+    return (
+        '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+        '<meta charset="utf-8">\n'
+        f"<title>{escape(plan['macro'])}</title>\n<style>{STYLE}</style>\n"
+        "</head>\n<body>\n<main>\n"
+        f"<header><h1>{escape(plan['macro'])}</h1></header>\n"
+        + "\n".join(toc)
+        + "\n"
+        + "\n".join(body)
+        + "\n</main>\n</body>\n</html>\n"
+    )
 
 
 def write_outputs(path="outputs"):
     path = Path(path)
     path.mkdir(exist_ok=True)
     for cls in CLASSES:
-        (path / f"{cls}.md").write_text(to_markdown(build_plan(cls)))
+        (path / f"{cls}.html").write_text(to_html(build_plan(cls)))
 
 
 def main():

@@ -40,15 +40,16 @@ from wlgen import (
     pair_fill,
     phrases,
     scheme_cost,
-    scheme_lines,
+    scheme_entries,
     session_prior,
     sessions,
     sets_text,
     shift,
     slot_match,
     spread,
-    to_markdown,
+    to_html,
     toc_entries,
+    training_table,
     week_bin_lifts,
     week_bins,
     week_quota,
@@ -280,19 +281,49 @@ def test_movements_use_template_floor():
         assert all(0 < v < MIN_DOSE for v in tiny)
 
 
-def test_markdown_sessions():
+def test_training_plan_tables():
     plan = build_plan("I")
-    plist = [s for m in plan["mesos"] for w in m["weeks"] for s in w["sessions"]]
-    md = to_markdown(plan)
-    lines = md.splitlines()
-    assert sum(1 for line in lines if line.startswith("#### Session ")) == len(plist)
-    chunks = md.split("\n#### ")[1:]
-    assert len(chunks) == len(plist)
-    assert not any("| Movement |" in line for line in lines)
-    first = plist[0]
-    assert f"#### Session 1 - {first['vol']} lifts" in lines
-    for line in scheme_lines(first):
-        assert line in chunks[0].splitlines()
+    html = to_html(plan)
+    assert "#### Session " not in html
+    assert "Day sizes:" not in html
+    assert html.count('<table class="plan">') == 5
+    # every session's slots land in its training-plan rows: each slot
+    # gets one row with a movement cell and a scheme cell per week
+    for m in plan["mesos"]:
+        table = training_table(m)
+        assert '<th scope="col" colspan="2">Week 1</th>' in table
+        rows = re.findall(r"<tr>(.*?)</tr>", table, re.DOTALL)
+        body = rows[1:]
+        idx = 0
+        for si in range(max(len(w["sessions"]) for w in m["weeks"])):
+            present = [w for w in m["weeks"] if si < len(w["sessions"])]
+            nslots = max(len(scheme_entries(w["sessions"][si])) for w in present)
+            for k in range(nslots):
+                cells = re.findall(r"<(?:td|th)[^>]*>(.*?)</(?:td|th)>", body[idx])
+                if k == 0:
+                    assert cells[0] == str(si + 1)
+                    assert f'rowspan="{nslots}"' in body[idx]
+                    base = 1
+                else:
+                    base = 0
+                for wi, w in enumerate(m["weeks"]):
+                    if si >= len(w["sessions"]):
+                        assert cells[base + 2 * wi] == ""
+                        assert cells[base + 2 * wi + 1] == ""
+                        continue
+                    entries = scheme_entries(w["sessions"][si])
+                    if k >= len(entries):
+                        assert cells[base + 2 * wi] == ""
+                        assert cells[base + 2 * wi + 1] == ""
+                        continue
+                    movement, seq = entries[k]
+                    assert cells[base + 2 * wi] == movement
+                    assert cells[base + 2 * wi + 1] == "".join(
+                        f'<div class="phrase">{p}</div>'
+                        for p in wlgen._render_html(wlgen._parse(tuple(seq))[2])
+                    )
+                idx += 1
+        assert idx == len(body)
 
 
 def test_fill_exact_and_grouped():
@@ -368,7 +399,7 @@ def test_scheme_sums_and_caps():
                                 )
 
 
-def test_scheme_lines_example():
+def test_scheme_entries_example():
     s = {
         "style": "ramp",
         "movements": {
@@ -379,8 +410,14 @@ def test_scheme_lines_example():
             "Other Squat": [3, 7, 7, 8, 0],
         },
     }
-    lines = scheme_lines(s)
-    assert lines and all(line.startswith("- ") for line in lines)
+    entries = scheme_entries(s)
+    assert [m for m, _ in entries] == [
+        "Snatch",
+        "Other Clean+Other Jerk",
+        "Squat",
+        "Other Squat",
+    ]
+    assert all(seq for _, seq in entries)
 
 
 def test_prune_doses_keeps_sessions_matchable():
@@ -404,7 +441,84 @@ def test_prune_doses_keeps_sessions_matchable():
     assert pruned[idx["Other Snatch"]][0] == 1
 
 
-def test_scheme_lines_follow_slot_order():
+def test_render_html():
+    assert wlgen._render_html((("group", 80, ((3, 2), (2, 1))),)) == (
+        '<span class="frac"><span class="zone">80%</span>'
+        '<span class="reps">3*2,2</span></span>',
+    )
+    assert wlgen._render_html((("group", 70, ((1, 1),)),)) == (
+        '<span class="frac"><span class="zone">70%</span>'
+        '<span class="reps">1</span></span>',
+    )
+    assert wlgen._render_html(
+        (
+            (
+                "wave",
+                3,
+                (
+                    ("group", 70, ((3, 1),)),
+                    ("group", 80, ((2, 1),)),
+                ),
+            ),
+        )
+    ) == (
+        '<span class="rep">3×</span>('
+        '<span class="frac"><span class="zone">70%</span>'
+        '<span class="reps">3</span></span>, '
+        '<span class="frac"><span class="zone">80%</span>'
+        '<span class="reps">2</span></span>)',
+    )
+
+
+def test_training_table_exact():
+    meso = {
+        "name": "Prep 4-2",
+        "phase": "prep",
+        "weeks": [
+            {
+                "vol": 10,
+                "sessions": [
+                    {
+                        "movements": {"Clean": [0, 2, 0, 0, 0]},
+                        "pairs": {
+                            ("Clean", "Jerk"): (
+                                "Clean",
+                                (0, 2, 0, 0, 0),
+                                (0, 2, 0, 0, 0),
+                            )
+                        },
+                    },
+                    {"movements": {"Squat": [0, 1, 0, 0, 0]}, "pairs": {}},
+                ],
+            },
+            {
+                "vol": 12,
+                "sessions": [
+                    {"movements": {"Squat": [0, 3, 0, 0, 0]}, "pairs": {}},
+                ],
+            },
+        ],
+    }
+    frac = (
+        '<span class="frac"><span class="zone">{}%</span>'
+        '<span class="reps">{}</span></span>'
+    )
+    cj = frac.format(70, "2+2")
+    sq3 = frac.format(60, "3")
+    sq1 = frac.format(60, "1")
+    assert training_table(meso) == (
+        '<table class="plan">\n'
+        "<thead><tr><th></th>"
+        '<th scope="col" colspan="2">Week 1</th>'
+        '<th scope="col" colspan="2">Week 2</th></tr></thead>\n'
+        "<tbody>\n"
+        f'<tr><th scope="row" rowspan="1">1</th><td class="move">Clean+Jerk</td><td class="scheme"><div class="phrase">{cj}</div></td><td class="move">Squat</td><td class="scheme"><div class="phrase">{sq3}</div></td></tr>\n'
+        f'<tr><th scope="row" rowspan="1">2</th><td class="move">Squat</td><td class="scheme"><div class="phrase">{sq1}</div></td><td></td><td></td></tr>\n'
+        "</tbody>\n</table>"
+    )
+
+
+def test_scheme_entries_follow_slot_order():
     s = {
         "movements": {
             "Other Clean": [0, 2, 0, 0, 0],
@@ -423,12 +537,12 @@ def test_scheme_lines_follow_slot_order():
             ),
         },
     }
-    lines = scheme_lines(s)
-    assert [line.split(":")[0] for line in lines] == [
-        "- SnPull+Snatch",
-        "- Other Clean+Other Jerk",
-        "- Squat",
-        "- Fundamental",
+    entries = scheme_entries(s)
+    assert [movement for movement, _ in entries] == [
+        "SnPull+Snatch",
+        "Other Clean+Other Jerk",
+        "Squat",
+        "Fundamental",
     ]
 
 
@@ -439,10 +553,10 @@ def _snatch_counts():
 def test_phrases_and_compact_text():
     wave = tuple([(70, 3), (80, 2)] * 3)
     assert phrases(wave) == 2
-    assert compact_text(wave) == "3x(3@70%, 2@80%)"
+    assert compact_text(wave) == "3*(70%/3, 80%/2)"
     same_zone = ((80, 2), (80, 2), (80, 2), (80, 1))
     assert phrases(same_zone) == 2
-    assert compact_text(same_zone) == "3x2,1@80%"
+    assert compact_text(same_zone) == "80%/2*3,1"
 
 
 def test_scheme_cost_run_penalty_visited():
@@ -470,7 +584,7 @@ def test_beam_order_warmup_and_no_skip():
 
 def test_beam_prefers_separated_rep_change():
     _ordered, text = best_scheme(_snatch_counts(), "Snatch")
-    assert text == "2@60%, 2x2@70%, 1@80%, 3x(3@70%, 2@80%)"
+    assert text == "60%/2, 70%/2*2, 3*(80%/2, 70%/3), 80%/1"
 
 
 def test_beam_cj_ratios_legal():
@@ -514,7 +628,7 @@ def test_mixed_pair_scheme_ratios_legal():
     for z, (p, q) in ordered:
         g = gcd(p, q)
         assert ratio_ok(p // g, q // g, z)
-    assert "@" in text
+    assert "%" in text
 
 
 def test_schedules_keep_each_side_down_as_weight_rises():
@@ -572,32 +686,37 @@ def test_group_totals():
         assert sum(m["groups"].values()) == m["vol"]
 
 
-def test_markdown_tables_at_every_level():
-    md = to_markdown(build_plan("I"))
-    assert md.startswith("# Soviet year (I)")
-    assert "| Group | Lifts |" in md.split("\n## ")[0]
-    sections = md.split("\n## ")[1:]
-    assert sections[0].startswith("Contents")
-    for chunk in sections[1:]:
-        assert "| Group | Lifts |" in chunk
-    micro = md.split("\n### ")[1:]
-    assert len(micro) == 20
-    for chunk in micro:
-        assert "| Group | Lifts |" in chunk
+def test_html_tables_at_every_level():
+    html = to_html(build_plan("I"))
+    assert html.startswith("<!DOCTYPE html>")
+    assert "<title>Soviet year (I)</title>" in html
+    for section in ("macrocycle", "mesocycles", "microcycles", "training-plan"):
+        assert f'<section id="{section}">' in html
+    macro = html.split('<section id="mesocycles">')[0]
+    assert '<th scope="col">Group</th><th scope="col">Lifts</th>' in macro
+    assert "Meso sizes:" in macro
+    assert "Prep 4-2 (prep)</th>" in html
+    micro = html.split('<section id="training-plan">')[0].split(
+        '<section id="microcycles">'
+    )[1]
+    assert micro.count("<h3") == 20
+    for chunk in micro.split("<h3")[1:]:
+        assert '<th scope="col">Group</th>' in chunk
+    plan = html.split('<section id="training-plan">')[1]
+    assert plan.count('<table class="plan">') == 5
 
 
-def test_markdown_toc():
-    md = to_markdown(build_plan("I"))
-    assert "## Contents" in md
-    assert "- [Prep 4-2 (prep) - 1151 lifts](#prep-4-2-prep---1151-lifts)" in md
-    assert "  - [Week 1 - 242 lifts](#week-1---242-lifts)" in md
-    assert "- [Comp 2 (comp) - 863 lifts](#comp-2-comp---863-lifts)" in md
-    assert md.count("\n- [") == 5
-    assert md.count("\n  - [") == 20
+def test_html_toc():
+    html = to_html(build_plan("I"))
+    assert '<nav class="toc">' in html
+    assert 'href="#prep-4-2-prep"' in html
+    assert 'href="#week-1---242-lifts"' in html
+    assert 'href="#prep-4-2-prep---training-plan"' in html
+    assert html.count("<li>") == 30
 
 
 def test_toc_anchors_disambiguate_duplicates():
-    headings = ["## A (x) - 1 lifts", "### Week 1 - 2 lifts", "## A (x) - 1 lifts"]
+    headings = [(2, "A (x) - 1 lifts"), (3, "Week 1 - 2 lifts"), (2, "A (x) - 1 lifts")]
     assert toc_entries(headings) == [
         (2, "A (x) - 1 lifts", "a-x---1-lifts"),
         (3, "Week 1 - 2 lifts", "week-1---2-lifts"),
@@ -605,60 +724,60 @@ def test_toc_anchors_disambiguate_duplicates():
     ]
 
 
-def test_markdown_tables_have_matching_columns():
-    def cells(row):
-        return [c.strip() for c in row.strip("|").split("|")]
-
+def test_html_tags_balance():
     for cls in ANNUALS:
-        lines = to_markdown(build_plan(cls)).splitlines()
-        for i, line in enumerate(lines):
-            if not line.startswith("|") or i + 1 >= len(lines):
-                continue
-            if not re.fullmatch(r"\|[-: |]+\|", lines[i + 1]):
-                continue
-            header = cells(line)
-            assert len(cells(lines[i + 1])) == len(header), f"{cls} line {i + 1}"
-            j = i + 2
-            while j < len(lines) and lines[j].startswith("|"):
-                assert len(cells(lines[j])) == len(header), f"{cls} line {j + 1}"
-                j += 1
+        html = to_html(build_plan(cls))
+        for tag in (
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "th",
+            "td",
+            "div",
+            "span",
+            "ul",
+            "li",
+            "section",
+            "nav",
+        ):
+            opens = len(re.findall(rf"<{tag}(?=[\s>/])", html))
+            assert opens == html.count(f"</{tag}>"), f"{cls} <{tag}>"
 
 
 def test_sizes_at_every_level():
-    md = to_markdown(build_plan("I"))
-    macro = md.split("\n## ")[0]
-    assert "Meso sizes:" in macro
-    assert "Day sizes:" not in macro
-    assert "Meso sizes: 1151, 1266, 1438, 1035, 863" in macro
-    chunk = md.split("\n## ")[2]
-    rows = [line for line in chunk.splitlines() if line.startswith("Week sizes:")]
-    assert rows == ["Week sizes: 242, 322, 196, 391"]
-    weeks = chunk.split("\n### ")[1:]
-    assert len(weeks) == 4
-    day = [line for line in weeks[0].splitlines() if line.startswith("Day sizes:")]
-    assert day == ["Day sizes: 49, 145, 48"]
+    html = to_html(build_plan("I"))
+    assert "Meso sizes: 1151, 1266, 1438, 1035, 863" in html
+    assert "Day sizes:" not in html
+    assert html.count('class="sizes"') == 6
+    assert "Prep 4-2 (prep) - Week sizes: 242, 322, 196, 391" in html
+    assert html.count("<h3") == 20
 
 
 def test_write_outputs(tmp_path):
     write_outputs(tmp_path)
-    assert sorted(f.name for f in tmp_path.glob("*.md")) == [
-        "CMS.md",
-        "I.md",
-        "II.md",
-        "III.md",
-        "MS.md",
+    assert sorted(f.name for f in tmp_path.glob("*.html")) == [
+        "CMS.html",
+        "I.html",
+        "II.html",
+        "III.html",
+        "MS.html",
     ]
-    assert tmp_path.joinpath("I.md").read_text().startswith("# Soviet year (I)")
+    assert tmp_path.joinpath("I.html").read_text().startswith("<!DOCTYPE html>")
 
 
-def test_markdown():
-    md = to_markdown(build_plan("MS"))
-    assert "# Soviet year (MS)" in md
-    assert "## Prep 4-2" in md
-    assert "### Week 1" in md
-    assert "| Snatch |" in md
-    assert "Day sizes:" in md
-    assert "| Other Squat |" in to_markdown(build_plan("III"))
+def test_html():
+    html = to_html(build_plan("MS"))
+    assert "<title>Soviet year (MS)</title>" in html
+    assert 'id="microcycles"' in html
+    assert 'id="training-plan"' in html
+    assert ">Prep 4-2 (prep)</h2>" in html
+    assert ">Week 1 - 290 lifts<" in html
+    assert ">Snatch<" in html
+    assert 'class="frac"' in html
+    assert "@" not in html
+    assert "Day sizes:" not in html
+    assert ">Other Squat<" in to_html(build_plan("III"))
 
 
 # Takano yearly ARI per bin table (ch. 8/11/12/13); fund tables are approximate
@@ -804,16 +923,28 @@ def test_week_bin_lifts():
                         assert sum(week_bin_lifts(cls, mi, wi, g, v)) == v
 
 
-def test_markdown_week_bins():
-    header = "| Group | Lifts | 50% | 60% | 70% | 80% | 90% | 100% | 110% | ARI |"
-    weeks = to_markdown(build_plan("I")).split("\n### ")[1:]
+def test_html_week_bins():
+    header = "".join(
+        f'<th scope="col">{h}</th>'
+        for h in [
+            "Group",
+            "Lifts",
+            "50%",
+            "60%",
+            "70%",
+            "80%",
+            "90%",
+            "100%",
+            "110%",
+            "ARI",
+        ]
+    )
+    weeks = to_html(build_plan("I")).split("<h3")[1:]
     assert len(weeks) == 20
     assert all(header in chunk for chunk in weeks)
-    snatch = next(
-        line for line in weeks[-1].splitlines() if line.startswith("| Snatch |")
-    )
-    cells = [c.strip() for c in snatch.split("|")]
-    assert cells[7] == "" and cells[8] == ""  # 90% and 100% empty in comp taper
+    row = weeks[-1].split('<th scope="row">Snatch</th>')[1].split("</tr>")[0]
+    cells = re.findall(r"<td[^>]*>(.*?)</td>", row)
+    assert cells[5] == "" and cells[6] == ""  # 90% and 100% empty in comp taper
 
 
 def test_bounded_round():

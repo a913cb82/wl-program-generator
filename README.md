@@ -1,6 +1,6 @@
 # WL Program Generator
 
-Generates a 20-week Soviet-style Olympic weightlifting macrocycle (one training block) from an annual lift target, ending at a competition. It splits volume first, then intensity, then sets, and writes Markdown. Deterministic, standard library only.
+Generates a 20-week Soviet-style Olympic weightlifting macrocycle (one training block) from an annual lift target, ending at a competition. It splits volume first, then intensity, then sets, and writes a styled HTML report per class. Deterministic, standard library only.
 
 ## Run
 
@@ -18,9 +18,9 @@ Get uv from <https://docs.astral.sh/uv/>.
 Or use it as a library:
 
 ```python
-from wlgen import build_plan, to_markdown
+from wlgen import build_plan, to_html
 
-text = to_markdown(build_plan("MS"))
+text = to_html(build_plan("MS"))
 ```
 
 `build_plan` caches its result per class.
@@ -31,32 +31,34 @@ Five files, one per competition class, III (entry) to MS (top):
 
 | File | Class | Annual lifts |
 |------|-------|-------------:|
-| `outputs/III.md` | Class III | 12000 |
-| `outputs/II.md` | Class II | 12000 |
-| `outputs/I.md` | Class I | 15000 |
-| `outputs/CMS.md` | CMS | 15000 |
-| `outputs/MS.md` | MS | 18000 |
+| `outputs/III.html` | Class III | 12000 |
+| `outputs/II.html` | Class II | 12000 |
+| `outputs/I.html` | Class I | 15000 |
+| `outputs/CMS.html` | CMS | 15000 |
+| `outputs/MS.html` | MS | 18000 |
+
+Open one in a browser. Each file is self-contained (inline CSS, no scripts).
 
 A plan has four parts:
 
-- The macrocycle total.
-- A group table per meso, with the weekly sizes.
-- A week table with lifts per group and zone.
-- One bullet list per session.
+- The macrocycle total, plus one group table with the meso sizes.
+- A mesocycles table (one volume column per meso), with the weekly sizes.
+- A week table with lifts per group and zone, per microcycle.
+- A training plan table per mesocycle: weeks go across, sessions and slots go down.
 
-Session bullets give exact sets, reps and zone:
+Each training plan slot gets one row with two columns per week: the movement name, then its scheme with the zone over the reps, fraction-style (a real stacked fraction with a vinculum, e.g. 80% over 1+2):
 
 ```
-- Snatch: 3x3,2x2@70%
-- SnPull+Snatch: 3+2@70%, 4x(3+2@70%, 2+1@80%)
+| | Week 1 | |
+| 1 | SnPull+Snatch | 80% / 1+2 |
 ```
 
-`3x3,2x2@70%` is three sets of three and two sets of two in the 70% zone. `3+2` is a complex (here a snatch pull paired with a snatch). `4x(...)` is a repeated wave.
+`80%/1+2` is one set of one pull plus two snatches at 80%. `70%/3*2,2` is two sets of three then one set of two at 70%. `4*(70%/3+2, 80%/2+1)` repeats a two-zone complex block four times. Sets of one omit the `*1`.
 
 ## What's in the repo
 
 - `src/wlconfig.py` — all data and tuning: ratios, templates, bins, search widths. The steps below name its tables.
-- `src/wlgen.py` — the generator and the Markdown renderer.
+- `src/wlgen.py` — the generator and the HTML renderer.
 - `tests/test_wlgen.py` — the test suite.
 - `outputs/` — the five generated plans.
 - `pyproject.toml` — packaging, test, lint and type-check config.
@@ -93,7 +95,7 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 
 - A session orders its sets like a warm-up. Zones first appear from light to heavy. Each jump up goes to the next zone in the session. Reps stay flat or drop as weight rises. A drop back down can add reps.
 - Two paired movements sharing a day follow a fixed rep ratio (eg 2 pulls per snatch, 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises. Pair volume counts toward both movements' bins.
-- The tool packs each movement's reps at a zone into as few sets as possible (`3x3,2x2@70%`), using the zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
+- The tool packs each movement's reps at a zone into as few sets as possible (`70%/3*2,2`), using the zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
 
 ## Guarantees
 
