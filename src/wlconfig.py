@@ -1,5 +1,6 @@
 """Tunable data and rules for the WL program generator."""
 
+import os as _os
 from typing import Any, Dict
 
 GROUPS = [
@@ -35,6 +36,18 @@ VARIANTS = {
 PATTERNS = {n: patterns[0] for n, patterns in VARIANTS.items()}
 SIZE_WEIGHT = {"S": 1, "M": 2, "L": 3}
 CAP = 150  # max lifts in one day
+
+# How a week is cut into days. "templates" walks the Soviet shape table;
+# "demand" computes the day count from the week's Prilepin demand and cuts
+# the volumes by a heavy/light rhythm instead.
+DAY_RULE = _os.environ.get("WLGEN_RULE", "templates")
+# Tuned on the real book: five session-equivalents of Prilepin score per day
+# is the sweet spot. Lower starves the light days (4 was infeasible), higher
+# concentrates the week (6 gave a three-day median and a 4.13 worst dose).
+DAY_T = float(_os.environ.get("WLGEN_T", "5"))
+# Heavy days run three times the light ones, every other day.
+DAY_C = float(_os.environ.get("WLGEN_C", "3"))  # 0 means scale with the week
+DAY_CMAX = float(_os.environ.get("WLGEN_CMAX", "3"))
 
 TOL = 0.2  # a microcycle's group targets may sit +/- this far from the nominal split
 CAP_DEV = 0.1  # ... and its total deviation may not exceed this share of volume

@@ -3,7 +3,7 @@ import re
 from concurrent.futures import ProcessPoolExecutor
 from functools import cache
 from html import escape
-from math import gcd
+from math import ceil, gcd
 from pathlib import Path
 
 from wlconfig import (
@@ -20,6 +20,10 @@ from wlconfig import (
     CLASSES,
     COMPLEXITY_COST,
     DAY,
+    DAY_C,
+    DAY_CMAX,
+    DAY_RULE,
+    DAY_T,
     EPS,
     FAN,
     FINISH_SCAN,
@@ -841,6 +845,52 @@ def day_split(vol, pattern):
     return vols, [{"size": s, "vol": v} for s, v in zip(pattern, cap(vols, weights))]
 
 
+def week_demand(targets, cls, mi, wi):
+    """Weekly Prilepin score per group: the dose each movement must place."""
+    out = {}
+    for g in GROUPS:
+        n = targets.get(g, 0)
+        if not n:
+            continue
+        lo = BIN_ZONES[BIN_GROUP[g]]
+        counts = week_bin_lifts(cls, mi, wi, g, n)
+        out[g] = prilepin_score({lo[z]: c for z, c in enumerate(counts) if c})
+    return out
+
+
+def demand_days(demand, vol):
+    """Days a week needs: one session of capacity per day for the heaviest
+    movement, one day's worth of total work for the rest, and never more
+    volume than the cap allows on one day."""
+    if not demand:
+        return 3
+    need = 3
+    for g, s in demand.items():
+        tier = "classic" if BIN_GROUP[g] in PRILEPIN_CLASSIC else "strength"
+        need = max(need, ceil(s / PRILEPIN_SOFT_AT[tier]))
+    need = max(need, ceil(sum(demand.values()) / DAY_T), ceil(vol / CAP))
+    return min(6, need)
+
+
+def rhythm(n, demand):
+    """Heavy days every other day, never adjacent. Contrast scales with the
+    week's demand when DAY_C is 0, else it is fixed."""
+    c = DAY_C
+    if c <= 0:
+        total = sum(demand.values())
+        c = min(DAY_CMAX, 2.0 + 1.0 * min(1.0, total / 29.0))
+    return [c if j % 2 else 1.0 for j in range(n)]
+
+
+def demand_split(vol, n, demand):
+    weights = rhythm(n, demand)
+    vols = cap(allocate(vol, weights), weights)
+    return vols, [
+        {"size": "L" if w == max(weights) else "S", "vol": v}
+        for w, v in zip(weights, vols)
+    ]
+
+
 def sessions(vol):
     for n in (3, 4, 5, 6):
         vols, session_list = day_split(vol, PATTERNS[n])
@@ -936,11 +986,21 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
     are unaffected."""
     best = None
     best_key = None
-    variants = [
-        (n, pattern) for n in range(len(sessions(vol)), 7) for pattern in VARIANTS[n]
-    ]
+    if DAY_RULE == "demand":
+        demand = week_demand(targets, cls, mi, wi)
+        variants = [(n, rhythm(n, demand)) for n in range(demand_days(demand, vol), 7)]
+    else:
+        demand = None
+        variants = [
+            (n, pattern)
+            for n in range(len(sessions(vol)), 7)
+            for pattern in VARIANTS[n]
+        ]
     for idx, (n, pattern) in enumerate(variants):
-        vols, session_list = day_split(vol, pattern)
+        if DAY_RULE == "demand":
+            vols, session_list = demand_split(vol, n, demand)
+        else:
+            vols, session_list = day_split(vol, pattern)
         if max(vols) > CAP and n != 6:
             continue
         attempt = dict(targets)
