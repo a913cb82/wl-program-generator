@@ -46,7 +46,10 @@ REPS = {
     "Snatch": {60: (3, 2), 70: (3, 2), 80: (2, 1), 90: (1,), 100: (1,)},
     "CJ": {60: (3, 2), 70: (3, 2), 80: (2, 1), 90: (1,), 100: (1,)},
     "Squat": {
-        50: (5, 4, 3, 2),
+        # Six is in the light ladder: a squat total that is a multiple of six
+        # then fits in uniform sets, so the ascent has one rep count to carry
+        # rather than a 2 or 3 left over that caps every zone above it.
+        50: (6, 5, 4, 3, 2),
         60: (5, 4, 3, 2),
         70: (5, 4, 3, 2),
         80: (4, 3, 2),

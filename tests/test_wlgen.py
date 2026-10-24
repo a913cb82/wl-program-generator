@@ -30,6 +30,7 @@ from wlgen import (
     bounded_round,
     build_plan,
     compact_text,
+    complexity,
     cover_session,
     expand,
     fill,
@@ -49,6 +50,7 @@ from wlgen import (
     single_zones,
     slot_match,
     spread,
+    stray,
     to_html,
     toc_entries,
     training_table,
@@ -1080,6 +1082,18 @@ def test_write_outputs(tmp_path):
         "MS.html",
     ]
     assert tmp_path.joinpath("I.html").read_text().startswith("<!DOCTYPE html>")
+
+
+def test_light_squat_ladder_reaches_six():
+    # A 12-rep total at 50% is two sets of six if the ladder allows it, and
+    # two sets of five leaves a 2 behind that caps every zone above it. That
+    # single missing size forced the classic 55-rep squat slot into 18 sets.
+    assert 6 in REPS["Squat"][50]
+    seq, _ = best_scheme((12, 15, 14, 7, 7), "Squat")
+    assert sum(r for _, r in seq) == 55
+    assert stray(seq, "Squat") == 0
+    assert complexity(seq) <= 13
+    assert len(seq) <= 15
 
 
 def test_parallel_render_matches_serial():
