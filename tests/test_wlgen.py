@@ -15,6 +15,8 @@ from wlconfig import (
     MIN_DOSE,
     PAIRED_GROUPS,
     PATTERNS,
+    PRILEPIN_HARD,
+    PRILEPIN_SOFT,
     REPS,
     SCHEDULES,
     TOL,
@@ -42,6 +44,9 @@ from wlgen import (
     micro_table,
     pair_choices,
     pair_fill,
+    prilepin_capacity,
+    prilepin_excess,
+    prilepin_score,
     scheme_cost,
     scheme_entries,
     session_prior,
@@ -1113,6 +1118,39 @@ def test_light_ladders_match_the_prescription():
     assert fill(12, REPS["Squat"][50]) == [12]
     # Eighteen cannot be one set, so it splits evenly rather than 12 + 6.
     assert fill(18, REPS["Squat"][50]) == [9, 9]
+
+
+def test_prilepin_capacity_and_score():
+    # Capacity is the top of Prilepin's range for the band, interpolated
+    # between the anchors and held flat outside them.
+    assert prilepin_capacity(50) == 30
+    assert prilepin_capacity(60) == 30
+    assert prilepin_capacity(65) == 27
+    assert prilepin_capacity(70) == 24
+    assert prilepin_capacity(80) == 20
+    assert prilepin_capacity(90) == 10
+    assert prilepin_capacity(100) == 4
+    assert prilepin_capacity(110) == 4
+    # The 55-rep squat slot: 12/30 + 15/30 + 14/24 + 7/20 + 7/10.
+    dose = {50: 12, 60: 15, 70: 14, 80: 7, 90: 7}
+    assert abs(prilepin_score(dose) - 2.5333) < 1e-3
+
+
+def test_prilepin_penalty_tiers_widen_for_strength_lifts():
+    # Nothing is charged up to one session's worth of Prilepin capacity.
+    for family in ("Snatch", "Squat"):
+        assert prilepin_excess(1.0, family) == 0
+        assert prilepin_excess(0.7, family) == 0
+    # Both tiers charge the soft rate from 1.0 to their soft ceiling.
+    assert prilepin_excess(1.5, "Snatch") == PRILEPIN_SOFT * 0.5
+    assert prilepin_excess(1.5, "Squat") == PRILEPIN_SOFT * 0.5
+    # Above the ceiling the classic lifts climb at the hard rate, so half a
+    # session of excess costs the hard rate twice over compared to soft.
+    assert prilepin_excess(2.0, "Snatch") == PRILEPIN_SOFT * 0.5 + PRILEPIN_HARD * 0.5
+    assert prilepin_excess(2.0, "Snatch") > prilepin_excess(1.5, "Snatch")
+    # A squat at 2.0 is at the soft ceiling, so it only pays the soft rate.
+    assert prilepin_excess(2.0, "Squat") == PRILEPIN_SOFT * 1.0
+    assert prilepin_excess(2.0, "Squat") < prilepin_excess(2.0, "Snatch")
 
 
 def test_big_squat_slot_stays_compact():

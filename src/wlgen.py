@@ -32,6 +32,11 @@ from wlconfig import (
     PAIRED_GROUPS,
     PAIRS,
     PATTERNS,
+    PRILEPIN_CAPACITY,
+    PRILEPIN_CLASSIC,
+    PRILEPIN_HARD,
+    PRILEPIN_SOFT,
+    PRILEPIN_SOFT_AT,
     REPS,
     SCHEDULES,
     SIZE_WEIGHT,
@@ -1775,6 +1780,65 @@ def pref_min(family, zlo):
     single there is the target rather than a fallback."""
     sizes = REPS[family][zlo]
     return min((s for s in sizes if s > 1), default=1)
+
+
+def prilepin_capacity(zlo):
+    """Reps a session may spend at one intensity before it is past the top
+    of Prilepin's range for that band. Interpolated, flat outside it."""
+    keys = sorted(PRILEPIN_CAPACITY)
+    if zlo <= keys[0]:
+        return PRILEPIN_CAPACITY[keys[0]]
+    if zlo >= keys[-1]:
+        return PRILEPIN_CAPACITY[keys[-1]]
+    lo = max(k for k in keys if k <= zlo)
+    hi = min(k for k in keys if k > zlo)
+    f = (zlo - lo) / (hi - lo)
+    return PRILEPIN_CAPACITY[lo] + f * (PRILEPIN_CAPACITY[hi] - PRILEPIN_CAPACITY[lo])
+
+
+def prilepin_score(dose):
+    """One session's reps at each zone as a share of Prilepin's capacity."""
+    return sum(n / prilepin_capacity(z) for z, n in dose.items())
+
+
+def prilepin_excess(score, family):
+    """Cost of a session dose past what the chart allows, two rates: the
+    soft one from one session's worth to the tolerance, the hard one past
+    it."""
+    tier = "classic" if family in PRILEPIN_CLASSIC else "strength"
+    if score <= 1.0:
+        return 0.0
+    soft_at = PRILEPIN_SOFT_AT[tier]
+    return PRILEPIN_SOFT * (min(score, soft_at) - 1.0) + PRILEPIN_HARD * max(
+        0.0, score - soft_at
+    )
+
+
+def session_dose(s):
+    """Lifted reps per zone for each movement in one session, with paired
+    work counted against both members as it is for the volume bins."""
+    doses = {}
+    for g, counts in s["movements"].items():
+        lo = BIN_ZONES[BIN_GROUP[g]]
+        d = {lo[z]: n for z, n in enumerate(counts) if n}
+        if d:
+            doses[g] = d
+    for (a, b), (ref, va, vb) in s.get("pairs", {}).items():
+        lo = BIN_ZONES[BIN_GROUP[ref]]
+        for g, vec in ((a, va), (b, vb)):
+            d = doses.setdefault(g, {})
+            for z, n in enumerate(vec):
+                if n:
+                    d[lo[z]] = d.get(lo[z], 0) + n
+    return doses
+
+
+def prilepin_penalty(planned):
+    total = 0.0
+    for s in planned:
+        for g, dose in session_dose(s).items():
+            total += prilepin_excess(prilepin_score(dose), BIN_GROUP.get(g, ""))
+    return total
 
 
 def stray(seq, family):

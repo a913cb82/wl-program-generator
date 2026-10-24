@@ -78,6 +78,16 @@ BEAM = 32  # session-order beam width
 BEAM_JOINT = 16  # fallback width when the preferred fill cannot be ordered
 FINISH_SCAN = 2  # survivors rescored under the true cost (waves compress)
 STRAY_COST = 100
+# Prilepin's chart: the most reps a single session spends at each intensity
+# before it is past the top of his range. Flat outside the anchors.
+PRILEPIN_CAPACITY = {60: 30, 70: 24, 80: 20, 90: 10, 100: 4}
+# One session's worth of capacity is free. The classic lifts the chart was
+# built from then climb at the hard rate above 1.5; squats, pulls and
+# fundamentals are exempt from its calibration and get until 2.0.
+PRILEPIN_CLASSIC = ("Snatch", "CJ")
+PRILEPIN_SOFT_AT = {"classic": 1.5, "strength": 2.0}
+PRILEPIN_SOFT = 4
+PRILEPIN_HARD = 20
 WARMUP_COST = 10
 COMPLEXITY_COST = 4
 
