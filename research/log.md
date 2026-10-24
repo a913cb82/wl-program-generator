@@ -254,3 +254,9 @@ Rule from now on: every explorer gets a 5-minute budget.
   gap-guard never watches -> reverted. Relaunched with defect-first
   discovery (name the component, then guard exactly that).
 - Doctrine holding: recon is mine (anchors), briefs mechanical.
+
+- snatch-spill-4: singles filter holds zero defects but exc-neutral
+  (no movable MS single). Parked MS. My recon: class I hosts Other
+  Snatch singles on many sessions (both ends) -> launched
+  snatch-spill-5 (I-only) + cms-snatch-spill (CMS-only), same recipe.
+- sched-lock line parked (scoped lock is a no-op on this family).
