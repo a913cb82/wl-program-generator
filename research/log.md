@@ -138,3 +138,10 @@ Rule from now on: every explorer gets a 5-minute budget.
   spread-trim NULL with a concrete lead (free-day1 running it).
 - Launched perclass-icms (unrun follow-ups). Running: free-day1,
   polish-pairs, perclass-icms.
+
+- free-day1 REVERTED hard (book 4.809 with defects; the DAY[1] anchor
+  is load-bearing — spread-trim's recommendation is dead).
+- perclass-icms NO-GO unrun, but recon done (M+0.5 allowed, patch
+  points found). Launched perclass-half + meso-split (untouched MACRO
+  table) + order-4day (4-day reorder). Running: order-4day,
+  perclass-half, meso-split.
