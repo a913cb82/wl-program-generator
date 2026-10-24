@@ -96,3 +96,7 @@ Rule from now on: every explorer gets a 5-minute budget.
   pay for +0.05 pace). Launched beam-joint (narrower blast radius) and
   longest-surgical (attack the mapped 21-set slots). Running:
   cap-refits, beam-joint, longest-surgical.
+
+- cap-refits REJECTED (300 changes no plan, pace tax; pin test kept).
+  Launched hotspot-2 (re-profile stacked tree). Spare ready:
+  mindose-tol tree. Running: beam-joint, longest-surgical, hotspot-2.

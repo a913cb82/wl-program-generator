@@ -1,5 +1,7 @@
 # Idea queue (cheapest first; bases in parens)
 
+- DONE cap-refits: REJECTED (no plan change at 300, pace tax; pin test kept).
+
 1. hotspot-2 (stack-1): re-profile the stacked tree and attack the new
    top hotspot. ipf-stall moved the bottleneck; find where it went.
 2. mindose-tol (stack-1): MIN_DOSE 6->5/7, TOL 0.2->0.15/0.25 probes.
