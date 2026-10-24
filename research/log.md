@@ -165,3 +165,13 @@ Rule from now on: every explorer gets a 5-minute budget.
   artifact of its tree. Do not chase.
 - Launched pair-ratio + taper-trim (untouched taper shape) + cap-evals
   (untested sibling). Running all three.
+
+- pair-ratio NO WIN (ladder locally optimal in both directions).
+- cap-evals verdict INVERTED (kept a +0.013 regression as "WIN").
+  Re-audited: the spread is pure pace noise, quality never moves.
+  Reverted on its branch. Second inverted verdict — added a rule to
+  every brief: report quality terms first, pace last.
+- perclass-impl stacked (stack-1 book 0.859). Launched order-4day-2
+  (disciplined retry, command allowlist) + ms-rhythm (repair MS 3.00
+  without losing the strain win). Running: bins-shift, order-4day-2,
+  ms-rhythm.
