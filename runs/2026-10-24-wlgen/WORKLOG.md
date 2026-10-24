@@ -46,3 +46,12 @@ One entry per round. Never edit an old entry.
 - what changed: 5 parallel probes (bulk spill, MS timing, pair-volume trim, per-class T, rhythm pricing)
 - what you learned: compute was idle; fill the share
 - next: harvest any, stack winners
+
+## 5 — ms-timing stacked, 4 relaunches (2026-10-24)
+- commit: ff3692c (stack-1)
+- score: exc 142.5, 138 green
+- best: exc 142.5
+- verdict: keep (verified: MS 40.3, rhythm 2.91, 2-line change)
+- what changed: MS week-vol rotation; harvested 5 notes
+- what you learned: discovery must be priced into the budget or done by me
+- next: fund-bulk-2, pairvol-trim-2, perclass-T-2, fold-thu
