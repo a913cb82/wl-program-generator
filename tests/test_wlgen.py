@@ -40,7 +40,6 @@ from wlgen import (
     micro_table,
     pair_choices,
     pair_fill,
-    phrases,
     scheme_cost,
     scheme_entries,
     session_prior,
@@ -645,28 +644,49 @@ def _snatch_counts():
     return (2, 13, 7, 0, 0)
 
 
-def test_below_min_exempts_first_touch_per_zone():
+def test_stray_exempts_first_touch_per_zone():
     # Squat prefers at least 2 reps at 50-80: the opening single is the
-    # warm-up ramp, only repeated singles are junk volume.
-    assert wlgen.below_min(((50, 1), (50, 1)), "Squat") == 1
-    assert wlgen.below_min(((50, 1), (60, 1), (60, 1)), "Squat") == 1
-    assert wlgen.below_min(((50, 2), (50, 1)), "Squat") == 1
+    # warm-up ramp, only repeated singles are stray volume.
+    assert wlgen.stray(((50, 1), (50, 1)), "Squat") == 1
+    assert wlgen.stray(((50, 1), (60, 1), (60, 1)), "Squat") == 1
+    assert wlgen.stray(((50, 2), (50, 1)), "Squat") == 1
 
 
-def test_phrases_and_compact_text():
+def test_complexity_counts_things():
+    # things = rendered set-groups + every ×N suffix.
+    assert wlgen.complexity(((70, 4), (70, 4), (70, 4))) == 2
+    assert wlgen.complexity(((70, 3), (70, 2), (70, 2), (70, 1))) == 4
+    assert wlgen.complexity(tuple([(70, 2), (80, 2)] * 4)) == 3
+    nested = tuple([(70, 2), (80, 2), (80, 2)] * 2)
+    assert wlgen.complexity(nested) == 4
+    assert wlgen.complexity(((50, 2), (60, 2), (50, 2))) == 3
+    grouped = ((50, 2), (50, 2), (60, 2), (60, 2))
+    assert wlgen.complexity(grouped) == 4
+
+
+def test_complexity_prefers_compressed_orders():
+    # A wave counts its body once plus its own ×N, so the same lifts read
+    # as fewer instructions when they alternate in a wave than when they
+    # are split into loose runs.
+    wave = ((60, 1), (70, 1), (80, 1), (80, 1)) + tuple([(70, 2), (80, 2)] * 5)
+    loose = ((60, 1), (70, 1)) + ((80, 1),) * 12 + ((70, 3), (70, 3)) + ((70, 2),) * 2
+    assert wlgen.complexity(wave) < wlgen.complexity(loose)
+
+
+def test_complexity_and_compact_text():
     wave = tuple([(70, 3), (80, 2)] * 3)
-    assert phrases(wave) == 2
+    assert wlgen.complexity(wave) == 3
     assert compact_text(wave) == "3*(70%/3, 80%/2)"
     same_zone = ((80, 2), (80, 2), (80, 2), (80, 1))
-    assert phrases(same_zone) == 2
+    assert wlgen.complexity(same_zone) == 3
     assert compact_text(same_zone) == "80%/2*3,1"
 
 
-def test_scheme_cost_run_penalty_visited():
+def test_scheme_cost_stray_warmup_complexity():
     seq = ((60, 1), (60, 1), (70, 1), (60, 1), (70, 1))
-    cost, below, run, rep, spans, sets = scheme_cost(seq, "Snatch")
-    assert run == 0
-    assert cost == 100 * below + 10 * run + 5 * rep + 3 * spans + 2 * sets
+    cost, stray, warmup, cx = scheme_cost(seq, "Snatch")
+    assert warmup == 0
+    assert cost == 100 * stray + 10 * warmup + 4 * cx
 
 
 def test_beam_order_warmup_and_no_skip():
@@ -692,23 +712,22 @@ def test_beam_seed_fixes_shredded_zone():
     assert text == "60%/1, 70%/1, 80%/1*2, 5*(70%/2, 80%/2)"
 
 
-def test_count_items_matches_rendered():
-    assert wlgen._count_items(()) == 0
-    assert wlgen._count_items(((60, 1), (70, 2), (70, 3))) == 2
-    assert wlgen._count_items(((70, 2), (80, 2), (70, 2), (80, 2))) == 1
-    assert wlgen._count_items(((60, 1), (70, 1), (80, 1))) == 3
-    # Sweep the largest class: R must never exceed what the renderer
-    # shows nor the beam's own phrase count.
+def test_complexity_matches_rendered_plus_revisits():
+    # complexity counts every rendered group and ×N suffix, plus one per
+    # non-adjacent zone revisit, so it never drops below the item count.
+    assert wlgen.complexity(()) == 0
+    assert wlgen.complexity(((60, 1), (70, 2), (70, 3))) == 3
+    assert wlgen.complexity(((70, 2), (80, 2), (70, 2), (80, 2))) == 3
+    assert wlgen.complexity(((60, 1), (70, 1), (80, 1))) == 3
+    # Sweep the largest class: no session shows fewer rendered blocks
+    # than the complexity of its order.
     for cls in ("I",):
         for m in build_plan(cls)["mesos"]:
             for w in m["weeks"]:
                 for s in w["sessions"]:
                     for _text, seq in scheme_entries(s):
                         parsed = wlgen._parse(tuple(seq))
-                        assert wlgen._count_items(tuple(seq)) <= len(parsed[2])
-                        assert wlgen._count_items(tuple(seq)) <= wlgen.phrases(
-                            tuple(seq)
-                        )
+                        assert wlgen.complexity(tuple(seq)) >= len(parsed[2])
 
 
 def test_micro_table_exact():
@@ -791,8 +810,10 @@ def test_micro_table_exact():
 
 
 def test_beam_prefers_separated_rep_change():
+    # The lone single is the free first touch of 80%; placing it after the
+    # wave would make it a stray repeat instead.
     _ordered, text = best_scheme(_snatch_counts(), "Snatch")
-    assert text == "60%/2, 70%/2*2, 3*(80%/2, 70%/3), 80%/1"
+    assert text == "60%/2, 70%/2*2, 80%/1, 3*(70%/3, 80%/2)"
 
 
 def test_seed_spine_opens_with_work_sets():

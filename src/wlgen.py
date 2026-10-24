@@ -19,6 +19,7 @@ from wlconfig import (
     DAY,
     EPS,
     FAN,
+    FINISH_SCAN,
     FREE_SLOTS,
     GAP,
     GROUPS,
@@ -28,7 +29,6 @@ from wlconfig import (
     PAIRED_GROUPS,
     PAIRS,
     PATTERNS,
-    REP_CHANGE,
     REPS,
     SCHEDULES,
     SIZE_WEIGHT,
@@ -1734,10 +1734,14 @@ def atom_text(value):
 
 
 def pref_min(family, zlo):
-    return min(REPS[family][zlo])
+    """Smallest useful set size: 1 is the fallback, not a target."""
+    sizes = REPS[family][zlo]
+    return min((s for s in sizes if s > 1), default=1)
 
 
-def below_min(seq, family):
+def stray(seq, family):
+    # Sets smaller than the zone minimum are stray volume. The first
+    # touch of a zone is the warm-up ramp and stays free.
     total = 0
     seen = set()
     for zlo, value in seq:
@@ -1749,7 +1753,7 @@ def below_min(seq, family):
     return total
 
 
-def run_penalty(seq):
+def warmup(seq):
     """Warm-up cost of a zone run followed by a heavier zone. A 1-set run is
     free once the heavier zone has already been visited; 3+ sets still cost."""
     runs: list = []
@@ -1767,49 +1771,31 @@ def run_penalty(seq):
     return total
 
 
-def rep_changes(seq):
-    """Rep changes inside one contiguous zone run."""
-    total = 0
-    last_zone = None
-    last_value = None
-    for zlo, value in seq:
-        if zlo == last_zone and atom_total(value) != atom_total(last_value):
-            total += 1
-        last_zone, last_value = zlo, value
-    return total
+def complexity(seq):
+    """Things the athlete must remember, counted off the rendered items:
+    every set-group and every ×N suffix. A wave's body counts once plus
+    its own ×N, so compression reads as fewer instructions."""
+    items = _parse(tuple(seq))[2]
+
+    def things(items):
+        total = 0
+        for item in items:
+            if item[0] == "wave":
+                total += 1 + things(item[2])
+            else:
+                total += len(item[2]) + sum(1 for _, c in item[2] if c > 1)
+        return total
+
+    return things(items)
 
 
 @cache
-def phrases(seq):
-    """Fewest compact phrases; a repeated wave adds no phrase for its count."""
-    if not seq:
-        return 0
-    n = len(seq)
-    best = 1 + phrases(seq[1:])
-    j = 1
-    while j < n and seq[j] == seq[0]:
-        j += 1
-    best = min(best, 1 + phrases(seq[j:]))
-    for p in range(2, n // 2 + 1):
-        if seq[p] != seq[0]:
-            continue
-        unit = seq[:p]
-        k = 1
-        while (k + 1) * p <= n and seq[k * p : (k + 1) * p] == unit:
-            k += 1
-        if k >= 2:
-            best = min(best, phrases(unit) + phrases(seq[k * p :]))
-    return best
-
-
 def scheme_cost(seq, family):
-    below = below_min(seq, family)
-    run = run_penalty(seq)
-    rep = rep_changes(seq)
-    spans = _count_items(seq)
-    sets = len(seq)
-    cost = 100 * below + 10 * run + REP_CHANGE * rep + 3 * spans + 2 * sets
-    return cost, below, run, rep, spans, sets
+    stray_ = stray(seq, family)
+    warmup_ = warmup(seq)
+    cx = complexity(seq)
+    cost = 100 * stray_ + 10 * warmup_ + 4 * cx
+    return cost, stray_, warmup_, cx
 
 
 @cache
@@ -1980,19 +1966,16 @@ def beam_search(zones, family):
         0,
         0,
         0,
+        1,
         (),
     )
     beam: list = [start]
     finished: list = []
 
     def key(state):
-        _caps, _lz, _lv, _seen, _rl, below, run, rep, prefix = state
-        ph = phrases(prefix)
-        return (
-            100 * below + 10 * run + REP_CHANGE * rep + 3 * ph + len(prefix),
-            ph,
-            len(prefix),
-        )
+        _caps, _lz, _lv, _seen, _rl, below, warmup, sfx, _cc, prefix = state
+        guide = _guide(prefix) + sfx
+        return 100 * below + 10 * warmup + 4 * guide + len(prefix), guide
 
     while beam:
         nxt = []
@@ -2003,23 +1986,14 @@ def beam_search(zones, family):
             seen,
             run_len,
             below,
-            run,
-            rep,
+            warmup,
+            sfx,
+            cur_count,
             prefix,
         ) in beam:
             if not any(caps):
-                ph = phrases(prefix)
-                finished.append(
-                    (
-                        100 * below
-                        + 10 * run
-                        + REP_CHANGE * rep
-                        + 3 * ph
-                        + len(prefix),
-                        ph,
-                        prefix,
-                    )
-                )
+                guide = _guide(prefix) + sfx
+                finished.append((100 * below + 10 * warmup + 4 * guide, guide, prefix))
                 continue
             for i, (zone, _cap, choices) in enumerate(zones):
                 current = caps[i]
@@ -2036,20 +2010,34 @@ def beam_search(zones, family):
                     new_caps[i] -= size
                     new_seen = seen | {zone}
                     amount = max(value) if isinstance(value, tuple) else value
-                    new_below = below + max(0, pref_min(family, zone) - amount)
-                    new_run, new_rep, new_run_len = run, rep, run_len
+                    # first touch is the warm-up ramp, exactly as stray() counts
+                    short = (
+                        0
+                        if zone not in seen
+                        else max(0, pref_min(family, zone) - amount)
+                    )
+                    new_below = below + short
+                    new_warmup, new_run_len = warmup, run_len
+                    new_sfx, new_count = sfx, cur_count
                     if last_zone is not None and zone == last_zone:
                         new_run_len = run_len + 1
-                        if atom_total(value) != atom_total(last_value):
-                            new_rep = rep + 1
+                        if value == last_value:
+                            if cur_count == 1:
+                                new_sfx = sfx + 1
+                            new_count = cur_count + 1
+                        else:
+                            new_count = 1
                     else:
+                        new_count = 1
                         if (
                             last_zone is not None
                             and zone > last_zone
                             and zone not in seen
                         ):
                             n = run_len
-                            new_run = run + (1 if n == 1 else 0 if n == 2 else n - 1)
+                            new_warmup = warmup + (
+                                1 if n == 1 else 0 if n == 2 else n - 1
+                            )
                         new_run_len = 1
                     nxt.append(
                         (
@@ -2059,14 +2047,15 @@ def beam_search(zones, family):
                             new_seen,
                             new_run_len,
                             new_below,
-                            new_run,
-                            new_rep,
+                            new_warmup,
+                            new_sfx,
+                            new_count,
                             prefix + ((zone, value),),
                         )
                     )
         alive = []
         for state in nxt:
-            caps, _lz, _lv, seen, _rl, _below, _run, _rep, _prefix = state
+            caps, _lz, _lv, seen, _rl, _below, _warmup, _sfx, _cc, _prefix = state
             top = max(seen, default=-1)
             if any(
                 caps[i] > 0 and z not in seen and z < top
@@ -2084,66 +2073,51 @@ def beam_search(zones, family):
                 ordered.append((zone, choices[-1][1]))
         base = tuple(ordered)
     else:
-        best_cost, best_phrases, _ = min(finished, key=lambda item: (item[0], item[1]))
-        tied = [
-            prefix
-            for cost, ph, prefix in finished
-            if (cost, ph) == (best_cost, best_phrases)
-        ]
-        best_prefix = None
-        best_text = None
-        for prefix in tied:
+        # The running estimate cannot see wave compression, so rescore the
+        # cheapest survivors under the true cost before choosing.
+        ranked = sorted(finished, key=lambda i: (i[0], i[1]))[:FINISH_SCAN]
+        best = None
+        for _approx, _things, prefix in ranked:
+            cost, _, _, cx = scheme_cost(prefix, family)
             text = compact_text(prefix)
-            if best_text is None or (len(text), text) < (len(best_text), best_text):
-                best_prefix, best_text = prefix, text
-        assert best_prefix is not None
-        base = best_prefix
-    base_cost, _, _, _, base_ph, _ = scheme_cost(base, family)
+            pick = (cost, cx, len(text), text)
+            if best is None or pick < best[0]:
+                best = (pick, prefix)
+        assert best is not None
+        base = best[1]
+    base_cost, _, _, base_cx = scheme_cost(base, family)
+    base_rank = (base_cost, base_cx, len(compact_text(base)))
     for seed in seed_orders(zones):
-        cost, _, _, _, ph, _ = scheme_cost(seed, family)
-        if (cost, ph) < (base_cost, base_ph):
-            base, base_cost, base_ph = seed, cost, ph
+        cost, _, _, cx = scheme_cost(seed, family)
+        seed_pick = (cost, cx, len(compact_text(seed)))
+        if seed_pick < base_rank:
+            base, base_rank = seed, seed_pick
     return base
 
 
 @cache
-def _count_items(seq):
-    """Fewest rendered spans for an atom seq: same-zone runs merge into
-    one span, a repeated wave is one span. Count-only twin of _parse's
-    items (no strings built)."""
-    memo: dict = {}
-
-    def info(s):
-        if s in memo:
-            return memo[s]
-        if not s:
-            r = (0, ("", -1), ("", -1))
-        elif len(s) == 1:
-            r = (1, ("g", s[0][0]), ("g", s[0][0]))
-        else:
-            best = (len(s) + 1, ("", -1), ("", -1))
-            for i in range(1, len(s)):
-                a = info(s[:i])
-                b = info(s[i:])
-                m = 1 if (a[2][0] == "g" and a[2] == b[1]) else 0
-                cand = (a[0] + b[0] - m, a[1] or b[1], b[2] or a[2])
-                if cand[0] < best[0]:
-                    best = cand
-            n = len(s)
-            for p in range(1, n // 2 + 1):
-                k = 1
-                while (k + 1) * p <= n and s[k * p : (k + 1) * p] == s[:p]:
-                    k += 1
-                if k >= 2:
-                    rest = info(s[k * p :])
-                    cand = (1 + rest[0], ("w", -1), rest[2] or ("w", -1))
-                    if cand[0] < best[0]:
-                        best = cand
-            r = best
-        memo[s] = r
-        return r
-
-    return info(tuple(seq))[0]
+def _guide(seq):
+    """Pruning guide only: fewest phrases. A repeated wave adds no phrase
+    for its count, so the beam can rank compression cheaply; the score
+    itself is complexity(). Global memo keeps it fast across prefixes."""
+    if not seq:
+        return 0
+    n = len(seq)
+    best = 1 + _guide(seq[1:])
+    j = 1
+    while j < n and seq[j] == seq[0]:
+        j += 1
+    best = min(best, 1 + _guide(seq[j:]))
+    for p in range(2, n // 2 + 1):
+        if seq[p] != seq[0]:
+            continue
+        unit = seq[:p]
+        k = 1
+        while (k + 1) * p <= n and seq[k * p : (k + 1) * p] == unit:
+            k += 1
+        if k >= 2:
+            best = min(best, _guide(unit) + _guide(seq[k * p :]))
+    return best
 
 
 def seed_orders(zones):
@@ -2187,10 +2161,20 @@ def seed_orders(zones):
         for z, _, ch in zones:
             want = min(2, rem[z], prev_size)
             size = max(s for s in sizes[z] if s <= want)
+            # Take the whole zone as one work set rather than opening with a
+            # double and stranding a crumb below the useful size.
+            useful = min((s for s in sizes[z] if s > 1), default=1)
+            if size < rem[z] < useful + size and rem[z] in sizes[z]:
+                size = rem[z]
             emit(z, size)
             prev_size = size
         top = present[-1]
         below = present[-2] if len(present) >= 2 else None
+        crumbs = {
+            z
+            for z in present
+            if 0 < rem[z] < min((s for s in sizes[z] if s > 1), default=1)
+        }
         s = 2
         if (
             waved
@@ -2217,6 +2201,8 @@ def seed_orders(zones):
         for z in sorted(present):
             if z == top or not ok or rem[z] <= 0:
                 continue
+            if z in crumbs:
+                continue
             if cap is None:
                 allowed = tuple(sizes[z])
             else:
@@ -2226,6 +2212,13 @@ def seed_orders(zones):
                 emit(z, size)
             if parts:
                 cap = parts[-1]
+        # Crumbs go last, heaviest first. A zone whose lock has been used
+        # up leaves a set below the useful size; running it with the bulk
+        # would cap every later zone at that size, so it drops in as a
+        # back-off instead, where a fall costs nothing.
+        for z in sorted(crumbs, reverse=True):
+            if ok and rem[z] > 0:
+                emit(z, rem[z])
         if ok and all(r == 0 for r in rem.values()) and seq:
             tup = tuple(seq)
             if tup not in out:
@@ -2245,36 +2238,34 @@ def fixed_beam(types, family):
         0,
         0,
         0,
+        1,
         (),
     )
     beam: list = [start]
     finished: list = []
 
     def key(state):
-        _rem, _lz, _lv, _seen, _rl, below, run, rep, prefix = state
-        ph = phrases(prefix)
-        return (
-            100 * below + 10 * run + REP_CHANGE * rep + 3 * ph + len(prefix),
-            ph,
-            len(prefix),
-        )
+        _rem, _lz, _lv, _seen, _rl, below, warmup, sfx, _cc, prefix = state
+        guide = _guide(prefix) + sfx
+        return 100 * below + 10 * warmup + 4 * guide + len(prefix), guide
 
     while beam:
         nxt = []
-        for rem, last_zone, last_value, seen, run_len, below, run, rep, prefix in beam:
+        for (
+            rem,
+            last_zone,
+            last_value,
+            seen,
+            run_len,
+            below,
+            warmup,
+            sfx,
+            cur_count,
+            prefix,
+        ) in beam:
             if not any(rem):
-                ph = phrases(prefix)
-                finished.append(
-                    (
-                        100 * below
-                        + 10 * run
-                        + REP_CHANGE * rep
-                        + 3 * ph
-                        + len(prefix),
-                        ph,
-                        prefix,
-                    )
-                )
+                guide = _guide(prefix) + sfx
+                finished.append((100 * below + 10 * warmup + 4 * guide, guide, prefix))
                 continue
             for i, (zone, value, _count) in enumerate(types):
                 if rem[i] <= 0:
@@ -2287,16 +2278,25 @@ def fixed_beam(types, family):
                 new_rem[i] -= 1
                 new_seen = seen | {zone}
                 amount = max(value) if isinstance(value, tuple) else value
-                new_below = below + max(0, pref_min(family, zone) - amount)
-                new_run, new_rep, new_run_len = run, rep, run_len
+                short = (
+                    0 if zone not in seen else max(0, pref_min(family, zone) - amount)
+                )
+                new_below = below + short
+                new_warmup, new_run_len = warmup, run_len
+                new_sfx, new_count = sfx, cur_count
                 if last_zone is not None and zone == last_zone:
                     new_run_len = run_len + 1
-                    if atom_total(value) != atom_total(last_value):
-                        new_rep = rep + 1
+                    if value == last_value:
+                        if cur_count == 1:
+                            new_sfx = sfx + 1
+                        new_count = cur_count + 1
+                    else:
+                        new_count = 1
                 else:
+                    new_count = 1
                     if last_zone is not None and zone > last_zone and zone not in seen:
                         n = run_len
-                        new_run = run + (1 if n == 1 else 0 if n == 2 else n - 1)
+                        new_warmup = warmup + (1 if n == 1 else 0 if n == 2 else n - 1)
                     new_run_len = 1
                 nxt.append(
                     (
@@ -2306,14 +2306,15 @@ def fixed_beam(types, family):
                         new_seen,
                         new_run_len,
                         new_below,
-                        new_run,
-                        new_rep,
+                        new_warmup,
+                        new_sfx,
+                        new_count,
                         prefix + ((zone, value),),
                     )
                 )
         alive = []
         for state in nxt:
-            rem, _lz, _lv, seen, _rl, _below, _run, _rep, _prefix = state
+            rem, _lz, _lv, seen, _rl, _below, _warmup, _sfx, _cc, _prefix = state
             top = max(seen, default=-1)
             if any(
                 rem[i] > 0 and z not in seen and z < top
@@ -2325,19 +2326,16 @@ def fixed_beam(types, family):
         beam = alive[:BEAM]
     if not finished:
         return None
-    best_cost, best_phrases, _ = min(finished, key=lambda item: (item[0], item[1]))
-    tied = [
-        prefix
-        for cost, ph, prefix in finished
-        if (cost, ph) == (best_cost, best_phrases)
-    ]
-    best_prefix = None
-    best_text = None
-    for prefix in tied:
+    ranked = sorted(finished, key=lambda i: (i[0], i[1]))[:FINISH_SCAN]
+    best = None
+    for _approx, _things, prefix in ranked:
+        cost, _, _, cx = scheme_cost(prefix, family)
         text = compact_text(prefix)
-        if best_text is None or (len(text), text) < (len(best_text), best_text):
-            best_prefix, best_text = prefix, text
-    return best_prefix
+        rank = (cost, cx, len(text), text)
+        if best is None or rank < best[0]:
+            best = (rank, prefix)
+    assert best is not None
+    return best[1]
 
 
 @cache

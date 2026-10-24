@@ -73,7 +73,7 @@ REPS = {
 
 BEAM = 32  # session-order beam width
 BEAM_JOINT = 16  # fallback width when the preferred fill cannot be ordered
-REP_CHANGE = 5  # soft cost of changing reps within one zone run
+FINISH_SCAN = 2  # survivors rescored under the true cost (waves compress)
 
 # Soviet class tables: % volume per group (prep/comp)
 III_II = {
