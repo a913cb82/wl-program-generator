@@ -37,3 +37,12 @@ One entry per round. Never edit an old entry.
 - what changed: nothing (clean no-op, reverted)
 - what you learned: spill family exhausted 5/5 on non-Fundamental; singles pools are dose-balanced
 - next: restart only on a bold new design (3-try budget): paired-84%% needs a new mechanism
+
+## 4 — loop reopens BOLD x5 (2026-10-24)
+- commit: 215004c (unchanged)
+- score: exc 144.7
+- best: exc 144.7
+- verdict: trying (stop lifted: 5 fresh lines, box idle)
+- what changed: 5 parallel probes (bulk spill, MS timing, pair-volume trim, per-class T, rhythm pricing)
+- what you learned: compute was idle; fill the share
+- next: harvest any, stack winners
