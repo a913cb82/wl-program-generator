@@ -145,3 +145,9 @@ Rule from now on: every explorer gets a 5-minute budget.
   points found). Launched perclass-half + meso-split (untouched MACRO
   table) + order-4day (4-day reorder). Running: order-4day,
   perclass-half, meso-split.
+
+- order-4day CANCELLED (wedged on runaway find; no notes, clean tree).
+  Idea stays open for a disciplined retry.
+- perclass-half SPLIT: MS-only M+0.5 audit-GO (-0.027, real strain),
+  I/CMS dead. Launched perclass-impl + finish-scan (FINISH_SCAN 2->1).
+  Running: meso-split, perclass-impl, finish-scan.
