@@ -228,3 +228,13 @@ Rule from now on: every explorer gets a 5-minute budget.
 - Launched fund-spill-4 (move the gap helper to wlconfig, the module
   both sides import; byte-identical gate) + pair-next (recon: next
   non-gating lever on the paired 84%).
+
+- fund-spill-4 NO-GO by MY base error (stack predated fund-spill-2).
+  Lesson: briefs must name the prerequisite commit and tell the agent
+  to check `git log` first. Verified + STACKED fund-spill-2 myself:
+  stack-1 book 0.840, strain 0.96 (exc 144.7), 132 green.
+- Parallelism up (idle CPU): 3 runners + 1 hot spare. Launched
+  layer-fix-2 (shared-module gap helper, correct base, byte gate) +
+  sched-lock (pair-next rec: light-tier 1:1 lock, I Other Snatch 70%,
+  re-coupling fenced) + snatch-spill (clone the spill for MS Other
+  Snatch singles, rhythm-gated).
