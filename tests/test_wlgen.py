@@ -1071,7 +1071,7 @@ def test_sizes_at_every_level():
 
 
 def test_write_outputs(tmp_path):
-    write_outputs(tmp_path)
+    write_outputs(tmp_path, jobs=1)
     assert sorted(f.name for f in tmp_path.glob("*.html")) == [
         "CMS.html",
         "I.html",
@@ -1080,6 +1080,18 @@ def test_write_outputs(tmp_path):
         "MS.html",
     ]
     assert tmp_path.joinpath("I.html").read_text().startswith("<!DOCTYPE html>")
+
+
+def test_parallel_render_matches_serial():
+    # Classes are independent, so a worker pool must produce byte-identical
+    # output; this guards against a class leaking state into another.
+    from concurrent.futures import ProcessPoolExecutor
+
+    from wlgen import _render_class, build_plan, to_html
+
+    with ProcessPoolExecutor(max_workers=2) as pool:
+        pooled = dict(pool.map(_render_class, ["III"]))
+    assert pooled["III"] == to_html(build_plan("III"))
 
 
 def test_html():

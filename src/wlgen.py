@@ -1,4 +1,6 @@
+import os
 import re
+from concurrent.futures import ProcessPoolExecutor
 from functools import cache
 from html import escape
 from math import gcd
@@ -254,6 +256,12 @@ def week_bin_lifts(cls, meso, week, group, lifts):
 def ipf(prior, rows, cols, iters=1000):
     """Fractional matrix with the given margins, shaped by prior. Returns None
     when the margins cannot be met (structural zeros or bad supply/demand)."""
+    m = _ipf(tuple(tuple(r) for r in prior), tuple(rows), tuple(cols), iters)
+    return None if m is None else [list(r) for r in m]
+
+
+@cache
+def _ipf(prior, rows, cols, iters):
     nr = len(rows)
     m = [[float(x) for x in row] for row in prior]
     rng = range(nr)
@@ -282,12 +290,17 @@ def ipf(prior, rows, cols, iters=1000):
                         ok = False
                         break
             if ok:
-                return m
+                return tuple(tuple(r) for r in m)
     return None
 
 
 def feasible(prior, rows, cols):
     """True when the margins fit the support: an exact max-flow check."""
+    return _feasible(tuple(tuple(r) for r in prior), tuple(rows), tuple(cols))
+
+
+@cache
+def _feasible(prior, rows, cols):
     nr, nc = len(rows), len(cols)
     n = nr + nc + 2
     src, sink = n - 2, n - 1
@@ -561,8 +574,14 @@ def resolve_slots(prior, rows, cols, idx, calls, limit):
 
 def session_options(live, weight):
     """Matchable group subsets of the day template, heaviest first."""
+    live = tuple(live)
+    return _session_options(live, tuple(weight[g] for g in live))
+
+
+@cache
+def _session_options(live, weights):
     opts = []
-    live = list(live)
+    weight = dict(zip(live, weights))
 
     def rec(k, chosen):
         if k == len(live):
@@ -575,7 +594,7 @@ def session_options(live, weight):
 
     rec(0, [])
     opts.sort(key=lambda groups: -sum(weight[g] for g in groups))
-    return opts
+    return tuple(opts)
 
 
 def slot_match(groups):
@@ -1658,7 +1677,13 @@ def fill(n, reps):
     """Exact rep split: fewest sets, then largest smallest and largest set."""
     if not n:
         return []
-    reps = sorted(set(reps) | {1}, reverse=True)
+    return list(_fill(n, tuple(sorted(set(reps) | {1}, reverse=True))))
+
+
+@cache
+def _fill(n, reps):
+    if not n:
+        return ()
     best = None
 
     def rec(i, rem, parts):
@@ -1676,7 +1701,7 @@ def fill(n, reps):
 
     rec(0, n, [])
     assert best is not None
-    return best[1]
+    return tuple(best[1])
 
 
 def sets_text(parts):
@@ -2718,15 +2743,36 @@ def to_html(plan):
     )
 
 
-def write_outputs(path="outputs"):
+def _render_class(cls):
+    """One class end to end: independent of every other class."""
+    return cls, to_html(build_plan(cls))
+
+
+def write_outputs(path="outputs", jobs=None):
+    """Write one HTML file per class. Classes share no state, so they run in
+    parallel; results are collected by class name to keep output identical."""
     path = Path(path)
     path.mkdir(exist_ok=True)
+    if jobs is None:
+        jobs = min(len(CLASSES), os.cpu_count() or 1)
+    pages: dict = {}
+    if jobs > 1 and len(CLASSES) > 1:
+        try:
+            with ProcessPoolExecutor(max_workers=jobs) as pool:
+                for cls, html in pool.map(_render_class, list(CLASSES)):
+                    pages[cls] = html
+        except (OSError, RuntimeError, ImportError, ValueError):
+            pages = {}  # no usable process pool here; fall back to serial
+    if not pages:
+        for cls in CLASSES:
+            pages[cls] = to_html(build_plan(cls))
     for cls in CLASSES:
-        (path / f"{cls}.html").write_text(to_html(build_plan(cls)))
+        (path / f"{cls}.html").write_text(pages[cls])
 
 
 def main():
-    write_outputs()
+    jobs = int(os.environ.get("WLGEN_JOBS", "0")) or None
+    write_outputs(jobs=jobs)
 
 
 if __name__ == "__main__":

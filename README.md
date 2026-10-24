@@ -13,6 +13,14 @@ uv sync --all-extras                 # create .venv from uv.lock (Python 3.14)
 .venv/bin/pre-commit install         # enable format and type hooks
 ```
 
+Classes are independent, so the five plans render in parallel by default (one
+worker per class, up to the CPU count). Set `WLGEN_JOBS` to change it; `1`
+renders serially.
+
+```sh
+WLGEN_JOBS=1 .venv/bin/wlgen         # single process, identical output
+```
+
 Get uv from <https://docs.astral.sh/uv/>.
 
 Or use it as a library:
