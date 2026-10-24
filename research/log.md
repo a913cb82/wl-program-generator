@@ -215,3 +215,9 @@ Rule from now on: every explorer gets a 5-minute budget.
   -> launched fund-spill (I-class Fundamental peak->light).
 - Skill updated twice: shared-notes paths go stale; briefs must be
   self-contained (paste exact targets inline).
+
+- fund-spill WIN, VERIFIED on orchestrator box (exc 147.3, 130 green,
+  diff reviewed: 58-line co-host-only post-pass, class I). STACKED:
+  stack-1 book 0.847, strain 0.98. First spill success after 4
+  orientation deaths — the fix was co-host-only + inline briefs.
+- Launched fund-spill-2 (top-k, then other classes, rhythm-gated).
