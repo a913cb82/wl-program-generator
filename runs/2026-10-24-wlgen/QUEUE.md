@@ -4,7 +4,8 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 
 | status | idea |
 |---|---|
-| trying | snatch-spill-5 (I Other Snatch singles spill) |
-| trying | cms-snatch-spill (CMS Other Snatch singles spill) |
-| open | I Other Clean singles spill (price donors first) |
-| open | map host ubiquity per movement (find the next Fundamental) |
+| dropped | snatch-spill-5 (neutral; Other Snatch line stopped: 4 neutral in a row) |
+| dropped | cms-snatch-spill (neutral no-op) |
+| dropped | I Other Clean singles spill (priced: 48 lifts/7 sess, ceiling ~2 exc, recipe 0-for-3) |
+| done | host ubiquity mapped (Squat ubiquitous but exc-free; SnPull never singles) |
+| trying | pace-prof (profiler-driven CPU cut) |

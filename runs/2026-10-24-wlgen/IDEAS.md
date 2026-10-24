@@ -19,10 +19,10 @@ Template path with per-class day weights: exc 153.4, 123 green.
 
 | status | idea |
 |---|---|
-| trying | snatch-spill-5: Other Snatch spill, class I, singles-host filter |
-| trying | cms-snatch-spill: Other Snatch spill, class CMS, singles-host filter |
-| open | I Other Clean singles spill (donors look small; price first) |
-| open | second ubiquitous family after Fundamental (map hosts per movement) |
+| dropped | snatch-spill-5 (neutral) |
+| dropped | cms-snatch-spill (neutral no-op) |
+| dropped | I Other Clean (priced: ceiling ~2 exc) |
+| done | ubiquity mapped (Squat exc-free; SnPull never singles) |
 | parked | demand-path shapes at template cost (pace-killed: +3.9 vs CPU_BOOK) |
 | dropped | ratio locks on paired families (global breaks shape; scoped no-op) |
 | dropped | gating / support-shaping pairs (support is the shape; 3 kills) |
