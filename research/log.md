@@ -199,3 +199,10 @@ Rule from now on: every explorer gets a 5-minute budget.
 - iclean-gate NO-GO (support gating breaks session shape; clean revert).
   i70-gate killed by clock with the design preserved; relaunched as
   i70-gate-2 (implement-only) plus beam-seed (untuned seeds).
+
+- i70-gate-2 NO-GO (same refit-clash defect even refit-aware). Gating
+  family is dead: support is the shape, cannot gate without reshaping.
+- beam-seed attempted nothing (budget burned on setup/read). Relaunched
+  tight (beam-seed-2: edit in 60s, audit-only). Launched single-exc
+  (analysis-only): the ~24 non-doubled excess is the untouched
+  remainder; gating verdicts attached so it is not retried.
