@@ -292,7 +292,7 @@ def test_training_plan_tables():
     for m in plan["mesos"]:
         table = training_table(m)
         assert '<th scope="col" colspan="2">Week 1</th>' in table
-        rows = re.findall(r"<tr>(.*?)</tr>", table, re.DOTALL)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.DOTALL)
         body = rows[1:]
         idx = 0
         for si in range(max(len(w["sessions"]) for w in m["weeks"])):
@@ -513,12 +513,21 @@ def test_training_table_exact():
         '<table class="plan">\n'
         "<thead><tr><th></th>"
         '<th scope="col" colspan="2">Week 1</th>'
-        '<th scope="col" colspan="2">Week 2</th></tr></thead>\n'
+        '<th scope="col" colspan="2" class="wk">Week 2</th></tr></thead>\n'
         "<tbody>\n"
-        f'<tr><th scope="row" rowspan="1">1</th><td class="move">Clean+Jerk</td><td class="scheme"><span class="phrase">{cj}</span></td><td class="move">Squat</td><td class="scheme"><span class="phrase">{sq3}</span></td></tr>\n'
-        f'<tr><th scope="row" rowspan="1">2</th><td class="move">Squat</td><td class="scheme"><span class="phrase">{sq1}</span></td><td></td><td></td></tr>\n'
+        f'<tr class="sess"><th scope="row" rowspan="1">1</th><td class="move">Clean+Jerk</td><td class="scheme"><span class="phrase">{cj}</span></td><td class="move wk">Squat</td><td class="scheme"><span class="phrase">{sq3}</span></td></tr>\n'
+        f'<tr class="sess"><th scope="row" rowspan="1">2</th><td class="move">Squat</td><td class="scheme"><span class="phrase">{sq1}</span></td><td class="wk"></td><td></td></tr>\n'
         "</tbody>\n</table>"
     )
+
+
+def test_plan_table_has_session_and_week_dividers():
+    html = to_html(build_plan("I"))
+    assert "--strong:" in html
+    assert "table.plan tr.sess" in html
+    assert "table.plan .wk" in html
+    assert '<tr class="sess">' in html
+    assert 'class="move wk"' in html
 
 
 def test_plan_table_uses_full_width_without_wrapping():

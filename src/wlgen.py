@@ -2109,14 +2109,11 @@ def training_table(meso):
     reps, fraction-style). Each movement slot in each session gets one
     row; the session number spans its slot rows."""
     weeks = meso["weeks"]
-    head = (
-        "<thead><tr><th></th>"
-        + "".join(
-            f'<th scope="col" colspan="2">Week {wi + 1}</th>'
-            for wi in range(len(weeks))
-        )
-        + "</tr></thead>"
-    )
+    parts = []
+    for wi in range(len(weeks)):
+        cls = ' class="wk"' if wi else ""
+        parts.append(f'<th scope="col" colspan="2"{cls}>Week {wi + 1}</th>')
+    head = "<thead><tr><th></th>" + "".join(parts) + "</tr></thead>"
     body = []
     rows = max(len(w["sessions"]) for w in weeks)
     for si in range(rows):
@@ -2126,25 +2123,28 @@ def training_table(meso):
         )
         for k in range(slots):
             cells = []
-            for w in weeks:
+            for wi, w in enumerate(weeks):
+                gap = '<td class="wk"></td>' if wi else "<td></td>"
                 if si >= len(w["sessions"]):
-                    cells += ["<td></td>", "<td></td>"]
+                    cells += [gap, "<td></td>"]
                     continue
                 entries = scheme_entries(w["sessions"][si])
                 if k >= len(entries):
-                    cells += ["<td></td>", "<td></td>"]
+                    cells += [gap, "<td></td>"]
                     continue
                 movement, seq = entries[k]
                 phrases = " ".join(
                     f'<span class="phrase">{p}</span>'
                     for p in _render_html(_parse(tuple(seq))[2])
                 )
+                move_cls = "move wk" if wi else "move"
                 cells += [
-                    f'<td class="move">{escape(movement)}</td>',
+                    f'<td class="{move_cls}">{escape(movement)}</td>',
                     f'<td class="scheme">{phrases}</td>',
                 ]
             first = f'<th scope="row" rowspan="{slots}">{si + 1}</th>' if k == 0 else ""
-            body.append("<tr>" + first + "".join(cells) + "</tr>")
+            tag = '<tr class="sess">' if k == 0 else "<tr>"
+            body.append(tag + first + "".join(cells) + "</tr>")
     return (
         '<table class="plan">\n'
         + head
@@ -2161,6 +2161,7 @@ STYLE = """
   --ink: #27272a;
   --muted: #71717a;
   --line: #e4e4e7;
+  --strong: #71717a;
   --accent: #9a3412;
 }
 * { box-sizing: border-box; }
@@ -2192,6 +2193,8 @@ p.sizes { color: var(--muted); margin: 0.25rem 0 1rem; }
 td.move { white-space: nowrap; font-weight: 600; }
 td.scheme { min-width: 10rem; white-space: nowrap; }
 table.plan { width: 100%; }
+table.plan tr.sess > td, table.plan tr.sess > th { border-top: 2px solid var(--strong); }
+table.plan .wk { border-left: 2px solid var(--strong); }
 .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0.1em 0.25em; }
 .frac .zone { border-bottom: 1.5px solid currentColor; padding: 0 0.4em; font-weight: 600; }
 .frac .reps { padding: 0 0.4em; }
