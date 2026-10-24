@@ -35,9 +35,11 @@ from wlgen import (
     complexity,
     cover_session,
     expand,
+    feasible,
     fill,
     fit,
     fit_session,
+    ipf,
     ladder,
     macro_days,
     map_zone_index,
@@ -63,6 +65,7 @@ from wlgen import (
     week_bin_lifts,
     week_bins,
     week_quota,
+    week_units,
     write_outputs,
     zone_alloc,
 )
@@ -1634,3 +1637,121 @@ def test_meso_targets_exact():
         for m in build_plan(cls)["mesos"]:
             for g in GROUPS:
                 assert sum(w["groups"][g] for w in m["weeks"]) == m["groups"][g]
+
+
+def _brute_feasible(prior, rows, cols):
+    """Exhaustive support-respecting check for tiny matrices only."""
+    nr, nc = len(rows), len(cols)
+    cells = [(i, j) for i in range(nr) for j in range(nc) if prior[i][j] > 0]
+    if sum(rows) != sum(cols):
+        return False
+    found = False
+
+    def rec(k, rs, cs):
+        nonlocal found
+        if found:
+            return
+        if k == len(cells):
+            if all(v == 0 for v in rs) and all(v == 0 for v in cs):
+                found = True
+            return
+        i, j = cells[k]
+        for v in range(min(rs[i], cs[j]) + 1):
+            rs[i] -= v
+            cs[j] -= v
+            rec(k + 1, rs, cs)
+            rs[i] += v
+            cs[j] += v
+
+    rec(0, list(rows), list(cols))
+    return found
+
+
+def _naive_ipf(prior, rows, cols, iters=1000):
+    """Straightforward IPF without caches or shortcuts."""
+    m = [[float(x) for x in row] for row in prior]
+    nr = len(rows)
+    for it in range(iters):
+        for i in range(nr):
+            s = sum(m[i])
+            if s:
+                m[i] = [x * rows[i] / s for x in m[i]]
+        for j in range(len(cols)):
+            s = sum(m[i][j] for i in range(nr))
+            if s:
+                for i in range(nr):
+                    m[i][j] *= cols[j] / s
+        if it % 10 == 9:
+            ok = all(abs(sum(m[i]) - rows[i]) < 1e-6 for i in range(nr))
+            if ok:
+                ok = all(
+                    abs(sum(m[i][j] for i in range(nr)) - cols[j]) < 1e-6
+                    for j in range(len(cols))
+                )
+            if ok:
+                return m
+    return None
+
+
+def test_feasible_matches_brute_force():
+    cases = [
+        ([[1, 1], [1, 1]], [2, 2], [2, 2]),
+        ([[1, 0], [1, 1]], [1, 2], [2, 1]),
+        ([[1, 0], [1, 1]], [2, 1], [3, 0]),
+        ([[1, 0], [0, 1]], [1, 1], [0, 2]),
+        ([[1, 1, 0], [0, 1, 1], [1, 0, 1]], [3, 3, 3], [3, 3, 3]),
+        ([[1, 1, 0], [0, 1, 1], [1, 0, 1]], [4, 1, 1], [2, 2, 2]),
+        ([[1, 1, 1], [0, 1, 0]], [5, 1], [2, 2, 2]),
+        ([[0, 0], [0, 0]], [0, 0], [0, 0]),
+        ([[1, 0], [0, 1]], [1, 0], [1, 0]),
+    ]
+    for prior, rows, cols in cases:
+        assert feasible(prior, rows, cols) == _brute_feasible(
+            prior, rows, cols
+        ), (prior, rows, cols)
+
+
+def test_feasible_uses_only_support():
+    prior = [[1.0, 0.01], [0.5, 2.0]]
+    other = [[3.0, 0.001], [1.0, 7.0]]
+    assert feasible(prior, [3, 3], [3, 3]) == feasible(other, [3, 3], [3, 3])
+    assert feasible(prior, [5, 1], [4, 2]) == feasible(other, [5, 1], [4, 2])
+
+
+def test_ipf_matches_naive_reference():
+    cases = [
+        ([[1.0, 1.0], [1.0, 1.0]], [2, 2], [2, 2]),
+        ([[1.0, 0.01], [1.0, 1.0]], [6, 12], [9, 9]),
+        ([[1.0, 1.0, 1.0], [0.01, 1.0, 1.0]], [30, 20], [17, 17, 16]),
+        ([[1.0, 0.0], [1.0, 1.0]], [4, 8], [6, 6]),
+    ]
+    for prior, rows, cols in cases:
+        got = ipf(prior, rows, cols)
+        want = _naive_ipf(prior, rows, cols)
+        assert (got is None) == (want is None)
+        assert got == want, (prior, rows, cols)
+
+
+def test_equal_classes_share_zone_bins():
+    assert week_bins("III", 0, 0, "Squat") == week_bins("II", 0, 0, "Squat")
+    assert week_units("III", 0, 0, 10) == week_units("II", 0, 0, 10)
+    keyed = wlgen._week_units_keyed
+    keyed.cache_clear()
+    try:
+        week_units("III", 0, 0, 10)
+        before = keyed.cache_info()
+        week_units("II", 0, 0, 10)
+        after = keyed.cache_info()
+    finally:
+        week_units("III", 0, 0, 10)
+    assert after.hits == before.hits + 1
+
+
+def test_build_plan_deterministic():
+    first = build_plan("III")
+    build_plan.cache_clear()
+    try:
+        again = build_plan("III")
+    finally:
+        build_plan("III")
+    assert again == first
