@@ -586,9 +586,11 @@ def test_plan_table_uses_full_width_without_wrapping():
 
 def test_wave_parens_span_full_height():
     html = to_html(build_plan("I"))
-    assert ".wave { display: inline-flex; align-items: center; }" in html
+    assert (
+        ".dose, .wave { display: inline-flex; align-items: center; "
+        "vertical-align: middle; }" in html
+    )
     assert ".pl, .pr { font-size: 2.2em; line-height: 1; font-weight: 300; }" in html
-    assert ".dose { display: inline-flex; align-items: center; }" in html
     assert '<span class="pl">(</span>' in html
 
 
