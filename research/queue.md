@@ -33,3 +33,8 @@
     shaping per-group hosting days. Audit-only nudges.
 12. pair-ratio (stack-1): RATIOS/SCHEDULES tuning for pair schemes;
     size/strain lever, never probed.
+
+13. bins-shift (stack-1): nudge weekly intensity-bin targets (BINS);
+    intensity mix feeds strain directly. Audit-only, revert at red.
+14. order-4day-2 (stack-1): disciplined retry of the 4-day reorder
+    (forbid environment spelunking; 3 commands: audit, edit, audit).
