@@ -1,10 +1,10 @@
 import re
 from functools import cache
-from itertools import product
 from math import gcd
 from pathlib import Path
 
 from wlconfig import (
+    BALLAST,
     BEAM,
     BEAM_JOINT,
     BIN_CLASS,
@@ -15,7 +15,6 @@ from wlconfig import (
     CAP,
     CAP_DEV,
     CLASSES,
-    CLEAN,
     DAY,
     DISPLAY_ZONES,
     EPS,
@@ -23,9 +22,11 @@ from wlconfig import (
     FREE_SLOTS,
     GAP,
     GROUPS,
-    JERK,
     MACRO,
     MIN_DOSE,
+    PAIR_REF,
+    PAIRED_GROUPS,
+    PAIRS,
     PATTERNS,
     REP_CHANGE,
     REPS,
@@ -33,6 +34,8 @@ from wlconfig import (
     SIZE_WEIGHT,
     TOL,
     VARIANTS,
+    slot_singles,
+    token_parts,
 )
 
 
@@ -42,6 +45,81 @@ def expand(slots):
         choices = [*alts, *([None] if optional else [])]
         out = [o + (c,) for o in out for c in choices]
     return out
+
+
+PAIR_SET = {frozenset(p) for p in PAIRS}
+PAIR_BY_SET = {frozenset(p): p for p in PAIRS}
+
+
+def _slot_tables():
+    singles: dict = {}
+    complexes: dict = {}
+    for si, slot in enumerate(DAY):
+        for tok in slot[0]:
+            parts = token_parts(tok)
+            if len(parts) == 1:
+                singles.setdefault(parts[0], set()).add(si)
+            else:
+                complexes.setdefault(frozenset(parts), set()).add(si)
+    return singles, complexes
+
+
+SINGLE_SLOTS, COMPLEX_SLOTS = _slot_tables()
+
+
+def map_zone_index(zlo, group):
+    """Member bin index for a reference zone label.
+
+    Exact when the label exists in the member's zones; below-range labels map
+    to the member's lowest bin (paired pulls ride the classic's low zones),
+    above-range to its highest, otherwise to the nearest bin.
+    """
+    zones = BIN_ZONES[BIN_GROUP[group]]
+    if zlo in zones:
+        return zones.index(zlo)
+    if zlo <= zones[0]:
+        return 0
+    if zlo >= zones[-1]:
+        return len(zones) - 1
+    return min(range(len(zones)), key=lambda i: abs(zones[i] - zlo))
+
+
+@cache
+def is_matchable(groups):
+    """True when every hosted group can take a template slot, with listed
+    A+X complexes sharing one slot.
+
+    Co-hosted pairs need not render jointly: unpaired groups keep their own
+    sets (separate bullets), so overlapping triples only need distinct-slot
+    sharing here. Designated pairs are chosen later by detect_pairs."""
+    groups = set(groups)
+    if not groups:
+        return True
+    if any(g not in SINGLE_SLOTS and all(g not in p for p in PAIR_SET) for g in groups):
+        return False
+
+    def rec(remaining, used):
+        if not remaining:
+            return True
+        g = next(iter(remaining))
+        rest = set(remaining)
+        rest.discard(g)
+        for si in SINGLE_SLOTS.get(g, ()):
+            if si not in used and rec(rest, used | {si}):
+                return True
+        for h in list(rest):
+            key = frozenset((g, h))
+            if key not in PAIR_SET:
+                continue
+            for si in COMPLEX_SLOTS.get(key, ()):
+                if si not in used:
+                    rest2 = set(rest)
+                    rest2.discard(h)
+                    if rec(rest2, used | {si}):
+                        return True
+        return False
+
+    return rec(groups, set())
 
 
 def allocate(total, weights):
@@ -299,6 +377,45 @@ def fit(prior, rows, cols):
                 break
         if not moved:
             break
+    diff = [cols[j] - sum(out[i][j] for i in range(nr)) for j in range(nc)]
+    for _ in range(sum(abs(d) for d in diff) // 2 + 1):
+        # Single swaps can stall when only a chain of moves frees a unit
+        # (e.g. a sparse support after dose pruning). Augment along a path
+        # from an over column to an under one; each augmentation fixes two
+        # units of column drift while keeping every row sum exact.
+        diff = [cols[j] - sum(out[i][j] for i in range(nr)) for j in range(nc)]
+        if not any(diff):
+            break
+        parent: dict = {}
+        queue = [j for j, d in enumerate(diff) if d < 0]
+        for j in queue:
+            parent[j] = None
+        target = None
+        head = 0
+        while head < len(queue) and target is None:
+            j = queue[head]
+            head += 1
+            for i in range(nr):
+                if out[i][j] <= 0:
+                    continue
+                for k in range(nc):
+                    if prior[i][k] <= 0 or k in parent:
+                        continue
+                    parent[k] = (j, i)
+                    if diff[k] > 0:
+                        target = k
+                        break
+                    queue.append(k)
+                if target is not None:
+                    break
+        if target is None:
+            break
+        k = target
+        while parent[k] is not None:
+            j, i = parent[k]
+            out[i][j] -= 1
+            out[i][k] += 1
+            k = j
     if any(sum(out[i]) != rows[i] for i in range(nr)):
         return None
     if any(sum(out[i][j] for i in range(nr)) != cols[j] for j in range(nc)):
@@ -306,8 +423,12 @@ def fit(prior, rows, cols):
     return out
 
 
-def prune_doses(support, rows, cols):
-    """Drop cells below a usable dose where the margins stay feasible."""
+def prune_doses(support, rows, cols, groups=None):
+    """Drop cells below a usable dose where the margins stay feasible.
+
+    With groups (one name per row), a drop must also keep the session's
+    hosted set slot-matchable: pruning a pair partner must not strand the
+    other half in a slot clash (e.g. SnPull left alone with ClPull)."""
     p = [row[:] for row in support]
     for _ in range(20):
         m = ipf(p, rows, cols)
@@ -329,6 +450,11 @@ def prune_doses(support, rows, cols):
             col_ok = sum(1 for ii in range(len(rows)) if p[ii][j] > 0) > 1
             if not (row_ok and col_ok):
                 continue
+            if groups is not None:
+                hosted = {groups[ii] for ii in range(len(rows)) if p[ii][j] > 0}
+                hosted.discard(groups[i])
+                if not slot_match(hosted):
+                    continue
             keep = p[i][j]
             p[i][j] = 0
             if feasible(p, rows, cols):
@@ -347,7 +473,7 @@ def fit_session(prior, rows, cols):
     p = resolve_slots(prior, rows, cols, idx, [0], limit=2000)
     if p is None:
         return None
-    p = prune_doses(p, rows, cols)
+    p = prune_doses(p, rows, cols, GROUPS)
     if p is None:
         return None
     return fit(p, rows, cols)
@@ -398,48 +524,28 @@ def resolve_slots(prior, rows, cols, idx, calls, limit):
 
 def session_options(live, weight):
     """Matchable group subsets of the day template, heaviest first."""
-    slots = [set(alts) for alts, lo, hi, optional in DAY]
     opts = []
+    live = list(live)
 
-    def rec(k, used, chosen):
+    def rec(k, chosen):
         if k == len(live):
-            opts.append(tuple(chosen))
+            if is_matchable(frozenset(chosen)):
+                opts.append(tuple(chosen))
             return
         g = live[k]
-        rec(k + 1, used, chosen)
-        for s, alts in enumerate(slots):
-            if s not in used and g in alts:
-                rec(k + 1, used | {s}, chosen + [g])
+        rec(k + 1, chosen)
+        rec(k + 1, chosen + [g])
 
-    rec(0, set(), [])
+    rec(0, [])
     opts.sort(key=lambda groups: -sum(weight[g] for g in groups))
     return opts
 
 
-def slot_assign(groups, values):
-    """Assign groups to distinct template slots (largest volume first), so each
-    X|Y slot is filled by exactly one movement. Returns the matched groups."""
-    slots = [set(alts) for alts, lo, hi, optional in DAY]
-    taken: dict = {}
-
-    def place(g, seen):
-        for k, alts in enumerate(slots):
-            if g in alts and k not in seen:
-                seen.add(k)
-                if k not in taken or place(taken[k], seen):
-                    taken[k] = g
-                    return True
-        return False
-
-    for g in sorted(groups, key=lambda g: values[g], reverse=True):
-        place(g, set())
-    return set(taken.values())
-
-
 def slot_match(groups):
-    """True when every group can take a distinct template slot."""
+    """True when every group can take a distinct template slot (listed
+    complexes may share one)."""
     groups = set(groups)
-    return len(slot_assign(groups, {g: 1 for g in groups})) == len(groups)
+    return is_matchable(frozenset(groups))
 
 
 def week_quota(targets, vols, prev_last=None):
@@ -452,7 +558,7 @@ def week_quota(targets, vols, prev_last=None):
     for si, slot in enumerate(DAY):
         if slot not in FREE_SLOTS:
             continue
-        live = [g for g in slot[0] if targets[g] > 0]
+        live = [g for g in slot_singles(slot) if targets[g] > 0]
         if not live:
             continue
         caps = {g: min(n, max(1, targets[g] // MIN_DOSE)) for g in live}
@@ -484,7 +590,7 @@ def session_prior(targets, nsessions, quota=None, prev_last=None):
     """Hostability weight per group x session. Quota days weigh 1, other days
     a small epsilon, so the feasible-support search prefers the spread-out
     calendar but can still move a host when the exact amounts need it."""
-    free = {g for slot in FREE_SLOTS for g in slot[0]}
+    free = {g for slot in FREE_SLOTS for g in slot_singles(slot)}
     out = []
     for g in GROUPS:
         if targets[g] <= 0:
@@ -518,55 +624,123 @@ def zone_alloc(counts, lifts):
 def close_ramps(m):
     """Swap reps between sessions until every session's zone profile is
     contiguous from its own base. Volumes and week totals stay exact.
-    m is zone-major: m[zone][session]."""
+    m is zone-major: m[zone][session].
+
+    A gap the week cannot fill is left alone: when a zone holds fewer
+    units than the sessions spanning it (below and above, or just above
+    for the base), no swap can give every spanning session that zone, so
+    trying only churns mass between days."""
     nz, ns = len(m), len(m[0])
     base = next((z for z in range(nz) if any(m[z])), nz)
     if base == nz:
         return m
+    weekcount = [sum(m[z]) for z in range(nz)]
+
+    def spanning(z):
+        n = 0
+        for s in range(ns):
+            above = any(m[zz][s] for zz in range(z + 1, nz))
+            if not above:
+                continue
+            if z == base or any(m[zz][s] for zz in range(base, z)):
+                n += 1
+        return n
+
+    def raw_gaps(s):
+        used = [z for z in range(base, nz) if m[z][s]]
+        if not used:
+            return []
+        return [z for z in range(used[0], used[-1] + 1) if not m[z][s]]
+
+    def fill(s, z):
+        """Fill session s's gap at z, strictly reducing the total gap
+        count. Every candidate move is simulated first and applied only
+        when s gains no new gap and nobody else does either; a lone
+        pigeonholed gap can strand a two-way swap, so a three-cycle
+        (holder -> s -> middleman -> holder) is tried next."""
+        pre = [len(raw_gaps(t)) for t in range(ns)]
+
+        def ok(touched):
+            post = {t: len(raw_gaps(t)) for t in touched}
+            if post[s] >= pre[s]:
+                return False
+            return all(post[t] <= pre[t] for t in touched if t != s)
+
+        def take(give, recv):
+            for zz, ss, delta in give:
+                m[zz][ss] += delta
+            for zz, ss, delta in recv:
+                m[zz][ss] += delta
+
+        def untake(give, recv):
+            for zz, ss, delta in give:
+                m[zz][ss] -= delta
+            for zz, ss, delta in recv:
+                m[zz][ss] -= delta
+
+        # two-way: s takes z from d, d takes an upper v back
+        for v in range(z + 1, nz):
+            if not m[v][s]:
+                continue
+            for d in range(ns):
+                if d == s or not m[z][d]:
+                    continue
+                give = [(z, s, 1), (v, d, 1)]
+                recv = [(z, d, -1), (v, s, -1)]
+                take(give, recv)
+                good = ok((s, d))
+                if not good:
+                    untake(give, recv)
+                else:
+                    return True
+        # three-cycle: a holder h with nothing above z hands z to s,
+        # s hands its top v on to a middleman d2, d2 hands a lower w
+        # it can spare back to h. Nobody gains a new gap by construction
+        # (h and s trade their tops down, d2 keeps every zone it holds).
+        top = max(zz for zz in range(z + 1, nz) if m[zz][s])
+        for h in range(ns):
+            if h == s or not m[z][h]:
+                continue
+            if any(m[zz][h] for zz in range(z + 1, nz)):
+                continue
+            for d2 in range(ns):
+                if d2 == s or d2 == h:
+                    continue
+                for w in range(base, z):
+                    if m[w][d2] < 2:
+                        continue
+                    give = [(z, s, 1), (top, d2, 1), (w, h, 1)]
+                    recv = [(z, h, -1), (top, s, -1), (w, d2, -1)]
+                    take(give, recv)
+                    good = ok((s, h, d2))
+                    if not good:
+                        untake(give, recv)
+                    else:
+                        return True
+        return False
 
     def pass_once():
         changed = False
         for s in range(ns):
+            stuck = set()
             while True:
-                gaps = [
-                    z
-                    for z in range(base, nz)
-                    if m[z][s] == 0 and any(m[zz][s] for zz in range(z + 1, nz))
-                ]
-                moved = False
-                for z in gaps:
-                    up = next(zz for zz in range(z + 1, nz) if m[zz][s])
-                    # a donor can spare a gap rep; pay with s's next rep
-                    donor = next(
-                        (d for d in range(ns) if d != s and m[z][d] >= 2), None
-                    )
-                    if donor is not None:
-                        m[z][s] += 1
-                        m[z][donor] -= 1
-                        m[up][s] -= 1
-                        m[up][donor] += 1
-                        moved = True
-                        break
-                    # move s's lowest upper rep to a holder of the gap, and
-                    # take the holder's own base rep back
-                    for d in range(ns):
-                        if d == s or m[z][d] == 0:
-                            continue
-                        top = max(ww for ww in range(nz) if m[ww][d])
-                        if m[up][d] == 0 and top + 1 != up:
-                            continue
-                        low = next(ww for ww in range(nz) if m[ww][d])
-                        m[up][s] -= 1
-                        m[up][d] += 1
-                        m[low][d] -= 1
-                        m[low][s] += 1
-                        moved = True
-                        break
-                    if moved:
-                        break
-                if not moved:
+                nxt = next(
+                    (
+                        z
+                        for z in range(base, nz)
+                        if z not in stuck
+                        and m[z][s] == 0
+                        and any(m[zz][s] for zz in range(z + 1, nz))
+                        and weekcount[z] >= spanning(z)
+                    ),
+                    None,
+                )
+                if nxt is None:
                     break
-                changed = True
+                if fill(s, nxt):
+                    changed = True
+                else:
+                    stuck.add(nxt)
         return changed
 
     for _ in range(nz * ns + 4):
@@ -626,10 +800,13 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
 
 
 @cache
-def week_units(cls, mi, wi, t):
-    """Paired units in the heavy, mid and light ratio tiers."""
-    lo = BIN_ZONES[BIN_GROUP["Clean"]]
-    counts = week_bin_lifts(cls, mi, wi, CLEAN[0], t)
+def week_units(cls, mi, wi, t, ref="Clean"):
+    """Paired units in the heavy, mid and light ratio tiers.
+
+    Tiers follow the reference member's zones (the classic lift limits the
+    complex), so mixed pairs share the classic's heavy/mid/light split."""
+    lo = BIN_ZONES[BIN_GROUP[ref]]
+    counts = week_bin_lifts(cls, mi, wi, ref, t)
     return (
         sum(c for c, z in zip(counts, lo) if z >= 90),
         sum(c for c, z in zip(counts, lo) if z == 80),
@@ -637,11 +814,11 @@ def week_units(cls, mi, wi, t):
     )
 
 
-def pair_options(c, h, cls, mi, wi):
+def pair_options(c, h, cls, mi, wi, ref="Clean"):
     """Legal tier schedules for one session, closest to (c, h) first."""
     out = []
     for t in range(max(1, (c + h) // 5 - 2), (c + h) // 2 + 2):
-        heavy, mid, light = week_units(cls, mi, wi, t)
+        heavy, mid, light = week_units(cls, mi, wi, t, ref)
         for rh, rm, rl in SCHEDULES:
             ac = rh[0] * heavy + rm[0] * mid + rl[0] * light
             aj = rh[1] * heavy + rm[1] * mid + rl[1] * light
@@ -650,136 +827,306 @@ def pair_options(c, h, cls, mi, wi):
     return out
 
 
+def cover_session(hosted):
+    """Pairing + slot assignment covering every hosted group, or None.
+
+    Listed pairs share their complex slot (preferred, so complexes render),
+    the rest take distinct single slots. Groups volume-first, pairs before
+    singles, both in sorted order: deterministic."""
+    hosted = sorted(hosted, key=lambda g: (-hosted[g], g))
+    names = list(hosted)
+
+    def rec(names, used, pairs):
+        if not names:
+            return list(pairs)
+        g = names[0]
+        rest = names[1:]
+        for k, h in enumerate(rest):
+            key = frozenset((g, h))
+            if key not in PAIR_SET:
+                continue
+            for si in sorted(COMPLEX_SLOTS.get(key, ())):
+                if si not in used:
+                    a, b = PAIR_BY_SET[key]
+                    out = rec(rest[:k] + rest[k + 1 :], used | {si}, pairs + [(a, b)])
+                    if out is not None:
+                        return out
+        for si in sorted(SINGLE_SLOTS.get(g, ())):
+            if si not in used:
+                out = rec(rest, used | {si}, pairs)
+                if out is not None:
+                    return out
+        return None
+
+    return rec(names, set(), [])
+
+
+def detect_pairs(moved, idx, vols):
+    """Slot-consistent A+X pairs per session. The fit guarantees a cover
+    exists; when none is found the session stays unpaired (separate sets)."""
+    found: dict = {}
+    for j in range(len(vols)):
+        hosted = {g for g in GROUPS if moved[idx[g]][j] > 0}
+        cover = cover_session({g: moved[idx[g]][j] for g in hosted})
+        if cover:
+            found[j] = cover
+    return found
+
+
 def pair_fit(moved, vols, targets, nom, prior, cls, mi, wi):
-    """Snap every session that hosts a clean and a jerk to one small ratio,
+    """Snap every session hosting a listed A+X pair to one small ratio,
     then refit the other groups. Week targets flex to what was planned."""
     idx = {g: i for i, g in enumerate(GROUPS)}
-    pair = {}
-    for j in range(len(vols)):
-        c = next((g for g in CLEAN if moved[idx[g]][j]), None)
-        h = next((g for g in JERK if moved[idx[g]][j]), None)
-        if c and h:
-            pair[j] = (c, h)
-    if not pair:
+    detected = detect_pairs(moved, idx, vols)
+    if not detected:
         return moved, {}
-    jlist = list(pair)
-    free = [i for i, g in enumerate(GROUPS) if g not in CLEAN + JERK]
+    instances = [
+        (j, a, b, PAIR_REF[(a, b)]) for j, picks in detected.items() for a, b in picks
+    ]
+    # The refit only moves never-paired groups: every pairable row is frozen
+    # (snapped where paired, as-fit elsewhere), so the refit cannot strand
+    # a new unsnapped co-hosted pair in one session.
+    free = [i for i, g in enumerate(GROUPS) if g in BALLAST]
     lo = [nom[GROUPS[i]] - max(1, round(TOL * nom[GROUPS[i]])) for i in free]
     hi = [nom[GROUPS[i]] + max(1, round(TOL * nom[GROUPS[i]])) for i in free]
     prior = prior or session_prior(targets, len(vols))
 
     def snap(combo):
         work = [row[:] for row in moved]
-        pairs = {}
-        for j, (_, _, ac, aj, t, sched) in zip(jlist, combo):
-            c, h = pair[j]
-            work[idx[c]][j] = ac
-            work[idx[h]][j] = aj
-            pairs[j] = (c, h, ac, aj, t, sched)
+        pairs: dict = {}
+        for (j, a, b, ref), (_, _, ac, aj, t, sched) in zip(instances, combo):
+            work[idx[a]][j] = ac
+            work[idx[b]][j] = aj
+            pairs.setdefault(j, []).append((a, b, ac, aj, t, sched, ref))
         return work, pairs
 
     def band_excess(work):
         return sum(
             max(0, abs(sum(work[idx[g]]) - nom[g]) - max(1, round(TOL * nom[g])))
-            for g in CLEAN + JERK
+            for g in PAIRED_GROUPS
         )
 
-    combos = list(
-        product(
-            *(
-                pair_options(
-                    moved[idx[pair[j][0]]][j],
-                    moved[idx[pair[j][1]]][j],
-                    cls,
-                    mi,
-                    wi,
-                )[:6]
-                for j in jlist
+    per_opts = [
+        pair_options(moved[idx[a]][j], moved[idx[b]][j], cls, mi, wi, ref)[:6]
+        for j, a, b, ref in instances
+    ]
+    # A snapped pair occupies its complex slot, and every frozen (unsnapped
+    # but hosted) pairable cell keeps its single slot, so the refit may not
+    # host other singles needing those slots in the same session (e.g. no
+    # lone Squat alongside a frozen ClPull in slot 2).
+    occupied: dict = {}
+    for j, a, b, _ref in instances:
+        slots = COMPLEX_SLOTS.get(frozenset((a, b)), set())
+        if slots:
+            occupied.setdefault(j, set()).add(sorted(slots)[0])
+    # Hill-climb the snap choice: start from the closest option per paired
+    # session, then flip single sessions while the week total nears its
+    # band. Product order would starve wide weeks (6^12 combos); climbing
+    # evaluates hundreds, not billions. Candidates sort by (band excess,
+    # session overflow, snap distance); strict takes the first in-band
+    # refit, relaxed retries the cheapest excess first. Session overflow
+    # is scored (not just filtered) so the climb walks away from snaps
+    # that burst a day's volume.
+    CAP_EVALS = 20000
+    CAP_REFITS = 200
+    tried_refits = 0
+
+    def vols_ok(work):
+        return not any(
+            sum(work[idx[g]][j] for g in PAIRED_GROUPS) > vols[j]
+            for j in range(len(vols))
+        )
+
+    def combo_key(idxs):
+        work, _ = snap(tuple(per_opts[i][k] for i, k in enumerate(idxs)))
+        dist = sum(per_opts[i][k][0] for i, k in enumerate(idxs))
+        overflow = sum(
+            max(0, sum(work[idx[g]][j] for g in PAIRED_GROUPS) - vols[j])
+            for j in range(len(vols))
+        )
+        return (band_excess(work), overflow, dist)
+
+    start = tuple(0 for _ in instances)
+    seen_keys = {start}
+    scored = [(combo_key(start), start)]
+    evals = 1
+    cur, cur_score = start, scored[0][0]
+    while evals < CAP_EVALS:
+        stepped = None
+        for i in range(len(instances)):
+            for k in range(len(per_opts[i])):
+                if k == cur[i]:
+                    continue
+                nxt = cur[:i] + (k,) + cur[i + 1 :]
+                if nxt in seen_keys:
+                    continue
+                seen_keys.add(nxt)
+                evals += 1
+                score = combo_key(nxt)
+                scored.append((score, nxt))
+                if score < cur_score:
+                    stepped = (nxt, score)
+                    break
+                if evals >= CAP_EVALS:
+                    break
+            if stepped is not None or evals >= CAP_EVALS:
+                break
+        if stepped is None:
+            break
+        cur, cur_score = stepped
+    scored.sort(key=lambda t: t[0])
+    ordered = []
+    seen_work = set()
+    for _, idxs in scored:
+        combo = tuple(per_opts[i][k] for i, k in enumerate(idxs))
+        work, pairs = snap(combo)
+        if not vols_ok(work):
+            continue
+        key = tuple(sum(work[idx[g]]) for g in sorted(PAIRED_GROUPS))
+        if key in seen_work:
+            continue
+        seen_work.add(key)
+        ordered.append((work, pairs))
+        if len(ordered) >= CAP_REFITS * 2:
+            break
+
+    def refit(work, pairs):
+        nonlocal tried_refits
+        tried_refits += 1
+        if tried_refits > CAP_REFITS:
+            return None
+        delta = sum(sum(work[idx[g]]) for g in PAIRED_GROUPS) - sum(
+            targets[g] for g in PAIRED_GROUPS
+        )
+        rows = [targets[GROUPS[i]] for i in free]
+        step = -1 if delta > 0 else 1
+        for _ in range(abs(delta)):
+            room = [k for k in range(len(rows)) if lo[k] <= rows[k] + step <= hi[k]]
+            if not room:
+                break
+            k = max(
+                room,
+                key=lambda k: (hi[k] - rows[k]) if step > 0 else (rows[k] - lo[k]),
             )
-        )
-    )
+            rows[k] += step
+        if sum(rows) - sum(targets[GROUPS[i]] for i in free) != -delta:
+            return None
+        fixed = [0] * len(GROUPS)
+        for i, v in zip(free, rows):
+            fixed[i] = v
+        cols = [
+            vols[j] - sum(work[idx[g]][j] for g in PAIRED_GROUPS)
+            for j in range(len(vols))
+        ]
+        block = [row[:] for row in prior]
+        for g in PAIRED_GROUPS:
+            block[idx[g]] = [0.0] * len(vols)
+        designated = {}
+        for jj, plist in pairs.items():
+            designated[jj] = {g for a, b, *_ in plist for g in (a, b)}
+        for i in free:
+            g = GROUPS[i]
+            need_slots = SINGLE_SLOTS.get(g, set())
+            if not need_slots:
+                continue
+            for j in range(len(vols)):
+                occ = set(occupied.get(j, ()))
+                for h in PAIRED_GROUPS:
+                    if work[idx[h]][j] > 0 and h not in designated.get(j, set()):
+                        occ |= SINGLE_SLOTS.get(h, set())
+                if need_slots <= occ:
+                    block[i][j] = 0.0
+        support = resolve_slots(block, fixed, cols, idx, [0], limit=2000)
+        if support is None:
+            return None
+        support = prune_doses(support, fixed, cols)
+        if support is None:
+            return None
+        rest = fit(support, fixed, cols)
+        if rest is None:
+            return None
+        for i in free:
+            for j in range(len(vols)):
+                work[i][j] = rest[i][j]
+        for i, g in enumerate(GROUPS):
+            targets[g] = sum(work[i])
+        return work
+
     for strict in (True, False):
-        ordered = (
-            combos if strict else sorted(combos, key=lambda c: band_excess(snap(c)[0]))
-        )
-        for combo in ordered:
-            work, pairs = snap(combo)
+        for work, pairs in ordered:
             if strict and band_excess(work):
                 continue
-            if any(
-                sum(work[idx[g]][j] for g in CLEAN + JERK) > vols[j]
-                for j in range(len(vols))
-            ):
-                continue
-            delta = sum(sum(work[idx[g]]) for g in CLEAN + JERK) - sum(
-                targets[g] for g in CLEAN + JERK
-            )
-            rows = [targets[GROUPS[i]] for i in free]
-            step = -1 if delta > 0 else 1
-            for _ in range(abs(delta)):
-                room = [k for k in range(len(rows)) if lo[k] <= rows[k] + step <= hi[k]]
-                if not room:
-                    break
-                k = max(
-                    room,
-                    key=lambda k: (hi[k] - rows[k]) if step > 0 else (rows[k] - lo[k]),
-                )
-                rows[k] += step
-            if sum(rows) - sum(targets[GROUPS[i]] for i in free) != -delta:
-                continue
-            fixed = [0] * len(GROUPS)
-            for i, v in zip(free, rows):
-                fixed[i] = v
-            cols = [
-                vols[j] - sum(work[idx[g]][j] for g in CLEAN + JERK)
-                for j in range(len(vols))
-            ]
-            block = [row[:] for row in prior]
-            for g in CLEAN + JERK:
-                block[idx[g]] = [0.0] * len(vols)
-            support = resolve_slots(block, fixed, cols, idx, [0], limit=2000)
-            if support is None:
-                continue
-            support = prune_doses(support, fixed, cols)
-            if support is None:
-                continue
-            rest = fit(support, fixed, cols)
-            if rest is None:
-                continue
-            for i in free:
-                for j in range(len(vols)):
-                    work[i][j] = rest[i][j]
-            for i, g in enumerate(GROUPS):
-                targets[g] = sum(work[i])
-            return work, pairs
+            if refit(work, pairs) is not None:
+                return work, pairs
+            if tried_refits >= CAP_REFITS:
+                break
     return None, None
 
 
 def pair_zones(cls, mi, wi, pairs):
-    """One zone list per movement from the shared clean+jerk unit blocks.
+    """One zone list per movement from the pair's shared unit blocks.
 
-    The tier schedule fixes each zone's ratio; the actual clean/jerk totals are
-    returned too, so the free groups can absorb any rounding difference.
-    """
-    jlist = list(pairs)
-    units = [pairs[j][4] for j in jlist]
-    counts = week_bin_lifts(cls, mi, wi, CLEAN[0], sum(units))
-    top = max((z for z, c in enumerate(counts) if c), default=0)
-    counts = counts[: top + 1]
-    m = fit([[1.0] * len(units) for _ in counts], counts, units)
-    close_ramps(m)
-    lo = BIN_ZONES[BIN_GROUP["Clean"]]
+    Units of one reference-zone family split across that family's paired
+    sessions with a flat prior (so every complex carries its own warmup
+    ramp) and contiguous profiles; each member counts its share in its own
+    bins (below-range reference zones land in the member's lowest bin). The
+    tier schedule fixes each reference zone's ratio; the actual totals are
+    returned too, so the ballast groups can absorb any rounding difference.
+    Reference-zone vectors are also returned for rendering."""
+    by_bin: dict = {}
+    for j, plist in pairs.items():
+        for a, b, _ac, _aj, t, sched, ref in plist:
+            by_bin.setdefault(BIN_GROUP[ref], []).append((j, a, b, t, sched, ref))
     out = {}
     actual = {}
-    for k, j in enumerate(jlist):
-        c, h, _ac, _aj, _t, (rh, rm, rl) = pairs[j]
-        ratios = [
-            rh if lo[z] >= 90 else rm if lo[z] == 80 else rl for z in range(len(counts))
+    refdata = {}
+    for bt, items in by_bin.items():
+        ref0 = items[0][5]
+        units = [it[3] for it in items]
+        counts = week_bin_lifts(cls, mi, wi, ref0, sum(units))
+        top = max((z for z, c in enumerate(counts) if c), default=0)
+        counts = counts[: top + 1]
+        nS = len(items)
+        # Base floor: every paired session touches the week's base zone when
+        # the week holds enough (one per session with units to place), low
+        # zones first, so small proportional shares never round to zero and
+        # strand a lone top without its warmup base. The remainder still
+        # fits exactly, and adding base units cannot open a gap.
+        base = next((z for z, c in enumerate(counts) if c), None)
+        floored = [u >= 1 for u in units]
+        res = [[0] * len(counts) for _ in range(nS)]
+        if base is not None and counts[base] >= sum(floored):
+            for k in range(nS):
+                if floored[k]:
+                    res[k][base] = 1
+        rem_counts = [
+            counts[z] - sum(res[k][z] for k in range(nS)) for z in range(len(counts))
         ]
-        out[(j, c)] = [r[0] * m[z][k] for z, r in enumerate(ratios)]
-        out[(j, h)] = [r[1] * m[z][k] for z, r in enumerate(ratios)]
-        actual[j] = (sum(out[(j, c)]), sum(out[(j, h)]))
-    return out, actual
+        rem_units = [units[k] - sum(res[k]) for k in range(nS)]
+        m_rem = fit([[1.0] * nS for _ in rem_counts], rem_counts, rem_units)
+        close_ramps(m_rem)
+        m = [[m_rem[z][k] + res[k][z] for k in range(nS)] for z in range(len(counts))]
+        lo = BIN_ZONES[bt]
+        nz_full = len(BIN_ZONES[bt])
+        for k, (j, a, b, _t, (rh, rm, rl), ref) in enumerate(items):
+            ratios = [
+                rh if lo[z] >= 90 else rm if lo[z] == 80 else rl
+                for z in range(len(counts))
+            ]
+            ra = [r[0] * m[z][k] for z, r in enumerate(ratios)]
+            rb = [r[1] * m[z][k] for z, r in enumerate(ratios)]
+            va = [0] * len(BIN_ZONES[BIN_GROUP[a]])
+            vb = [0] * len(BIN_ZONES[BIN_GROUP[b]])
+            for z in range(len(counts)):
+                va[map_zone_index(lo[z], a)] += ra[z]
+                vb[map_zone_index(lo[z], b)] += rb[z]
+            out[(j, a)] = va
+            out[(j, b)] = vb
+            actual[(j, a, b)] = (sum(va), sum(vb))
+            full_a = ra + [0] * (nz_full - len(ra))
+            full_b = rb + [0] * (nz_full - len(rb))
+            refdata[(j, a, b)] = (ref, full_a, full_b)
+    return out, actual, refdata
 
 
 def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
@@ -797,41 +1144,71 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
     for s in session_list:
         s["base"] = "Day"
         s["movements"] = {}
-    paired, actual = pair_zones(cls, mi, wi, pairs) if pairs else ({}, {})
+        s["pairs"] = {}
+    paired, actual, refdata = pair_zones(cls, mi, wi, pairs) if pairs else ({}, {}, {})
     idx = {g: i for i, g in enumerate(GROUPS)}
-    free = [i for i, g in enumerate(GROUPS) if g not in CLEAN + JERK]
-    for j, (c, h, _ac, _aj, _t, _s) in pairs.items():
-        tc, tj = moved[idx[c]][j], moved[idx[h]][j]
-        ac, aj = actual[j]
-        moved[idx[c]][j] = ac
-        moved[idx[h]][j] = aj
-        need = tc + tj - ac - aj
-        while need > 0:
-            here = [i for i in free if moved[i][j] > 0]
-            i = max(
-                here,
-                key=lambda i: (
-                    nom[GROUPS[i]] + max(1, round(TOL * nom[GROUPS[i]])) - sum(moved[i])
-                ),
-                default=None,
-            )
-            if i is None:
-                break
-            moved[i][j] += 1
-            need -= 1
-        while need < 0:
-            here = [i for i in free if moved[i][j] > 0]
-            i = max(
-                here,
-                key=lambda i: (
-                    sum(moved[i]) - nom[GROUPS[i]] + max(1, round(TOL * nom[GROUPS[i]]))
-                ),
-                default=None,
-            )
-            if i is None:
-                break
-            moved[i][j] -= 1
-            need += 1
+    for j, plist in pairs.items():
+        paired_here = {g for a, b, *_ in plist for g in (a, b)}
+        free = [i for i, g in enumerate(GROUPS) if g not in paired_here]
+        for a, b, _ac, _aj, t, (rh, rm, rl), ref in plist:
+            tc, ta = moved[idx[a]][j], moved[idx[b]][j]
+            ac, aj = actual[(j, a, b)]
+            need = tc + ta - ac - aj
+            pool = sum(moved[i][j] for i in free)
+            if (need > 0 and pool == 0) or (need < 0 and pool < -need):
+                # Unabsorbable drift (near-pair-only session): split this
+                # session's own units instead. Totals match the snap exactly
+                # by construction, and big-t sessions keep a broad ramp.
+                lo = BIN_ZONES[BIN_GROUP[ref]]
+                wbl = week_bin_lifts(cls, mi, wi, ref, t)
+                ratios = [
+                    rh if lo[z] >= 90 else rm if lo[z] == 80 else rl
+                    for z in range(len(lo))
+                ]
+                ra = [r[0] * w for r, w in zip(ratios, wbl)]
+                rb = [r[1] * w for r, w in zip(ratios, wbl)]
+                va = [0] * len(BIN_ZONES[BIN_GROUP[a]])
+                vb = [0] * len(BIN_ZONES[BIN_GROUP[b]])
+                for z in range(len(lo)):
+                    va[map_zone_index(lo[z], a)] += ra[z]
+                    vb[map_zone_index(lo[z], b)] += rb[z]
+                paired[(j, a)] = va
+                paired[(j, b)] = vb
+                actual[(j, a, b)] = (sum(va), sum(vb))
+                refdata[(j, a, b)] = (ref, list(ra), list(rb))
+                continue
+            moved[idx[a]][j] = ac
+            moved[idx[b]][j] = aj
+            while need > 0:
+                here = [i for i in free if moved[i][j] > 0]
+                i = max(
+                    here,
+                    key=lambda i: (
+                        nom[GROUPS[i]]
+                        + max(1, round(TOL * nom[GROUPS[i]]))
+                        - sum(moved[i])
+                    ),
+                    default=None,
+                )
+                if i is None:
+                    break
+                moved[i][j] += 1
+                need -= 1
+            while need < 0:
+                here = [i for i in free if moved[i][j] > 0]
+                i = max(
+                    here,
+                    key=lambda i: (
+                        sum(moved[i])
+                        - nom[GROUPS[i]]
+                        + max(1, round(TOL * nom[GROUPS[i]]))
+                    ),
+                    default=None,
+                )
+                if i is None:
+                    break
+                moved[i][j] -= 1
+                need += 1
     for i, g in enumerate(GROUPS):
         targets[g] = sum(moved[i])
     for i, g in enumerate(GROUPS):
@@ -845,12 +1222,74 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
         if active:
             counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active))
             zones = zone_alloc(counts, [moved[i][j] for j in active])
+            # Ramp repair: every active session shows a dose in each zone
+            # below its top that the week holds in force. Zone 0 is owed
+            # when the week holds one per active session (this split's
+            # base plus paired sessions' base lifts); higher zones when
+            # the full week holds twice the active count (the test's
+            # dose-per-session-plus-spare bar for all-single doses). The
+            # moved unit comes from the lowest zone holding 2+ (else the
+            # top, which can only drop), so no session gaps; totals stay
+            # exact with no drift (1:1 lifts).
+            paired_at: dict = {}
+            for (jj, gg), va in paired.items():
+                if gg == g:
+                    for x, c in enumerate(va):
+                        paired_at[x] = paired_at.get(x, 0) + c
+            full = [
+                (counts[x] if x < len(counts) else 0) + paired_at.get(x, 0)
+                for x in range(nz)
+            ]
+            have0 = full[0] if full else 0
+            if have0 >= len(active):
+                for z in zones:
+                    used = [x for x in range(len(z)) if z[x]]
+                    if not used or used[0] == 0:
+                        continue
+                    if len(used) == 1:
+                        # lone zone: move the whole block to the base
+                        z[0] = z[used[0]]
+                        z[used[0]] = 0
+                    elif any(z[x] >= 2 for x in used):
+                        # spare rep: reinforce the base, lowest spare first
+                        src = next(x for x in used if z[x] >= 2)
+                        z[src] -= 1
+                        z[0] += 1
+                    else:
+                        # all singletons: shift the block down to the base
+                        b = used[0]
+                        block = [z[x] for x in used]
+                        for x in used:
+                            z[x] = 0
+                        for off, c in enumerate(block):
+                            z[off] = c
+            for z in zones:
+                top = max((x for x in range(len(z)) if z[x]), default=None)
+                if top is None:
+                    continue
+                for x in range(top - 1, 0, -1):
+                    if z[x] or full[x] < 2 * len(active):
+                        continue
+                    src = next(
+                        (y for y in range(x + 1, len(z)) if z[y] >= 2),
+                        max(y for y in range(len(z)) if z[y]),
+                    )
+                    z[src] -= 1
+                    z[x] += 1
             for j, z in zip(active, zones):
                 session_list[j]["movements"][g] = z + [0] * (nz - len(z))
         for j in range(len(vols)):
             if (j, g) in paired:
                 z = paired[(j, g)]
                 session_list[j]["movements"][g] = z + [0] * (nz - len(z))
+    for (j, a, b), (ref, va, vb) in refdata.items():
+        session_list[j]["pairs"][(a, b)] = (ref, tuple(va), tuple(vb))
+    for s in session_list:
+        hosted = {g for g, z in s["movements"].items() if sum(z)}
+        if not slot_match(hosted):
+            raise ValueError("week has no session mix that hosts every group")
+        if sum(sum(z) for z in s["movements"].values()) != s["vol"]:
+            raise ValueError("week has no session mix that hosts every group")
     return session_list
 
 
@@ -1023,11 +1462,19 @@ def complex_text(parts):
     return ",".join(f"{n}x{r}" if n > 1 else r for r, n in runs)
 
 
-def pair_fill(a, b, zlo):
-    """Complex sets for a clean+jerk zone; size capped by the zone's reps."""
+def pair_fill(a, b, zlo, a_group="Clean", b_group="Jerk"):
+    """Complex sets for an A+X zone; each side capped by its own rep table.
+
+        zlo is the reference (classic) zone label; sides lifting below/above their
+        own range use their lowest/highest bin's cap. The tightest side wins, so
+    e.g. SnPull+Snatch 3+3 is legal at 70%: correct for Snatch, low for SnPull."""
     m = gcd(a, b)
     p, q = a // m, b // m
-    kmax = max(1, max(REPS["CJ"][zlo]) // max(p, q))
+    za = BIN_ZONES[BIN_GROUP[a_group]][map_zone_index(zlo, a_group)]
+    zb = BIN_ZONES[BIN_GROUP[b_group]][map_zone_index(zlo, b_group)]
+    cap_a = max(REPS[BIN_GROUP[a_group]][za])
+    cap_b = max(REPS[BIN_GROUP[b_group]][zb])
+    kmax = max(1, min(cap_a // p, cap_b // q))
     return [(k * p, k * q) for k in fill(m, tuple(range(kmax, 0, -1)))]
 
 
@@ -1200,11 +1647,14 @@ def _transition_ok(prev_zone, prev_value, zone, value, seen, present):
         nxt = next((z for z in present if z > prev_zone), None)
         if zone != nxt:
             return False
-    return not (
-        prev_zone is not None
-        and zone >= prev_zone
-        and atom_total(value) > atom_total(prev_value)
-    )
+    if prev_zone is None or zone < prev_zone:
+        return True
+    if isinstance(value, tuple) and isinstance(prev_value, tuple):
+        # Complexes: each member's per-set reps must hold flat or fall.
+        # A flat complex total is not enough (1+2 -> 2+1 keeps 3 but
+        # raises one side).
+        return not any(v > p for v, p in zip(value, prev_value))
+    return not (atom_total(value) > atom_total(prev_value))
 
 
 def single_zones(counts, family):
@@ -1221,16 +1671,21 @@ def single_zones(counts, family):
     )
 
 
-def cj_zones(clean, jerk):
-    """Clean+jerk zones: size is the shared unit count, value is the complex."""
-    lo = BIN_ZONES["CJ"]
+def pair_choices(a_ref, b_ref, a_group, b_group, ref_group):
+    """A+X zones for the beam search: size is the shared unit count, value
+    is the complex. Zones and tiers follow the reference member."""
+    lo = BIN_ZONES[BIN_GROUP[ref_group]]
     out = []
-    for z, (a, b) in enumerate(zip(clean, jerk)):
+    for z, (a, b) in enumerate(zip(a_ref, b_ref)):
         if not (a or b):
             continue
         m = gcd(a, b)
         p, q = a // m, b // m
-        kmax = max(1, max(REPS["CJ"][lo[z]]) // max(p, q))
+        za = BIN_ZONES[BIN_GROUP[a_group]][map_zone_index(lo[z], a_group)]
+        zb = BIN_ZONES[BIN_GROUP[b_group]][map_zone_index(lo[z], b_group)]
+        cap_a = max(REPS[BIN_GROUP[a_group]][za])
+        cap_b = max(REPS[BIN_GROUP[b_group]][zb])
+        kmax = max(1, min(cap_a // p, cap_b // q))
         out.append((lo[z], m, tuple((k, (k * p, k * q)) for k in range(kmax, 0, -1))))
     return tuple(out)
 
@@ -1492,47 +1947,75 @@ def best_scheme(counts, family):
 
 
 @cache
-def best_pair_scheme(clean, jerk):
-    """Preferred complex fill first, joint search only when it cannot order."""
-    lo = BIN_ZONES["CJ"]
+def best_pair_scheme(
+    a_counts, b_counts, a_group="Clean", b_group="Jerk", ref_group="Clean"
+):
+    """Preferred complex fill first, joint search only when it cannot order.
+
+    Counts are reference-zone vectors (both sides share the reference zones);
+    each side is capped by its own rep table at its mapped zone."""
+    lo = BIN_ZONES[BIN_GROUP[ref_group]]
     types = []
-    for z, (a, b) in enumerate(zip(clean, jerk)):
+    for z, (a, b) in enumerate(zip(a_counts, b_counts)):
         if not (a or b):
             continue
-        parts = pair_fill(a, b, lo[z])
+        parts = pair_fill(a, b, lo[z], a_group, b_group)
         for p in sorted(set(parts)):
             types.append((lo[z], p, parts.count(p)))
-    order = fixed_beam(tuple(types), "CJ")
+    order = fixed_beam(tuple(types), BIN_GROUP[ref_group])
     if order is None:
-        order = beam_search(cj_zones(clean, jerk), "CJ")
+        order = beam_search(
+            pair_choices(a_counts, b_counts, a_group, b_group, ref_group),
+            BIN_GROUP[ref_group],
+        )
     return order, compact_text(order)
 
 
 def scheme_lines(s):
-    """One session's movements as exact sets x reps bullets, beam-ordered."""
-    cs = [g for g in CLEAN if sum(s["movements"].get(g, []))]
-    hs = [g for g in JERK if sum(s["movements"].get(g, []))]
-    pair = None
-    if len(cs) == 1 and len(hs) == 1:
-        c, h = cs[0], hs[0]
-        if all(
-            (a > 0) == (b > 0) for a, b in zip(s["movements"][c], s["movements"][h])
-        ):
-            pair = (c, h)
-    out = []
-    for g in GROUPS:
-        counts = s["movements"].get(g, [])
-        if not sum(counts) or (pair and g == pair[1]):
+    """One session's movements as exact sets x reps bullets, slot-ordered.
+
+    Stored pairs (from planning) render jointly from their reference-zone
+    vectors; sessions built by hand fall back to auto-detecting same-zone
+    pairs with aligned support. Bullets follow DAY slot order, not GROUPS
+    order."""
+    stored = dict(s.get("pairs", {}))
+    used: set = {g for p in stored for g in p}
+    detected: dict = {}
+    for a, b in PAIRS:
+        if a in used or b in used:
             continue
-        if pair and g == pair[0]:
-            c, h = pair
-            out.append(
-                f"- {c}+{h}: "
-                f"{best_pair_scheme(tuple(s['movements'][c]), tuple(s['movements'][h]))[1]}"
+        if BIN_GROUP[a] != BIN_GROUP[b]:
+            continue
+        if not (sum(s["movements"].get(a, [])) and sum(s["movements"].get(b, []))):
+            continue
+        if all(
+            (x > 0) == (y > 0) for x, y in zip(s["movements"][a], s["movements"][b])
+        ):
+            detected[(a, b)] = (
+                PAIR_REF[(a, b)],
+                tuple(s["movements"][a]),
+                tuple(s["movements"][b]),
             )
+            used.update((a, b))
+    pairs = {**stored, **detected}
+    first_of = {a: (a, b) for a, b in pairs}
+    second_of = {b: (a, b) for a, b in pairs}
+    entries = []
+    for order, g in enumerate(GROUPS):
+        counts = s["movements"].get(g, [])
+        if not sum(counts) or g in second_of:
+            continue
+        if g in first_of:
+            a, b = first_of[g]
+            ref, va, vb = pairs[(a, b)]
+            slots = COMPLEX_SLOTS.get(frozenset((a, b)), ())
+            text = f"- {a}+{b}: {best_pair_scheme(tuple(va), tuple(vb), a, b, ref)[1]}"
         else:
-            out.append(f"- {g}: {best_scheme(tuple(counts), BIN_GROUP[g])[1]}")
-    return out
+            slots = SINGLE_SLOTS.get(g, ())
+            text = f"- {g}: {best_scheme(tuple(counts), BIN_GROUP[g])[1]}"
+        entries.append((sorted(slots)[0] if slots else len(DAY), order, text))
+    entries.sort(key=lambda entry: (entry[0], entry[1]))
+    return [text for _, _, text in entries]
 
 
 def _slug(text, seen):

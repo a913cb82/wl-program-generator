@@ -171,17 +171,71 @@ FAN = {"I", "CMS", "MS"}
 
 # One session template: (alternatives, min reps, max reps, optional). Every
 # slot may be empty; the annual spread decides what each session trains.
+# Alternatives holding a "+" are complexes: both groups train together in
+# one slot and their session volumes must keep a legal clean-and-jerk style
+# ratio (see RATIOS below). Singles sharing a slot split across the week.
 DAY = [
-    (["Snatch", "Other Snatch"], 6, None, True),
-    (["Clean", "Other Clean"], 6, None, True),
-    (["Jerk", "Other Jerk"], 6, None, True),
+    (["Snatch", "Other Snatch", "SnPull+Snatch", "SnPull+Other Snatch"], 6, None, True),
+    (
+        [
+            "Clean",
+            "Other Clean",
+            "Jerk",
+            "Other Jerk",
+            "Clean+Jerk",
+            "Other Clean+Other Jerk",
+            "Other Clean+Jerk",
+            "Clean+Other Jerk",
+            "ClPull+Clean",
+            "ClPull+Other Clean",
+        ],
+        6,
+        None,
+        True,
+    ),
     (["Squat", "SnPull", "ClPull"], 6, None, True),
     (["Other Squat", "Press"], 6, None, True),
     (["Fundamental"], 6, None, True),
 ]
 
-CLEAN = ("Clean", "Other Clean")
-JERK = ("Jerk", "Other Jerk")
+
+def token_parts(token):
+    """Groups trained by one slot alternative (one for singles, two for A+X)."""
+    return tuple(token.split("+"))
+
+
+def slot_singles(slot):
+    return [t for t in slot[0] if "+" not in t]
+
+
+# groups never in a complex (the refit only ever moves these)
+BALLAST = ("Squat", "Other Squat", "Press", "Fundamental")
+# allowed A+X complexes: session volumes of both members must keep a legal
+# ratio (RATIOS) at every shared zone, widening only as weight drops.
+# Canonical display order is pull/classic first ("SnPull+Snatch").
+PAIRS = [
+    ("SnPull", "Snatch"),
+    ("SnPull", "Other Snatch"),
+    ("Clean", "Jerk"),
+    ("Other Clean", "Other Jerk"),
+    ("Other Clean", "Jerk"),
+    ("Clean", "Other Jerk"),
+    ("ClPull", "Clean"),
+    ("ClPull", "Other Clean"),
+]
+# reference member per pair for intensity tiers and zone labels: the classic
+# lift (or jerk) limits the complex, so paired pulls count at classic zones.
+PAIR_REF = {
+    ("SnPull", "Snatch"): "Snatch",
+    ("SnPull", "Other Snatch"): "Other Snatch",
+    ("Clean", "Jerk"): "Clean",
+    ("Other Clean", "Other Jerk"): "Other Clean",
+    ("Other Clean", "Jerk"): "Jerk",
+    ("Clean", "Other Jerk"): "Clean",
+    ("ClPull", "Clean"): "Clean",
+    ("ClPull", "Other Clean"): "Other Clean",
+}
+PAIRED_GROUPS = {g for p in PAIRS for g in p}
 # allowed clean:jerk ratios when both are trained in one session
 RATIOS = ((1, 1), (2, 1), (3, 1), (3, 2), (1, 2), (1, 3), (2, 3))
 
@@ -217,12 +271,19 @@ SCHEDULES = tuple(
     for heavy in allowed_ratios(90)
     for mid in allowed_ratios(80)
     for light in allowed_ratios(70)
-    if ratio_rank(*mid) >= ratio_rank(*heavy) and ratio_rank(*light) >= ratio_rank(*mid)
+    if ratio_rank(*mid) >= ratio_rank(*heavy)
+    and ratio_rank(*light) >= ratio_rank(*mid)
+    # Neither member's share may grow with weight: a flip such as
+    # light (1, 2) -> mid (2, 1) would force one side's per-set reps up
+    # on the way up (e.g. 1+2@70% -> 2+1@80%).
+    and heavy[0] <= mid[0] <= light[0]
+    and heavy[1] <= mid[1] <= light[1]
 )
 
 
-# free slots carry the annual spread; C&J slots are shaped by the pair rule
-FREE_SLOTS = (DAY[0], DAY[3], DAY[4], DAY[5])
+# free slots carry the annual spread; the Clean/Jerk slot is shaped by the
+# pair rule instead (its singles still host via the fit, but with no quota)
+FREE_SLOTS = (DAY[0], DAY[2], DAY[3], DAY[4])
 EPS = 0.01  # soft weight for a non-target host day
 BOUNDARY = 0.001  # even softer: first day after a group trained last week
 

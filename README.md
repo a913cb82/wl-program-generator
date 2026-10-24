@@ -48,10 +48,10 @@ Session bullets give exact sets, reps and zone:
 
 ```
 - Snatch: 3x3,2x2@70%
-- Other Clean+Other Jerk: 3+2@70%, 4x(3+2@70%, 2+1@80%)
+- SnPull+Snatch: 3+2@70%, 4x(3+2@70%, 2+1@80%)
 ```
 
-`3x3,2x2@70%` is three sets of three and two sets of two in the 70% zone. `3+2` is a clean and jerk complex. `4x(...)` is a repeated wave.
+`3x3,2x2@70%` is three sets of three and two sets of two in the 70% zone. `3+2` is a complex (here a snatch pull paired with a snatch). `4x(...)` is a repeated wave.
 
 ## What's in the repo
 
@@ -80,7 +80,7 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 - Volume counts lifts above 50% of your best in that movement. The plan covers all 12 Soviet groups.
 - The block is five 4-week mesos: three prep, two comp. `MACRO` holds the meso weights and weekly splits.
 - Weekly group volumes follow the class ratio table. The tool shifts a little volume between weeks (±20% per group, 10% per week) so lifts stay whole, sessions fit, and the meso sums exactly. See `III_II`, `I_CMS` and `MS_R`.
-- A session draws from six optional slots, one movement each. `X|Y` options split across the week, and each movement gets a minimum dose (6 lifts). See `DAY`.
+- A session draws from five optional slots. Complexes such as `SnPull+Snatch` or `Clean+Jerk` share one slot. Other `X|Y` options split across the week, and each movement gets a minimum dose (6 lifts). See `DAY`.
 
 ### Intensity
 
@@ -92,14 +92,16 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 ### Sessions and sets
 
 - A session orders its sets like a warm-up. Zones first appear from light to heavy. Each jump up goes to the next zone in the session. Reps stay flat or drop as weight rises. A drop back down can add reps.
-- A clean and jerk sharing a day follow a fixed rep ratio (eg 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises.
+- Two paired movements sharing a day follow a fixed rep ratio (eg 2 pulls per snatch, 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises. Pair volume counts toward both movements' bins.
 - The tool packs each movement's reps at a zone into as few sets as possible (`3x3,2x2@70%`), using the zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
 
 ## Guarantees
 
 - Every split sums exactly.
 - Sets follow the warm-up order.
-- Every clean:jerk ratio stays legal.
+- Every paired-movement ratio stays legal, and each side's reps stay flat or fall as weight rises.
+- Each session's zone profile is contiguous from its own base; a gap stands only where the week cannot cover every session spanning it.
+- A session touches the week's base zone, and each zone below its top the week holds in force, whenever the week holds enough to share.
 - Same input, same output.
 
 ## Open
