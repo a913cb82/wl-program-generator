@@ -108,3 +108,7 @@ Rule from now on: every explorer gets a 5-minute budget.
   longest-surgical NULL (repacking infeasible; recommends post-pass
   split). Launched split-20 + demand-cheap (capped demand variant).
   Running: mindose-tol, split-20, demand-cheap.
+
+- mindose-tol: all four values REVERTED (pinned-test breakage, no
+  quality signal). Launched sizeweight-nudge (last knob-scan lead).
+  Running: split-20, demand-cheap, sizeweight-nudge.
