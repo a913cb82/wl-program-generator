@@ -108,8 +108,8 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 
 Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the
 intermediate representation: plain data with no tuples, so any tool can
-read it. The HTML is rendered from that same structure, and the scorer
-reads it too.
+read it. The HTML is rendered from the JSON itself, and the scorer reads
+it too.
 
 `wlgen audit` builds all five classes and prints one scoreboard row per
 class plus the book total. The score has four parts; lower is better.

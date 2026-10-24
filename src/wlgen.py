@@ -3019,8 +3019,14 @@ def to_html(plan):
 
 
 def _render_class(cls):
-    """One class end to end: independent of every other class."""
-    return cls, to_html(build_plan(cls))
+    """One class end to end: independent of every other class.
+
+    The HTML is rendered from the JSON representation, not from the
+    live plan, so the saved JSON is byte-for-byte what the page shows."""
+    import json
+
+    ir = json.dumps(to_ir(build_plan(cls)))
+    return cls, to_html(from_ir(json.loads(ir))), ir
 
 
 def write_outputs(path="outputs", jobs=None):
@@ -3031,21 +3037,21 @@ def write_outputs(path="outputs", jobs=None):
     if jobs is None:
         jobs = min(len(CLASSES), os.cpu_count() or 1)
     pages: dict = {}
+    rendered: dict = {}
     if jobs > 1 and len(CLASSES) > 1:
         try:
             with ProcessPoolExecutor(max_workers=jobs) as pool:
-                for cls, html in pool.map(_render_class, list(CLASSES)):
+                for cls, html, ir in pool.map(_render_class, list(CLASSES)):
                     pages[cls] = html
+                    rendered[cls] = ir
         except (OSError, RuntimeError, ImportError, ValueError):
             pages = {}  # no usable process pool here; fall back to serial
     if not pages:
         for cls in CLASSES:
-            pages[cls] = to_html(build_plan(cls))
-    import json
-
+            pages[cls], rendered[cls] = _render_class(cls)[1:]
     for cls in CLASSES:
         (path / f"{cls}.html").write_text(pages[cls])
-        (path / f"{cls}.json").write_text(json.dumps(to_ir(build_plan(cls))))
+        (path / f"{cls}.json").write_text(rendered[cls])
 
 
 def main():

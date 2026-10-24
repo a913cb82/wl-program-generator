@@ -23,6 +23,17 @@ def test_html_from_ir_matches():
     assert to_html(from_ir(to_ir(plan))) == to_html(plan)
 
 
+def test_outputs_html_comes_from_json(tmp_path):
+    import json
+
+    from wlgen import write_outputs
+
+    write_outputs(path=str(tmp_path), jobs=1)
+    for cls in ("III",):
+        ir = json.loads((tmp_path / f"{cls}.json").read_text())
+        assert (tmp_path / f"{cls}.html").read_text() == to_html(from_ir(ir))
+
+
 def test_ir_scores_like_build():
     plan = build_plan("III")
     assert score_ir(to_ir(plan))["score"] == score_class("III")["score"]

@@ -1172,7 +1172,7 @@ def test_parallel_render_matches_serial():
     from wlgen import _render_class, build_plan, to_html
 
     with ProcessPoolExecutor(max_workers=2) as pool:
-        pooled = dict(pool.map(_render_class, ["III"]))
+        pooled = {cls: html for cls, html, _ in pool.map(_render_class, ["III"])}
     assert pooled["III"] == to_html(build_plan("III"))
 
 
