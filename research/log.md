@@ -156,3 +156,12 @@ Rule from now on: every explorer gets a 5-minute budget.
   ±0.02; every nudge raised strain/size). Launched quota-cap
   (untried week_quota divisor). Running: perclass-impl, finish-scan,
   quota-cap.
+
+- quota-cap: both directions rejected (pace-only movement; //6 is the
+  sweet spot). perclass-impl VERIFIED on orchestrator box (0.844) and
+  STACKED: stack-1 now 0.859, 129 green (strain 0.99, pace -0.26).
+- finish-scan REJECTED (not byte-identical, book loss, 2 test failures).
+  Regen check on main is byte-stable — its nondeterminism flag was an
+  artifact of its tree. Do not chase.
+- Launched pair-ratio + taper-trim (untouched taper shape) + cap-evals
+  (untested sibling). Running all three.
