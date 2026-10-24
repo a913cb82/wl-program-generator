@@ -64,3 +64,12 @@ One entry per round. Never edit an old entry.
 - what changed: EXAM gains a book-gate rule; exc-only gates banned
 - what you learned: more days = more CPU, structurally; strain gains can't repay pace at 0.2 vs 0.4 weights unless 4x
 - next: lean-3, lean-2 (inverse bet on lean classes, book-gated)
+
+## 7 — day-count line dead both directions (2026-10-24)
+- commit: ff3692c (stack-1, unchanged)
+- score: exc 142.5 flat (both probes 153.1, reverted)
+- best: exc 142.5
+- verdict: drop the line (I+1 pace-killed; III/II-1 strain+pace loss)
+- what changed: book-gate held (both failed all four conditions)
+- what you learned: concentrating lean weeks spikes strain AND pace; the thesis inverted
+- next: shapediff recon (borrowable demand features, not transplants)

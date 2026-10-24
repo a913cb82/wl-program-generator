@@ -19,5 +19,6 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 | dropped | pairvol-trim-2 (starves sessions into drift; hypothesis dead) |
 | dropped | perclass-T-2 (exc -13.7 BUT pace +0.82, book +0.2; gate was exc-only) |
 | dropped | fold-thu (clash x24 as priced; kill line held) |
-| trying | lean-3 (III -1 day, book-gated) |
-| trying | lean-2 (II -1 day, book-gated) |
+| dropped | lean-3 (exc +10.6, pace worsened; small-base thesis wrong) |
+| dropped | lean-2 (exc +10.5, pace worsened; symmetric) |
+| trying | shapediff (recon: diff demand vs template winner shapes) |
