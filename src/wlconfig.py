@@ -52,6 +52,8 @@ DAY_CMAX = float(_os.environ.get("WLGEN_CMAX", "3"))
 # other day a peak. Tuned: one peak keeps contrast three for 20% less
 # over-capacity work than alternating peaks, which concentrate twice as much.
 DAY_SHAPE = _os.environ.get("WLGEN_SHAPE", "peak")
+# 1 keeps the old rule of one group per day per slot; more lets groups share.
+DAY_QUOTA = float(_os.environ.get("WLGEN_QUOTA", "1"))
 
 TOL = 0.2  # a microcycle's group targets may sit +/- this far from the nominal split
 CAP_DEV = 0.1  # ... and its total deviation may not exceed this share of volume

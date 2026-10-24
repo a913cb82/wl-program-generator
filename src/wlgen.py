@@ -22,6 +22,7 @@ from wlconfig import (
     DAY,
     DAY_C,
     DAY_CMAX,
+    DAY_QUOTA,
     DAY_RULE,
     DAY_SHAPE,
     DAY_T,
@@ -632,7 +633,7 @@ def week_quota(targets, vols, prev_last=None):
             continue
         caps = {g: min(n, max(1, targets[g] // MIN_DOSE)) for g in live}
         h = dict.fromkeys(live, 0)
-        left = n
+        left = int(n * DAY_QUOTA)
         while left > 0:
             cand = [g for g in live if h[g] < caps[g]]
             if not cand:
@@ -644,7 +645,7 @@ def week_quota(targets, vols, prev_last=None):
         for g in sorted(live, key=lambda g: -targets[g]):
             for k in range(h[g]):
                 j = ((2 * k + 1) * n // (2 * h[g]) + si) % n
-                while j in used:
+                while j in used and DAY_QUOTA <= 1:
                     j = (j + 1) % n
                 if j == 0 and prev_last and g in prev_last:
                     alt = next((x for x in range(1, n) if x not in used), None)
