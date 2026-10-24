@@ -38,3 +38,12 @@ Rule from now on: every explorer gets a 5-minute budget.
 | r2-host | research/r2-host | support-level host control for paired doubling |
 | r2-hotspot | research/r2-hotspot | profile current build, cut top CPU hotspot, byte-identical output |
 | r2-shape | research/r2-shape | weekly shape: day counts, peak placement, peak patterns |
+
+## Flow notes (no rounds; always 3 running; no merges to main)
+
+- R2: r2-host reverted clean (host bias backfires). r2-hotspot found only
+  noise (pace +0.09 -> -0.04 machine wobble; kept one exactness test).
+  r2-shape reverted SIZE_WEIGHT tries (broke structural tests) but left
+  an untried lead: MSLMM / MSLSMM canonical patterns.
+- Launched: shape-patterns (that lead), pair-freq (gate pair formation),
+  size-again (next instruction cut). All from main, 5-min budgets.
