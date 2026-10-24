@@ -40,3 +40,25 @@ No change attempted within budget; baseline stands
 (book 0.849, MS rhythm 2.96). The spill_probe above is the recommended
 next 5-minute shot, reusing `spill_peak_fundamental` verbatim with the
 group/zone/pair predicates swapped.
+
+## Attempt 2026-10-24: verbatim clone, top-1, MS-only (REVERTED)
+
+Implemented `spill_peak_snatch(plan, top_k=1)` as a verbatim copy of
+`spill_peak_fundamental` with Fundamental -> Other Snatch, an MS-only
+guard, and `build_plan` chaining `spill_peak_snatch` after the fund
+spill. TDD: 3 new tests (non-MS guard identity, top-1 shape, gap-free)
+plus `_unspilled_plan` extended to bypass both passes.
+
+Result: exc 144.7 -> 144.4 (-0.3, MS 42.5 -> 42.2) but a NEW defect:
+MS drift 0.18 -> 5.18 (bad 1 vs 0); book drift -0.18 -> +4.85.
+MS rhythm held 2.96 (in [2.91, 3.01]). 3 tests red
+(`test_shipped_scores_clean`, `test_book_numbers_match_research`, and
+the fund-spill top-3 shape test — the stacked passes can touch 4 weeks
+in MS). Gate demands zero new defects -> REVERTED src+tests fully;
+132 green, baseline restored (book exc 144.7, MS rhythm 2.96).
+
+Lesson: unlike Fundamental, Other Snatch moves trip a drift defect
+(bad 1) even with the gap-guard revert — the guard only watches
+`_unjustified_gaps`, not drift. Next shot needs a drift-guard revert
+(or a smaller MIN_DOSE slice) instead of the verbatim full-top-slice
+move.
