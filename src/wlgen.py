@@ -19,6 +19,7 @@ from wlconfig import (
     CAP,
     CAP_DEV,
     CLASSES,
+    COMPLEX_SLOTS,
     COMPLEXITY_COST,
     DAY,
     DAY_C,
@@ -35,7 +36,9 @@ from wlconfig import (
     GROUPS,
     MACRO,
     MIN_DOSE,
+    PAIR_BY_SET,
     PAIR_REF,
+    PAIR_SET,
     PAIRED_GROUPS,
     PAIRS,
     PATTERNS,
@@ -46,14 +49,17 @@ from wlconfig import (
     PRILEPIN_SOFT_AT,
     REPS,
     SCHEDULES,
+    SINGLE_SLOTS,
     SIZE_WEIGHT,
     STRAY_COST,
     TOL,
     VARIANTS,
     WARMUP_COST,
+    is_matchable,
+    slot_match,
     slot_singles,
-    token_parts,
 )
+from wlir import allocate, from_ir, macro_days, to_ir
 
 
 def expand(slots):
@@ -62,26 +68,6 @@ def expand(slots):
         choices = [*alts, *([None] if optional else [])]
         out = [o + (c,) for o in out for c in choices]
     return out
-
-
-PAIR_SET = {frozenset(p) for p in PAIRS}
-PAIR_BY_SET = {frozenset(p): p for p in PAIRS}
-
-
-def _slot_tables():
-    singles: dict = {}
-    complexes: dict = {}
-    for si, slot in enumerate(DAY):
-        for tok in slot[0]:
-            parts = token_parts(tok)
-            if len(parts) == 1:
-                singles.setdefault(parts[0], set()).add(si)
-            else:
-                complexes.setdefault(frozenset(parts), set()).add(si)
-    return singles, complexes
-
-
-SINGLE_SLOTS, COMPLEX_SLOTS = _slot_tables()
 
 
 def map_zone_index(zlo, group):
@@ -99,53 +85,6 @@ def map_zone_index(zlo, group):
     if zlo >= zones[-1]:
         return len(zones) - 1
     return min(range(len(zones)), key=lambda i: abs(zones[i] - zlo))
-
-
-@cache
-def is_matchable(groups):
-    """True when every hosted group can take a template slot, with listed
-    A+X complexes sharing one slot.
-
-    Co-hosted pairs need not render jointly: unpaired groups keep their own
-    sets (separate bullets), so overlapping triples only need distinct-slot
-    sharing here. Designated pairs are chosen later by detect_pairs."""
-    groups = set(groups)
-    if not groups:
-        return True
-    if any(g not in SINGLE_SLOTS and all(g not in p for p in PAIR_SET) for g in groups):
-        return False
-
-    def rec(remaining, used):
-        if not remaining:
-            return True
-        g = next(iter(remaining))
-        rest = set(remaining)
-        rest.discard(g)
-        for si in SINGLE_SLOTS.get(g, ()):
-            if si not in used and rec(rest, used | {si}):
-                return True
-        for h in list(rest):
-            key = frozenset((g, h))
-            if key not in PAIR_SET:
-                continue
-            for si in COMPLEX_SLOTS.get(key, ()):
-                if si not in used:
-                    rest2 = set(rest)
-                    rest2.discard(h)
-                    if rec(rest2, used | {si}):
-                        return True
-        return False
-
-    return rec(groups, set())
-
-
-def allocate(total, weights):
-    raw = [total * w / sum(weights) for w in weights]
-    out = [int(x) for x in raw]
-    order = sorted(range(len(weights)), key=lambda i: raw[i] - out[i], reverse=True)
-    for i in order[: total - sum(out)]:
-        out[i] += 1
-    return out
 
 
 def bounded_round(values, lo, hi, total):
@@ -612,13 +551,6 @@ def _session_options(live, weights):
     return tuple(opts)
 
 
-def slot_match(groups):
-    """True when every group can take a distinct template slot (listed
-    complexes may share one)."""
-    groups = set(groups)
-    return is_matchable(frozenset(groups))
-
-
 def week_quota(targets, vols, prev_last=None):
     """Soft host targets for the free slots. Each slot shares the week's days
     equally up to the min-dose cap; phases are staggered per slot so groups
@@ -818,10 +750,6 @@ def close_ramps(m):
         if not pass_once():
             break
     return m
-
-
-def macro_days(macro):
-    return 7 * sum(len(m[2]) for m in macro)
 
 
 def cap(vols, weights, cap=CAP):
@@ -1718,104 +1646,6 @@ def build_plan(cls):
         "mesos": mesos,
         "groups": {g: sum(m["groups"][g] for m in mesos) for g in GROUPS},
     }
-
-
-def to_ir(plan):
-    """Plain-JSON version of a built plan.
-
-    Sessions store pairs under tuple keys with tuple vectors; JSON has
-    neither, so ``(a, b)`` becomes ``"a+b"`` and every tuple a list.
-    Everything else in the plan is already plain data."""
-    out = {
-        "macro": plan["macro"],
-        "class": plan["class"],
-        "annual": plan["annual"],
-        "groups": dict(plan["groups"]),
-        "mesos": [],
-    }
-    for m in plan["mesos"]:
-        weeks = []
-        for w in m["weeks"]:
-            sessions = []
-            for s in w["sessions"]:
-                sessions.append(
-                    {
-                        "size": s["size"],
-                        "vol": s["vol"],
-                        "base": s.get("base", "Day"),
-                        "movements": {g: list(v) for g, v in s["movements"].items()},
-                        "pairs": {
-                            f"{a}+{b}": [ref, list(va), list(vb)]
-                            for (a, b), (ref, va, vb) in s.get("pairs", {}).items()
-                        },
-                    }
-                )
-            weeks.append(
-                {
-                    "vol": w["vol"],
-                    "groups": dict(w["groups"]),
-                    "sessions": sessions,
-                    "bins": {g: list(v) for g, v in w["bins"].items()},
-                }
-            )
-        out["mesos"].append(
-            {
-                "name": m["name"],
-                "phase": m["phase"],
-                "vol": m["vol"],
-                "groups": dict(m["groups"]),
-                "weeks": weeks,
-            }
-        )
-    return out
-
-
-def from_ir(ir):
-    """Restore a built-plan structure from ``to_ir`` output (or its JSON
-    round trip). Rendering and scoring accept the result as built."""
-    plan = {
-        "macro": ir["macro"],
-        "class": ir["class"],
-        "annual": ir["annual"],
-        "groups": dict(ir["groups"]),
-        "mesos": [],
-    }
-    for m in ir["mesos"]:
-        weeks = []
-        for w in m["weeks"]:
-            sessions = []
-            for s in w["sessions"]:
-                pairs = {}
-                for key, (ref, va, vb) in s.get("pairs", {}).items():
-                    a, b = key.split("+")
-                    pairs[(a, b)] = (ref, tuple(va), tuple(vb))
-                sessions.append(
-                    {
-                        "size": s["size"],
-                        "vol": s["vol"],
-                        "base": s.get("base", "Day"),
-                        "movements": {g: list(v) for g, v in s["movements"].items()},
-                        "pairs": pairs,
-                    }
-                )
-            weeks.append(
-                {
-                    "vol": w["vol"],
-                    "groups": dict(w["groups"]),
-                    "sessions": sessions,
-                    "bins": {g: list(v) for g, v in w["bins"].items()},
-                }
-            )
-        plan["mesos"].append(
-            {
-                "name": m["name"],
-                "phase": m["phase"],
-                "vol": m["vol"],
-                "groups": dict(m["groups"]),
-                "weeks": weeks,
-            }
-        )
-    return plan
 
 
 def _th(label, colspan=1):
@@ -2736,6 +2566,41 @@ def scheme_entries(s):
     return [(text, seq) for _, _, text, seq in entries]
 
 
+def _jsonable(value):
+    if isinstance(value, tuple):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, list):
+        return [_jsonable(v) for v in value]
+    return value
+
+
+def session_slots(session):
+    """One JSON-safe slot per scheme entry: the movement name, the atom
+    scheme and its parsed phrase items. Generation computes these once;
+    the HTML renderer and the scorer read them back."""
+    out = []
+    for text, seq in scheme_entries(session):
+        out.append(
+            {
+                "movement": text,
+                "seq": [[z, list(v) if isinstance(v, tuple) else v] for z, v in seq],
+                "items": _jsonable(_parse(tuple(seq))[2]),
+            }
+        )
+    return out
+
+
+def ir_with_slots(plan):
+    """The plan's JSON representation with every session's slots
+    materialized, ready to write to disk."""
+    ir = to_ir(plan)
+    for m, im in zip(plan["mesos"], ir["mesos"]):
+        for w, iw in zip(m["weeks"], im["weeks"]):
+            for s, ins in zip(w["sessions"], iw["sessions"]):
+                ins["slots"] = session_slots(s)
+    return ir
+
+
 def _slug(text, seen):
     base = re.sub(r"[^\w -]", "", text.lower()).replace(" ", "-")
     count = seen.get(base, 0)
@@ -2855,7 +2720,11 @@ def training_table(meso):
                 if si >= len(w["sessions"]):
                     cells += [gap, "<td></td>"]
                     continue
-                entries = scheme_entries(w["sessions"][si])
+                sess = w["sessions"][si]
+                if sess.get("slots"):
+                    entries = [(sl["movement"], sl["seq"]) for sl in sess["slots"]]
+                else:
+                    entries = scheme_entries(sess)
                 if k >= len(entries):
                     cells += [gap, "<td></td>"]
                     continue
@@ -3025,7 +2894,7 @@ def _render_class(cls):
     live plan, so the saved JSON is byte-for-byte what the page shows."""
     import json
 
-    ir = json.dumps(to_ir(build_plan(cls)))
+    ir = json.dumps(ir_with_slots(build_plan(cls)))
     return cls, to_html(from_ir(json.loads(ir))), ir
 
 
@@ -3061,12 +2930,9 @@ def main():
 
         audit()
     elif args[:1] == ["score"] and len(args) == 2:
-        import json
+        from wlscore import print_breakdown, score_json
 
-        from wlscore import print_breakdown, score_ir
-
-        ir = json.loads(Path(args[1]).read_text())
-        print_breakdown(score_ir(ir))
+        print_breakdown(score_json(args[1]))
     else:
         jobs = int(os.environ.get("WLGEN_JOBS", "0")) or None
         write_outputs(jobs=jobs)

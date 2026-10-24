@@ -1,6 +1,7 @@
 """Tunable data and rules for the WL program generator."""
 
 import os as _os
+from functools import cache
 from typing import Any, Dict
 
 GROUPS = [
@@ -314,6 +315,71 @@ SCHEDULES = tuple(
     and heavy[0] <= mid[0] <= light[0]
     and heavy[1] <= mid[1] <= light[1]
 )
+
+
+PAIR_SET = {frozenset(p) for p in PAIRS}
+PAIR_BY_SET = {frozenset(p): p for p in PAIRS}
+
+
+def _slot_tables():
+    singles: dict = {}
+    complexes: dict = {}
+    for si, slot in enumerate(DAY):
+        for tok in slot[0]:
+            parts = token_parts(tok)
+            if len(parts) == 1:
+                singles.setdefault(parts[0], set()).add(si)
+            else:
+                complexes.setdefault(frozenset(parts), set()).add(si)
+    return singles, complexes
+
+
+SINGLE_SLOTS, COMPLEX_SLOTS = _slot_tables()
+
+
+@cache
+def is_matchable(groups):
+    """True when every hosted group can take a template slot, with listed
+    A+X complexes sharing one slot.
+
+    Co-hosted pairs need not render jointly: unpaired groups keep their own
+    sets (separate bullets), so overlapping triples only need distinct-slot
+    sharing here. Designated pairs are chosen later by detect_pairs."""
+    groups = set(groups)
+    if not groups:
+        return True
+    if any(g not in SINGLE_SLOTS and all(g not in p for p in PAIR_SET) for g in groups):
+        return False
+
+    def rec(remaining, used):
+        if not remaining:
+            return True
+        g = next(iter(remaining))
+        rest = set(remaining)
+        rest.discard(g)
+        for si in SINGLE_SLOTS.get(g, ()):
+            if si not in used and rec(rest, used | {si}):
+                return True
+        for h in list(rest):
+            key = frozenset((g, h))
+            if key not in PAIR_SET:
+                continue
+            for si in COMPLEX_SLOTS.get(key, ()):
+                if si not in used:
+                    rest2 = set(rest)
+                    rest2.discard(h)
+                    if rec(rest2, used | {si}):
+                        return True
+        return False
+
+    return rec(groups, set())
+
+
+def slot_match(groups):
+    """True when every group can take a distinct template slot (listed
+    complexes may share one)."""
+    groups = set(groups)
+    return is_matchable(frozenset(groups))
 
 
 # free slots carry the annual spread; the Clean/Jerk slot is shaped by the

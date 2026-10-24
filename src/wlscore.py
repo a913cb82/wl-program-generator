@@ -1,10 +1,17 @@
 """Score a program from its intermediate representation.
 
-The scorer reads the plain-JSON plan (see ``to_ir``/``from_ir`` in wlgen)
-and returns the scoring system from the design doc: strain, size, rhythm
-and drift, plus the single score. Lower is better everywhere.
+Two functions, one contract: the scorer reads only the plain-JSON plan
+(see wlir) that generate_json writes. Scoring never imports the generator,
+so any JSON honoring the contract scores the same, whoever wrote it.
+
+- generate_json: build every class and write its JSON file.
+- score_json: read JSON (a path or a parsed dict) and return the score.
 """
 
+import json
+import os
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 from statistics import median
 
 from wlconfig import (
@@ -14,32 +21,122 @@ from wlconfig import (
     GROUPS,
     PAIR_REF,
     PAIRED_GROUPS,
+    PRILEPIN_CAPACITY,
     PRILEPIN_CLASSIC,
     REPS,
     TOL,
-)
-from wlgen import (
-    _parse,
-    _transition_ok,
-    allocate,
-    atom_total,
-    build_plan,
-    complexity,
-    from_ir,
-    macro_days,
-    prilepin_score,
-    scheme_entries,
-    session_dose,
     slot_match,
 )
+from wlir import allocate, from_ir, macro_days
 
 FLOOR = 0.25  # smallest useful dose in one session, in session units
 TOL_CLASSIC = 1.5
 TOL_STRENGTH = 2.0
 
 
+def generate_json(path="outputs", classes=None, jobs=None):
+    """Build every class and write its JSON file. This is the only scorer
+    function that touches the generator; everything else reads the JSON."""
+    from wlgen import build_plan, ir_with_slots
+
+    classes = list(classes or CLASSES)
+    path = Path(path)
+    path.mkdir(exist_ok=True)
+
+    def build(cls):
+        return cls, json.dumps(ir_with_slots(build_plan(cls)))
+
+    if jobs is None:
+        jobs = min(len(classes), os.cpu_count() or 1)
+    rendered: dict = {}
+    if jobs > 1 and len(classes) > 1:
+        try:
+            with ProcessPoolExecutor(max_workers=jobs) as pool:
+                for cls, dump in pool.map(build, classes):
+                    rendered[cls] = dump
+        except (OSError, RuntimeError, ImportError, ValueError):
+            rendered = {}
+    if not rendered:
+        for cls in classes:
+            rendered[cls] = build(cls)[1]
+    out = []
+    for cls in classes:
+        dest = path / f"{cls}.json"
+        dest.write_text(rendered[cls])
+        out.append(dest)
+    return out
+
+
+def score_json(source, seconds=None):
+    """Score an intermediate-representation dict or the JSON file holding
+    it. Needs no generator: the file is the whole input."""
+    if isinstance(source, (str, Path)):
+        with open(source) as fh:
+            source = json.load(fh)
+    return score_class(source["class"], from_ir(source), seconds)
+
+
 def _tolerance(family):
     return TOL_CLASSIC if family in PRILEPIN_CLASSIC else TOL_STRENGTH
+
+
+def _capacity(zlo):
+    """Reps a session may spend at one intensity before it is past the top
+    of Prilepin's range for that band. Interpolated, flat outside it."""
+    keys = sorted(PRILEPIN_CAPACITY)
+    if zlo <= keys[0]:
+        return PRILEPIN_CAPACITY[keys[0]]
+    if zlo >= keys[-1]:
+        return PRILEPIN_CAPACITY[keys[-1]]
+    lo = max(k for k in keys if k <= zlo)
+    hi = min(k for k in keys if k > zlo)
+    f = (zlo - lo) / (hi - lo)
+    return PRILEPIN_CAPACITY[lo] + f * (PRILEPIN_CAPACITY[hi] - PRILEPIN_CAPACITY[lo])
+
+
+def _session_score(dose):
+    """One session's reps at each zone as a share of Prilepin's capacity."""
+    return sum(n / _capacity(z) for z, n in dose.items())
+
+
+def _dose(session):
+    """Lifted reps per zone for each movement in one session, with paired
+    work counted against both members as it is for the volume bins."""
+    doses = {}
+    for g, counts in session["movements"].items():
+        lo = BIN_ZONES[BIN_GROUP[g]]
+        d = {lo[z]: n for z, n in enumerate(counts) if n}
+        if d:
+            doses[g] = d
+    for (a, b), (ref, va, vb) in session.get("pairs", {}).items():
+        lo = BIN_ZONES[BIN_GROUP[ref]]
+        for g, vec in ((a, va), (b, vb)):
+            d = doses.setdefault(g, {})
+            for z, n in enumerate(vec):
+                if n:
+                    d[lo[z]] = d.get(lo[z], 0) + n
+    return doses
+
+
+def _atom_total(value):
+    return value if isinstance(value, int) else value[0] + value[1]
+
+
+def _step_ok(prev_zone, prev_value, zone, value, seen, present):
+    """One set may follow another: rises are capped (a set may revisit a
+    lower zone only once seen), climbs step to the next zone present, and
+    reps stay flat or fall as weight rises."""
+    if zone not in seen and seen and zone < max(seen):
+        return False
+    if prev_zone is not None and zone > prev_zone:
+        nxt = next((z for z in present if z > prev_zone), None)
+        if zone != nxt:
+            return False
+    if prev_zone is None or zone < prev_zone:
+        return True
+    if isinstance(value, tuple) and isinstance(prev_value, tuple):
+        return not any(v > p for v, p in zip(value, prev_value))
+    return _atom_total(value) <= _atom_total(prev_value)
 
 
 def _nominal(cls, phase, week_vol):
@@ -76,7 +173,20 @@ def _slot_total(items):
     return total
 
 
-def _entry_problems(text, seq, session):
+def _count(items):
+    """Things the athlete must remember, counted off the stored items:
+    every set-group and every repeat suffix. A wave's body counts once
+    plus its own repeat, so compression reads as fewer instructions."""
+    total = 0
+    for item in items:
+        if item[0] == "wave":
+            total += 1 + _count(item[2])
+        else:
+            total += len(item[2]) + sum(1 for _, c in item[2] if c > 1)
+    return total
+
+
+def _entry_problems(text, seq, items, session):
     """Ways one scheme entry breaks the training rules, if any."""
     problems = []
     parts = text.split("+")
@@ -96,14 +206,14 @@ def _entry_problems(text, seq, session):
         seen: set = set()
         prev = None
         for zlo, value in seq:
-            if prev is not None and not _transition_ok(
+            if prev is not None and not _step_ok(
                 prev[0], prev[1], zlo, value, seen, present
             ):
                 problems.append(f"{text}: illegal order at {zlo}%")
                 break
             seen.add(zlo)
             prev = (zlo, value)
-        if _slot_total(_parse(seq)[2]) != sum(session["movements"].get(g, [])):
+        if _slot_total(items) != sum(session["movements"].get(g, [])):
             problems.append(f"{text}: scheme does not match the cell")
     else:
         a, b = parts
@@ -118,7 +228,7 @@ def _entry_problems(text, seq, session):
             if not isinstance(value, tuple) or len(value) != 2:
                 problems.append(f"{text}: complex set is not a pair")
                 break
-            if atom_total(value) < 1 or any(v < 0 for v in value):
+            if _atom_total(value) < 1 or any(v < 0 for v in value):
                 problems.append(f"{text}: empty complex set")
                 break
             caps = [
@@ -132,7 +242,7 @@ def _entry_problems(text, seq, session):
         seen = set()
         prev = None
         for zlo, value in seq:
-            if prev is not None and not _transition_ok(
+            if prev is not None and not _step_ok(
                 prev[0], prev[1], zlo, value, seen, present
             ):
                 problems.append(f"{text}: illegal order at {zlo}%")
@@ -142,7 +252,7 @@ def _entry_problems(text, seq, session):
         want = sum(session["movements"].get(a, [])) + sum(
             session["movements"].get(b, [])
         )
-        if _slot_total(_parse(seq)[2]) != want:
+        if _slot_total(items) != want:
             problems.append(f"{text}: scheme does not match the cell")
     return problems
 
@@ -211,7 +321,8 @@ def _unjustified_gaps(session, sessions, week_bins):
 
 def _score_items(items, seconds=None):
     """Additive breakdown over (cls, plan) pairs; the book total is just
-    the same loop over more classes."""
+    the same loop over more classes. Plans are restored IR: sessions carry
+    their stored slots, so no generator call is needed."""
     out: dict = {
         "excess": 0.0,
         "shortfall": 0.0,
@@ -278,16 +389,24 @@ def _score_items(items, seconds=None):
                     if not slot_match(hosted):
                         out["clash"] += 1
                     out["gaps"] += _unjustified_gaps(s, w["sessions"], w["bins"])
-                    for text, seq in scheme_entries(s):
-                        t = tuple(seq)
-                        out["instructions"] += complexity(t)
-                        out["longest"] = max(out["longest"], len(t))
+                    if "slots" not in s:
+                        raise ValueError(
+                            "session is missing 'slots': score only the JSON "
+                            "that generate_json writes"
+                        )
+                    for sl in s["slots"]:
+                        text, seq, slot_items = (
+                            sl["movement"],
+                            sl["seq"],
+                            sl["items"],
+                        )
+                        out["instructions"] += _count(slot_items)
+                        out["longest"] = max(out["longest"], len(seq))
                         out["slots"] += 1
-                        out["illegal"] += len(_entry_problems(text, seq, s))
-                    for g, dose in session_dose(s).items():
-                        score = prilepin_score(dose)
-                        tol = _tolerance(BIN_GROUP[g])
-                        out["excess"] += max(0.0, score - tol)
+                        out["illegal"] += len(_entry_problems(text, seq, slot_items, s))
+                    for g, dose in _dose(s).items():
+                        score = _session_score(dose)
+                        out["excess"] += max(0.0, score - _tolerance(BIN_GROUP[g]))
                         if score < FLOOR:
                             out["shortfall"] += FLOOR - score
             nweeks = len(m["weeks"])
@@ -357,8 +476,8 @@ def _finalize(raw, seconds=None):
         "rhythm": rhythm,
         "ob_micro": raw["ob_micro"],
         "iv_micro": raw["iv_micro"],
-        "ob_meso": raw["ob_meso"],
         "iv_meso": raw["iv_meso"],
+        "ob_meso": raw["ob_meso"],
         "ob_macro": raw["ob_macro"],
         "iv_macro": raw["iv_macro"],
         "illegal": raw["illegal"],
@@ -375,23 +494,26 @@ def _finalize(raw, seconds=None):
 
 
 def score_class(cls, plan=None, seconds=None):
-    """Score one class; builds the plan unless one is given."""
-    plan = build_plan(cls) if plan is None else plan
+    """Score one class from a restored plan (from_ir output). Builds it
+    only when none is given, through the generator's front door."""
+    if plan is None:
+        from wlgen import build_plan, ir_with_slots
+
+        plan = from_ir(ir_with_slots(build_plan(cls)))
     return _finalize(_score_items([(cls, plan)], seconds), seconds)
 
 
 def score_book(items=None, seconds=None):
     """Score the whole book; the totals are the same loop over classes."""
-    from wlconfig import CLASSES as _CLASSES
-
     if items is None:
-        items = [(cls, build_plan(cls)) for cls in _CLASSES]
+        items = [(cls, _plan_for(cls)) for cls in CLASSES]
     return _finalize(_score_items(items, seconds), seconds)
 
 
-def score_ir(ir, seconds=None):
-    """Score an intermediate-representation dict (parsed JSON)."""
-    return score_class(ir["class"], from_ir(ir), seconds)
+def _plan_for(cls):
+    from wlgen import build_plan, ir_with_slots
+
+    return from_ir(ir_with_slots(build_plan(cls)))
 
 
 def _row(label, r):
@@ -418,18 +540,14 @@ def print_breakdown(r, label="plan"):
 
 
 def audit(classes=None, seconds=None):
-    """Build every class, score each plus the book, print the scoreboard."""
+    """Score every class plus the book and print the scoreboard."""
     import time
 
-    from wlconfig import CLASSES as _CLASSES
-
-    classes = list(classes or _CLASSES)
+    classes = list(classes or CLASSES)
+    t0 = time.perf_counter()
+    plans = [(cls, _plan_for(cls)) for cls in classes]
     if seconds is None:
-        t0 = time.perf_counter()
-        plans = [(cls, build_plan(cls)) for cls in classes]
         seconds = time.perf_counter() - t0
-    else:
-        plans = [(cls, build_plan(cls)) for cls in classes]
     for cls, plan in plans:
         print_breakdown(score_class(cls, plan), cls)
     print_breakdown(score_book(plans), "book")

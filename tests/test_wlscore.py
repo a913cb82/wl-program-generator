@@ -1,8 +1,23 @@
 import json
+import subprocess
+import sys
 
 import wlgen
-from wlgen import build_plan, from_ir, to_html, to_ir
-from wlscore import _score_items, audit, score_book, score_class, score_ir
+from wlgen import build_plan, ir_with_slots, to_html
+from wlir import from_ir, to_ir
+from wlscore import (
+    _score_items,
+    audit,
+    generate_json,
+    score_book,
+    score_class,
+    score_json,
+)
+
+
+def _plan(cls="III"):
+    """A restored plan with stored slots, the scorer's whole input."""
+    return from_ir(ir_with_slots(build_plan(cls)))
 
 
 def _copy_week(plan, mi=0, wi=0):
@@ -12,14 +27,14 @@ def _copy_week(plan, mi=0, wi=0):
 
 
 def test_ir_round_trip():
-    plan = build_plan("III")
+    plan = _plan()
     ir = to_ir(plan)
     json.loads(json.dumps(ir))  # plain JSON types only
     assert from_ir(json.loads(json.dumps(ir))) == plan
 
 
 def test_html_from_ir_matches():
-    plan = build_plan("III")
+    plan = _plan()
     assert to_html(from_ir(to_ir(plan))) == to_html(plan)
 
 
@@ -35,13 +50,13 @@ def test_outputs_html_comes_from_json(tmp_path):
 
 
 def test_ir_scores_like_build():
-    plan = build_plan("III")
-    assert score_ir(to_ir(plan))["score"] == score_class("III")["score"]
+    plan = _plan()
+    assert score_json(ir_with_slots(plan))["score"] == score_class("III")["score"]
 
 
 def test_shipped_scores_clean():
     for cls in ("III", "II", "I", "CMS", "MS"):
-        raw = _score_items([(cls, build_plan(cls))])
+        raw = _score_items([(cls, _plan(cls))])
         assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
         assert raw["gaps"] == 0, cls
@@ -64,7 +79,7 @@ def test_book_numbers_match_research():
 
 
 def test_score_detects_gap():
-    plan = build_plan("III")
+    plan = _plan()
     week = _copy_week(plan)
     target = None
     for s in week["sessions"]:
@@ -86,7 +101,7 @@ def test_score_detects_gap():
 
 
 def test_score_detects_idle():
-    plan = build_plan("III")
+    plan = _plan()
     week = _copy_week(plan)
     grown = None
     for g in wlgen.GROUPS:
@@ -119,7 +134,7 @@ def test_score_detects_clash():
         None,
     )
     assert clash, "no clashing pair found"
-    plan = build_plan("III")
+    plan = _plan()
     week = _copy_week(plan)
     s = week["sessions"][0]
     nz = max(len(v) for v in s["movements"].values())
@@ -131,3 +146,33 @@ def test_score_detects_clash():
 
 def test_audit_runs():
     assert audit(["III"]) >= 0
+
+
+def test_missing_slots_raises():
+    import pytest
+
+    with pytest.raises(ValueError, match="slots"):
+        score_json(to_ir(build_plan("III")))
+
+
+def test_generate_json_writes_scorable_files(tmp_path):
+    paths = generate_json(tmp_path, classes=["III"], jobs=1)
+    assert [p.name for p in paths] == ["III.json"]
+    scored = score_json(paths[0])
+    assert scored["score"] == score_class("III")["score"]
+    assert scored["score"] >= 0
+
+
+def test_score_needs_no_generator(tmp_path):
+    generate_json(tmp_path, classes=["III"], jobs=1)
+    code = (
+        "import sys; sys.modules['wlgen'] = None;"
+        "sys.path.insert(0, 'src');"
+        f"from wlscore import score_json;"
+        f"print(score_json({str(tmp_path / 'III.json')!r})['score'])"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, cwd="."
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert float(proc.stdout.strip()) == score_class("III")["score"]
