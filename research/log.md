@@ -175,3 +175,10 @@ Rule from now on: every explorer gets a 5-minute budget.
   (disciplined retry, command allowlist) + ms-rhythm (repair MS 3.00
   without losing the strain win). Running: bins-shift, order-4day-2,
   ms-rhythm.
+
+- bins-shift NO WIN (fence both directions; probe-B strain -1.1 sits
+  under noise + breaks the golden pin).
+- order-4day-2 REVERTED (SMSL rhythm -0.13, strain +21.8 — clean
+  quality tradeoff that loses).
+- Launched exc-map (analysis-only: map the 147.8 excess to direct the
+  next strain shot) + ms-rhythm recovery steer.
