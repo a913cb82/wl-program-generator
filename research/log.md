@@ -68,3 +68,13 @@ Rule from now on: every explorer gets a 5-minute budget.
 - ipf-stall WON (stall-abort at iter 400-600, byte-identical, pace
   -0.04 -> -0.21, 5bac17d). Launched beam-trim (other half of CPU).
   Running: support-cap, demand-sweep, beam-trim.
+
+- demand-sweep REJECTED (demand wins strain 1.02 -> 0.83 but 3x CPU,
+  pace +3.5, score 1.55). support-cap FALSIFIED (pair-softening
+  concentrates pairs off-peak, exc +11.6 + idle defects). beam-trim NULL
+  (budget expired; queued BEAM 32->16 hypothesis in its notes).
+- Built research/stack-1 (main + ipf-stall + size-again winners,
+  test conflict resolved, 128 green, book 0.897). Exploration base
+  for pace/size work; main stays untouched.
+- Launched beam-narrow (queued hypothesis, stack base), longest-cut
+  (attack the 21-set block), knob-scan (coordinate descent on stack).
