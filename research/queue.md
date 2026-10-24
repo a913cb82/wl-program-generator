@@ -45,3 +45,8 @@ back-to-back on one box. Never keep a change on pace alone.
 
 - clpull-spill + ms70-spill: spill peak singles to light days, same
   weekly totals, nothing gated (single-exc cells #1/#2).
+
+STOP RULE (adopted from the autoresearch skill): stop a line after
+3 dropped rounds in a row; stop the loop when the queue is empty and
+the last 3 rounds land inside noise. Statuses: open / trying / done /
+dropped. Spill line: 2 wins in a row -> keep mining, no bold needed.
