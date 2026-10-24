@@ -100,3 +100,11 @@ Rule from now on: every explorer gets a 5-minute budget.
 - cap-refits REJECTED (300 changes no plan, pace tax; pin test kept).
   Launched hotspot-2 (re-profile stacked tree). Spare ready:
   mindose-tol tree. Running: beam-joint, longest-surgical, hotspot-2.
+
+- beam-joint verdict was INVERTED (kept a +0.04 regression; lower is
+  better). Verified on orchestrator box (0.952, longest 22, pace
+  +0.13) and reverted on its branch. Lesson recorded in its notes.
+- hotspot-2 NULL (no float-safe cut past compensated sums).
+  longest-surgical NULL (repacking infeasible; recommends post-pass
+  split). Launched split-20 + demand-cheap (capped demand variant).
+  Running: mindose-tol, split-20, demand-cheap.
