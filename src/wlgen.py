@@ -1829,10 +1829,10 @@ def scheme_cost(seq, family):
     below = below_min(seq, family)
     run = run_penalty(seq)
     rep = rep_changes(seq)
-    ph = phrases(seq)
+    spans = _count_items(seq)
     sets = len(seq)
-    cost = 100 * below + 10 * run + REP_CHANGE * rep + 3 * ph + sets
-    return cost, below, run, rep, ph, sets
+    cost = 100 * below + 10 * run + REP_CHANGE * rep + 3 * spans + 2 * sets
+    return cost, below, run, rep, spans, sets
 
 
 @cache
@@ -2105,23 +2105,142 @@ def beam_search(zones, family):
         for zone, cap, choices in zones:
             for _ in range(cap):
                 ordered.append((zone, choices[-1][1]))
-        return tuple(ordered)
-    best_cost, best_phrases, _ = min(finished, key=lambda item: (item[0], item[1]))
-    tied = [
-        prefix
-        for cost, ph, prefix in finished
-        if (cost, ph) == (best_cost, best_phrases)
-    ]
-    best_prefix = None
-    best_text = None
-    for prefix in tied:
-        text = compact_text(prefix)
-        if best_text is None or (len(text), text) < (len(best_text), best_text):
-            best_prefix, best_text = prefix, text
-    return best_prefix
+        base = tuple(ordered)
+    else:
+        best_cost, best_phrases, _ = min(finished, key=lambda item: (item[0], item[1]))
+        tied = [
+            prefix
+            for cost, ph, prefix in finished
+            if (cost, ph) == (best_cost, best_phrases)
+        ]
+        best_prefix = None
+        best_text = None
+        for prefix in tied:
+            text = compact_text(prefix)
+            if best_text is None or (len(text), text) < (len(best_text), best_text):
+                best_prefix, best_text = prefix, text
+        assert best_prefix is not None
+        base = best_prefix
+    base_cost, _, _, _, base_ph, _ = scheme_cost(base, family)
+    for seed in seed_orders(zones):
+        cost, _, _, _, ph, _ = scheme_cost(seed, family)
+        if (cost, ph) < (base_cost, base_ph):
+            base, base_cost, base_ph = seed, cost, ph
+    return base
 
 
 @cache
+def _count_items(seq):
+    """Fewest rendered spans for an atom seq: same-zone runs merge into
+    one span, a repeated wave is one span. Count-only twin of _parse's
+    items (no strings built)."""
+    memo: dict = {}
+
+    def info(s):
+        if s in memo:
+            return memo[s]
+        if not s:
+            r = (0, ("", -1), ("", -1))
+        elif len(s) == 1:
+            r = (1, ("g", s[0][0]), ("g", s[0][0]))
+        else:
+            best = (len(s) + 1, ("", -1), ("", -1))
+            for i in range(1, len(s)):
+                a = info(s[:i])
+                b = info(s[i:])
+                m = 1 if (a[2][0] == "g" and a[2] == b[1]) else 0
+                cand = (a[0] + b[0] - m, a[1] or b[1], b[2] or a[2])
+                if cand[0] < best[0]:
+                    best = cand
+            n = len(s)
+            for p in range(1, n // 2 + 1):
+                k = 1
+                while (k + 1) * p <= n and s[k * p : (k + 1) * p] == s[:p]:
+                    k += 1
+                if k >= 2:
+                    rest = info(s[k * p :])
+                    cand = (1 + rest[0], ("w", -1), rest[2] or ("w", -1))
+                    if cand[0] < best[0]:
+                        best = cand
+            r = best
+        memo[s] = r
+        return r
+
+    return info(tuple(seq))[0]
+
+
+def seed_orders(zones):
+    """Deterministic candidate orders the joint beam misses.
+
+    Ramp spine (smallest set per zone, ascending), then either grouped
+    bulk (top remainder as singles, lower zones largest-first, drops are
+    free) or a top-pair wave ((U,s),(T,s) alternating after parity
+    singles). Every step is checked against _transition_ok and zone
+    totals must match exactly; invalid seeds are dropped. Pure (no RNG),
+    so beam_search stays @cache-safe."""
+    present = tuple(z for z, _, _ in zones)
+    if not present:
+        return ()
+    sizes = {z: [s for s, _ in ch] for z, _, ch in zones}
+    values = {z: {s: v for s, v in ch} for z, _, ch in zones}
+    out = []
+    for waved in (False, True):
+        seq = []
+        seen: set = set()
+        rem = {z: c for z, c, _ in zones}
+        last_zone, last_value = None, None
+        ok = True
+
+        def emit(z, size):
+            nonlocal last_zone, last_value, ok
+            if not ok:
+                return
+            v = values[z][size]
+            if not _transition_ok(
+                last_zone, last_value, z, v, frozenset(seen), present
+            ):
+                ok = False
+                return
+            seen.add(z)
+            last_zone, last_value = z, v
+            seq.append((z, v))
+            rem[z] -= size
+
+        for z, _, ch in zones:
+            emit(z, ch[-1][0])
+        top = present[-1]
+        below = present[-2] if len(present) >= 2 else None
+        s = 2
+        if (
+            waved
+            and below is not None
+            and s in sizes[top]
+            and s in sizes[below]
+            and rem[top] >= s
+            and rem[below] >= s
+        ):
+            for _ in range(rem[top] % s):
+                emit(top, 1)
+            while ok and rem[top] >= s and rem[below] >= s:
+                emit(below, s)
+                if ok:
+                    emit(top, s)
+        for z in sorted(present, reverse=True):
+            if not ok or rem[z] <= 0:
+                continue
+            if z == last_zone:
+                while rem[z] > 0 and ok:
+                    emit(z, 1)
+            else:
+                for size in sorted(fill(rem[z], tuple(sizes[z])), reverse=True):
+                    emit(z, size)
+        if ok and all(r == 0 for r in rem.values()) and seq:
+            tup = tuple(seq)
+            if tup not in out:
+                out.append(tup)
+    return tuple(out)
+
+
 def fixed_beam(types, family):
     """Best legal order of a fixed atom multiset; None if impossible."""
     present = tuple(sorted({z for z, _, _ in types}))

@@ -37,6 +37,7 @@ from wlgen import (
     fit_session,
     macro_days,
     map_zone_index,
+    pair_choices,
     pair_fill,
     phrases,
     scheme_cost,
@@ -45,6 +46,7 @@ from wlgen import (
     sessions,
     sets_text,
     shift,
+    single_zones,
     slot_match,
     spread,
     to_html,
@@ -653,9 +655,9 @@ def test_phrases_and_compact_text():
 
 def test_scheme_cost_run_penalty_visited():
     seq = ((60, 1), (60, 1), (70, 1), (60, 1), (70, 1))
-    cost, below, run, rep, ph, sets = scheme_cost(seq, "Snatch")
+    cost, below, run, rep, spans, sets = scheme_cost(seq, "Snatch")
     assert run == 0
-    assert cost == 100 * below + 10 * run + 5 * rep + 3 * ph + sets
+    assert cost == 100 * below + 10 * run + 5 * rep + 3 * spans + 2 * sets
 
 
 def test_beam_order_warmup_and_no_skip():
@@ -674,9 +676,62 @@ def test_beam_order_warmup_and_no_skip():
     assert sum(v for _, v in order) == 22
 
 
+def test_beam_seed_fixes_shredded_zone():
+    # A lone 60% single forces the ramp base to singles; the beam shreds
+    # the whole 80% zone into singles instead of waving back-off doubles.
+    _ordered, text = best_scheme((1, 11, 12, 0, 0), "CJ")
+    assert text == "60%/1, 70%/1, 80%/1*2, 5*(70%/2, 80%/2)"
+
+
+def test_count_items_matches_rendered():
+    assert wlgen._count_items(()) == 0
+    assert wlgen._count_items(((60, 1), (70, 2), (70, 3))) == 2
+    assert wlgen._count_items(((70, 2), (80, 2), (70, 2), (80, 2))) == 1
+    assert wlgen._count_items(((60, 1), (70, 1), (80, 1))) == 3
+    # Sweep the largest class: R must never exceed what the renderer
+    # shows nor the beam's own phrase count.
+    for cls in ("I",):
+        for m in build_plan(cls)["mesos"]:
+            for w in m["weeks"]:
+                for s in w["sessions"]:
+                    for _text, seq in scheme_entries(s):
+                        parsed = wlgen._parse(tuple(seq))
+                        assert wlgen._count_items(tuple(seq)) <= len(parsed[2])
+                        assert wlgen._count_items(tuple(seq)) <= wlgen.phrases(
+                            tuple(seq)
+                        )
+
+
 def test_beam_prefers_separated_rep_change():
     _ordered, text = best_scheme(_snatch_counts(), "Snatch")
     assert text == "60%/2, 70%/2*2, 3*(80%/2, 70%/3), 80%/1"
+
+
+def test_seed_orders_are_legal_and_exact():
+    cases = [
+        single_zones((1, 11, 12, 0, 0), "CJ"),
+        single_zones((6, 14, 10, 14, 3), "Squat"),
+        pair_choices((0, 2, 2), (0, 2, 2), "Clean", "Jerk", "Clean"),
+    ]
+    for zones in cases:
+        present = tuple(z for z, _, _ in zones)
+        idx = {z: i for i, (z, _, _) in enumerate(zones)}
+        sizemap = {z: {v: s for s, v in ch} for z, _, ch in zones}
+        seeds = wlgen.seed_orders(zones)
+        assert 1 <= len(seeds) <= 2
+        assert wlgen.seed_orders(zones) == seeds
+        for prefix in seeds:
+            seen = set()
+            last_zone, last_value = None, None
+            rem = [c for _, c, _ in zones]
+            for z, v in prefix:
+                assert wlgen._transition_ok(
+                    last_zone, last_value, z, v, frozenset(seen), present
+                )
+                seen.add(z)
+                last_zone, last_value = z, v
+                rem[idx[z]] -= sizemap[z][v]
+            assert all(r == 0 for r in rem)
 
 
 def test_beam_cj_ratios_legal():
