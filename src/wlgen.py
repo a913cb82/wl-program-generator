@@ -1680,7 +1680,7 @@ def fill(n, reps):
     """Exact rep split: fewest sets, then largest smallest and largest set."""
     if not n:
         return []
-    return list(_fill(n, tuple(sorted(set(reps) | {1}, reverse=True))))
+    return list(_fill(n, ladder(reps)))
 
 
 @cache
@@ -1761,8 +1761,18 @@ def atom_text(value):
     return str(value) if isinstance(value, int) else f"{value[0]}+{value[1]}"
 
 
+def ladder(reps):
+    """Allowed set sizes: the prescribed ladder plus every smaller size.
+
+    A shorter set is a legal fallback, not a forbidden one, so the ladders
+    are widened down to one rather than having a single bolted on."""
+    return tuple(sorted(set(reps) | set(range(1, min(reps))), reverse=True))
+
+
 def pref_min(family, zlo):
-    """Smallest useful set size: 1 is the fallback, not a target."""
+    """Smallest set size that counts as work, i.e. what a fallback is
+    measured against. A ladder of bare singles has no work size, so a
+    single there is the target rather than a fallback."""
     sizes = REPS[family][zlo]
     return min((s for s in sizes if s > 1), default=1)
 
@@ -1967,7 +1977,7 @@ def single_zones(counts, family):
         (
             lo[z],
             n,
-            tuple((r, r) for r in sorted(set(REPS[family][lo[z]]) | {1}, reverse=True)),
+            tuple((r, r) for r in ladder(REPS[family][lo[z]])),
         )
         for z, n in enumerate(counts)
         if n

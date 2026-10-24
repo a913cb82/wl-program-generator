@@ -36,6 +36,7 @@ from wlgen import (
     fill,
     fit,
     fit_session,
+    ladder,
     macro_days,
     map_zone_index,
     micro_table,
@@ -392,7 +393,8 @@ def test_scheme_sums_and_caps():
                                 parts = fill(n, REPS[BIN_GROUP[g]][lo[z]])
                                 assert sum(parts) == n
                                 assert all(
-                                    p in REPS[BIN_GROUP[g]][lo[z]] + (1,) for p in parts
+                                    p in ladder(REPS[BIN_GROUP[g]][lo[z]])
+                                    for p in parts
                                 )
                     for (a, b), (ref, va, vb) in s.get("pairs", {}).items():
                         lo = BIN_ZONES[BIN_GROUP[ref]]
@@ -654,11 +656,12 @@ def _snatch_counts():
 
 
 def test_stray_exempts_first_touch_per_zone():
-    # Squat prefers at least 2 reps at 50-80: the opening single is the
-    # warm-up ramp, only repeated singles are stray volume.
-    assert wlgen.stray(((50, 1), (50, 1)), "Squat") == 1
+    # The opening set of a zone is the warm-up ramp and stays free; repeats
+    # pay the shortfall from the smallest working size, so a single costs
+    # two at 50% (min 3) but one at 60% (min 2).
+    assert wlgen.stray(((50, 1), (50, 1)), "Squat") == 2
     assert wlgen.stray(((50, 1), (60, 1), (60, 1)), "Squat") == 1
-    assert wlgen.stray(((50, 2), (50, 1)), "Squat") == 1
+    assert wlgen.stray(((50, 2), (50, 1)), "Squat") == 2
 
 
 def test_complexity_counts_things():
@@ -968,6 +971,20 @@ def test_pair_orders_never_raise_side_reps_with_weight():
                                 )
 
 
+def test_below_the_ladder_costs_the_shortfall():
+    # Sizes under the prescribed range are legal fallbacks, and each rep
+    # they fall short costs one; the first touch of a zone stays free.
+    assert fill(2, REPS["Squat"][50]) == [2]
+    assert fill(1, REPS["Squat"][50]) == [1]
+    assert stray(((50, 12), (50, 3)), "Squat") == 0
+    assert stray(((50, 12), (50, 2)), "Squat") == 1
+    assert stray(((50, 12), (50, 1)), "Squat") == 2
+    assert stray(((50, 2),), "Squat") == 0
+    # A ladder of bare singles has no working size to fall short of.
+    assert stray(((90, 1), (90, 1)), "Snatch") == 0
+    assert stray(((80, 2), (80, 1)), "Snatch") == 1
+
+
 def test_two_reps_at_low_zones_are_one_set():
     for family in ("Squat", "Fund"):
         for zone in (50, 60, 70):
@@ -1084,11 +1101,24 @@ def test_write_outputs(tmp_path):
     assert tmp_path.joinpath("I.html").read_text().startswith("<!DOCTYPE html>")
 
 
-def test_light_squat_ladder_reaches_six():
-    # A 12-rep total at 50% is two sets of six if the ladder allows it, and
-    # two sets of five leaves a 2 behind that caps every zone above it. That
-    # single missing size forced the classic 55-rep squat slot into 18 sets.
-    assert 6 in REPS["Squat"][50]
+def test_light_ladders_match_the_prescription():
+    # 50% and 60% carry a full rep range for the strength lifts.
+    wide = tuple(range(12, 2, -1))
+    mid = tuple(range(8, 1, -1))
+    assert REPS["Squat"][50] == wide
+    assert REPS["Fund"][50] == wide
+    assert REPS["Squat"][60] == mid
+    assert REPS["Fund"][60] == mid
+    # A 12-rep 50% block is one set of twelve, not two of six.
+    assert fill(12, REPS["Squat"][50]) == [12]
+    # Eighteen cannot be one set, so it splits evenly rather than 12 + 6.
+    assert fill(18, REPS["Squat"][50]) == [9, 9]
+
+
+def test_big_squat_slot_stays_compact():
+    # A full light ladder lets the 55-rep slot sit in a dozen sets. While
+    # 50% topped out at five reps it needed eighteen, because the ascent
+    # always left a 2 or 3 behind that capped every zone above it.
     seq, _ = best_scheme((12, 15, 14, 7, 7), "Squat")
     assert sum(r for _, r in seq) == 55
     assert stray(seq, "Squat") == 0
