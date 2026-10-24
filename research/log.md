@@ -126,3 +126,8 @@ Rule from now on: every explorer gets a 5-minute budget.
   (size-again schemes), CMS identical; ipf-stall contributes no diff.
 - Launched spread-trim (nobody has attacked spread 0.17 directly).
   Running: day-rebalance, feasible-trim, spread-trim.
+
+- day-rebalance KILLED (strain cost 4.5x rhythm gain; turns-vs-peaks
+  tradeoff floors 4-6-day weeks). Launched perclass-weights (non-uniform
+  SIZE_WEIGHT for the worst rhythm rows). Running: feasible-trim,
+  spread-trim, perclass-weights.
