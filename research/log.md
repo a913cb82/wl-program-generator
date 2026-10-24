@@ -206,3 +206,12 @@ Rule from now on: every explorer gets a 5-minute budget.
   tight (beam-seed-2: edit in 60s, audit-only). Launched single-exc
   (analysis-only): the ~24 non-doubled excess is the untouched
   remainder; gating verdicts attached so it is not retried.
+
+- clpull-2 + ms70-2 NO-GO (budgets expire before implementation even
+  with inline briefs; 4 runs, zero implementation).
+- Orchestrator spike: one-cell ClPull spill KILLED by construction
+  (only host that week; adding a movement dwarfs the ~2 exc gain).
+  Rescue: spill only into co-host sessions. Fundamental is everywhere
+  -> launched fund-spill (I-class Fundamental peak->light).
+- Skill updated twice: shared-notes paths go stale; briefs must be
+  self-contained (paste exact targets inline).
