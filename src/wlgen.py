@@ -1739,9 +1739,13 @@ def pref_min(family, zlo):
 
 def below_min(seq, family):
     total = 0
+    seen = set()
     for zlo, value in seq:
-        size = max(value) if isinstance(value, tuple) else value
-        total += max(0, pref_min(family, zlo) - size)
+        if zlo in seen:
+            size = max(value) if isinstance(value, tuple) else value
+            total += max(0, pref_min(family, zlo) - size)
+        else:
+            seen.add(zlo)
     return total
 
 

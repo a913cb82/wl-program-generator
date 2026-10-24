@@ -645,6 +645,14 @@ def _snatch_counts():
     return (2, 13, 7, 0, 0)
 
 
+def test_below_min_exempts_first_touch_per_zone():
+    # Squat prefers at least 2 reps at 50-80: the opening single is the
+    # warm-up ramp, only repeated singles are junk volume.
+    assert wlgen.below_min(((50, 1), (50, 1)), "Squat") == 1
+    assert wlgen.below_min(((50, 1), (60, 1), (60, 1)), "Squat") == 1
+    assert wlgen.below_min(((50, 2), (50, 1)), "Squat") == 1
+
+
 def test_phrases_and_compact_text():
     wave = tuple([(70, 3), (80, 2)] * 3)
     assert phrases(wave) == 2
