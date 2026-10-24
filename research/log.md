@@ -131,3 +131,10 @@ Rule from now on: every explorer gets a 5-minute budget.
   tradeoff floors 4-6-day weeks). Launched perclass-weights (non-uniform
   SIZE_WEIGHT for the worst rhythm rows). Running: feasible-trim,
   spread-trim, perclass-weights.
+
+- perclass-weights NO-GO (MS-only M+1 right direction, 3 guards trip;
+  unrun: I/CMS-only, half-steps). Harvested.
+- feasible-trim HOLD (13% CPU cut, byte-identical, pace inside noise).
+  spread-trim NULL with a concrete lead (free-day1 running it).
+- Launched perclass-icms (unrun follow-ups). Running: free-day1,
+  polish-pairs, perclass-icms.
