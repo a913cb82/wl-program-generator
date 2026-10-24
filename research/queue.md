@@ -14,3 +14,10 @@
 5. longest-followup: depends on longest-surgical result.
 6. stack-verify (orchestrator, not a subagent): verify all winner
    branches combine cleanly before any merge decision.
+
+7. day-rebalance (stack-1): shift volume BETWEEN days (not groups) to
+   hit contrast 2.75 with more turns. Scored on total book — strain may
+   pay. New angle: all rhythm tries moved patterns, none moved mass.
+8. feasible-trim (stack-1): new eyes on _feasible (18% of build).
+   hotspot-2 ruled out float-unsafe cuts; look for algorithmic skips
+   (early exit, memo keys), byte-identity gate.
