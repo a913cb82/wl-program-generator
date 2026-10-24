@@ -21,3 +21,7 @@
 8. feasible-trim (stack-1): new eyes on _feasible (18% of build).
    hotspot-2 ruled out float-unsafe cuts; look for algorithmic skips
    (early exit, memo keys), byte-identity gate.
+
+9. polish-pairs (stack-1): wave-polish won on single-side sets; try the
+   round-robin polish on PAIR complex orders (two-sided zone totals).
+   Same strict gate: identical totals, no stray/warmup regression.
