@@ -110,6 +110,10 @@ PRILEPIN_SOFT = 4
 PRILEPIN_HARD = 20
 WARMUP_COST = 10
 COMPLEXITY_COST = 4
+# One more set to read and follow in a slot. The beam already spends one
+# unit of pruning guide per set while it searches; the final choice prices
+# the same unit, so a shorter order wins when it costs little extra.
+LENGTH_COST = 1
 
 # Soviet class tables: % volume per group (prep/comp)
 III_II = {
