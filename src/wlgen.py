@@ -1930,7 +1930,7 @@ def _render_html(items):
                 )
                 if count > 1:
                     frac += f'<span class="sets">×{count}</span>'
-                parts.append(frac)
+                parts.append(f'<span class="dose">{frac}</span>')
             out.append(" ".join(parts))
     return tuple(out)
 
@@ -2452,10 +2452,11 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0.1em 0.25em; }
 .frac .zone { border-bottom: 1.5px solid currentColor; padding: 0 0.4em; font-weight: 600; }
 .frac .reps { padding: 0 0.4em; }
-.sets { font-weight: 600; vertical-align: middle; }
+.sets { font-weight: 600; }
 .rep { font-weight: 600; }
 .wave { display: inline-flex; align-items: center; }
-.pl, .pr { font-size: 2.2em; line-height: 1; }
+.dose { display: inline-flex; align-items: center; }
+.pl, .pr { font-size: 2.2em; line-height: 1; font-weight: 300; }
 """
 
 

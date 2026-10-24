@@ -489,15 +489,15 @@ def test_consolidate_doses_folds_stranded_cells():
 
 def test_render_html():
     assert wlgen._render_html((("group", 80, ((3, 2), (2, 1))),)) == (
-        '<span class="frac"><span class="zone">80%</span>'
+        '<span class="dose"><span class="frac"><span class="zone">80%</span>'
         '<span class="reps">3</span></span>'
-        '<span class="sets">×2</span> '
-        '<span class="frac"><span class="zone">80%</span>'
-        '<span class="reps">2</span></span>',
+        '<span class="sets">×2</span></span> '
+        '<span class="dose"><span class="frac"><span class="zone">80%</span>'
+        '<span class="reps">2</span></span></span>',
     )
     assert wlgen._render_html((("group", 70, ((1, 1),)),)) == (
-        '<span class="frac"><span class="zone">70%</span>'
-        '<span class="reps">1</span></span>',
+        '<span class="dose"><span class="frac"><span class="zone">70%</span>'
+        '<span class="reps">1</span></span></span>',
     )
     assert wlgen._render_html(
         (
@@ -512,10 +512,10 @@ def test_render_html():
         )
     ) == (
         '<span class="wave"><span class="rep">3×</span><span class="pl">(</span>'
-        '<span class="frac"><span class="zone">70%</span>'
-        '<span class="reps">3</span></span> '
-        '<span class="frac"><span class="zone">80%</span>'
-        '<span class="reps">2</span></span>'
+        '<span class="dose"><span class="frac"><span class="zone">70%</span>'
+        '<span class="reps">3</span></span></span> '
+        '<span class="dose"><span class="frac"><span class="zone">80%</span>'
+        '<span class="reps">2</span></span></span>'
         '<span class="pr">)</span></span>',
     )
 
@@ -550,8 +550,8 @@ def test_training_table_exact():
         ],
     }
     frac = (
-        '<span class="frac"><span class="zone">{}%</span>'
-        '<span class="reps">{}</span></span>'
+        '<span class="dose"><span class="frac"><span class="zone">{}%</span>'
+        '<span class="reps">{}</span></span></span>'
     )
     cj = frac.format(70, "2+2")
     sq3 = frac.format(60, "3")
@@ -587,7 +587,8 @@ def test_plan_table_uses_full_width_without_wrapping():
 def test_wave_parens_span_full_height():
     html = to_html(build_plan("I"))
     assert ".wave { display: inline-flex; align-items: center; }" in html
-    assert ".pl, .pr { font-size: 2.2em; line-height: 1; }" in html
+    assert ".pl, .pr { font-size: 2.2em; line-height: 1; font-weight: 300; }" in html
+    assert ".dose { display: inline-flex; align-items: center; }" in html
     assert '<span class="pl">(</span>' in html
 
 
