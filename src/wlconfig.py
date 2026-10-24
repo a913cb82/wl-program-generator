@@ -74,6 +74,9 @@ REPS = {
 BEAM = 32  # session-order beam width
 BEAM_JOINT = 16  # fallback width when the preferred fill cannot be ordered
 FINISH_SCAN = 2  # survivors rescored under the true cost (waves compress)
+STRAY_COST = 100
+WARMUP_COST = 10
+COMPLEXITY_COST = 4
 
 # Soviet class tables: % volume per group (prep/comp)
 III_II = {

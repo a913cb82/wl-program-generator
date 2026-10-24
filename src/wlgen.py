@@ -18,6 +18,7 @@ from wlconfig import (
     CAP,
     CAP_DEV,
     CLASSES,
+    COMPLEXITY_COST,
     DAY,
     EPS,
     FAN,
@@ -34,8 +35,10 @@ from wlconfig import (
     REPS,
     SCHEDULES,
     SIZE_WEIGHT,
+    STRAY_COST,
     TOL,
     VARIANTS,
+    WARMUP_COST,
     slot_singles,
     token_parts,
 )
@@ -1821,7 +1824,7 @@ def scheme_cost(seq, family):
     stray_ = stray(seq, family)
     warmup_ = warmup(seq)
     cx = complexity(seq)
-    cost = 100 * stray_ + 10 * warmup_ + 4 * cx
+    cost = STRAY_COST * stray_ + WARMUP_COST * warmup_ + COMPLEXITY_COST * cx
     return cost, stray_, warmup_, cx
 
 
@@ -2012,7 +2015,13 @@ def beam_search(zones, family):
     def key(state):
         _caps, _lz, _lv, _seen, _rl, below, warmup, sfx, _cc, prefix = state
         guide = _guide(prefix) + sfx
-        return 100 * below + 10 * warmup + 4 * guide + len(prefix), guide
+        return (
+            STRAY_COST * below
+            + WARMUP_COST * warmup
+            + COMPLEXITY_COST * guide
+            + len(prefix),
+            guide,
+        )
 
     while beam:
         nxt = []
@@ -2030,7 +2039,15 @@ def beam_search(zones, family):
         ) in beam:
             if not any(caps):
                 guide = _guide(prefix) + sfx
-                finished.append((100 * below + 10 * warmup + 4 * guide, guide, prefix))
+                finished.append(
+                    (
+                        STRAY_COST * below
+                        + WARMUP_COST * warmup
+                        + COMPLEXITY_COST * guide,
+                        guide,
+                        prefix,
+                    )
+                )
                 continue
             for i, (zone, _cap, choices) in enumerate(zones):
                 current = caps[i]
@@ -2281,7 +2298,13 @@ def fixed_beam(types, family):
     def key(state):
         _rem, _lz, _lv, _seen, _rl, below, warmup, sfx, _cc, prefix = state
         guide = _guide(prefix) + sfx
-        return 100 * below + 10 * warmup + 4 * guide + len(prefix), guide
+        return (
+            STRAY_COST * below
+            + WARMUP_COST * warmup
+            + COMPLEXITY_COST * guide
+            + len(prefix),
+            guide,
+        )
 
     while beam:
         nxt = []
@@ -2299,7 +2322,15 @@ def fixed_beam(types, family):
         ) in beam:
             if not any(rem):
                 guide = _guide(prefix) + sfx
-                finished.append((100 * below + 10 * warmup + 4 * guide, guide, prefix))
+                finished.append(
+                    (
+                        STRAY_COST * below
+                        + WARMUP_COST * warmup
+                        + COMPLEXITY_COST * guide,
+                        guide,
+                        prefix,
+                    )
+                )
                 continue
             for i, (zone, value, _count) in enumerate(types):
                 if rem[i] <= 0:
