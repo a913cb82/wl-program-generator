@@ -182,3 +182,10 @@ Rule from now on: every explorer gets a 5-minute budget.
   quality tradeoff that loses).
 - Launched exc-map (analysis-only: map the 147.8 excess to direct the
   next strain shot) + ms-rhythm recovery steer.
+
+- ms-rhythm NO-GO (rhythm fix works 3.00->2.22 but strain 147.8->150.1;
+  S-less shapes are load-bearing for the strain win).
+- exc-map delivered: I 45.0/MS 43.3 top classes; 70% band holds 49% of
+  excess; 84% is paired doubling. Top shot: I Other Snatch 70% pairs
+  (7.3 exc, 10 sessions). Launched i70-gate + iclean-gate (cell #3) +
+  polish-again (is the polish idempotent?).
