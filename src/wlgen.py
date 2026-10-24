@@ -1917,8 +1917,8 @@ def _render_html(items):
         if item[0] == "wave":
             inner = " ".join(_render_html(item[2]))
             out.append(
-                f'<span class="wave"><span class="rep">{item[1]}×</span>'
-                f'<span class="pl">(</span>{inner}<span class="pr">)</span></span>'
+                f'<span class="wave"><span class="pl">(</span>{inner}'
+                f'<span class="pr">)</span><span class="rep">×{item[1]}</span></span>'
             )
         else:
             _, zlo, pairs = item

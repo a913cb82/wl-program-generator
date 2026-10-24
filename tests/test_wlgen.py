@@ -529,12 +529,12 @@ def test_render_html():
             ),
         )
     ) == (
-        '<span class="wave"><span class="rep">3×</span><span class="pl">(</span>'
+        '<span class="wave"><span class="pl">(</span>'
         '<span class="dose"><span class="frac"><span class="zone">70%</span>'
         '<span class="reps">3</span></span></span> '
         '<span class="dose"><span class="frac"><span class="zone">80%</span>'
         '<span class="reps">2</span></span></span>'
-        '<span class="pr">)</span></span>',
+        '<span class="pr">)</span><span class="rep">×3</span></span>',
     )
 
 
