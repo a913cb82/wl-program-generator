@@ -19,6 +19,8 @@ renders serially.
 
 ```sh
 WLGEN_JOBS=1 .venv/bin/wlgen         # single process, identical output
+.venv/bin/wlgen audit                # print the scoreboard for all five plans
+.venv/bin/wlgen score outputs/III.json  # score one saved plan
 ```
 
 Get uv from <https://docs.astral.sh/uv/>.
@@ -62,8 +64,10 @@ Each training plan slot gets one row with two columns per week: the movement nam
 
 - `src/wlconfig.py` — all data and tuning: ratios, templates, bins, search widths. The steps below name its tables.
 - `src/wlgen.py` — the generator and the HTML renderer.
-- `tests/test_wlgen.py` — the test suite.
-- `outputs/` — the five generated plans.
+- `src/wlscore.py` — the program scorer and the audit.
+- `tests/test_wlgen.py` — the generator test suite.
+- `tests/test_wlscore.py` — the representation and scorer tests.
+- `outputs/` — the five generated plans, each as HTML and JSON.
 - `pyproject.toml` — packaging, test, lint and type-check config.
 - `uv.lock` — pinned dev dependencies.
 - `.python-version` — interpreter uv uses.
@@ -99,6 +103,29 @@ Each level takes a share of the level above it. `wlconfig.py` holds those shares
 - A session orders its sets like a warm-up. Zones first appear from light to heavy. Each jump up goes to the next zone in the session. Reps stay flat or drop as weight rises. A drop back down can add reps.
 - Two paired movements sharing a day follow a fixed rep ratio (eg 2 pulls per snatch, 2 cleans per jerk). Lighter zones allow more ratios, and the choice narrows as weight rises. Pair volume counts toward both movements' bins.
 - The tool packs each movement's reps at a zone into as few sets as possible (`70%/3*2,2`), using the zone's preferred rep counts from `REPS`. A search then picks the cleanest legal order.
+
+## Representation and scoring
+
+Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the
+intermediate representation: plain data with no tuples, so any tool can
+read it. The HTML is rendered from that same structure, and the scorer
+reads it too.
+
+`wlgen audit` builds all five classes and prints one scoreboard row per
+class plus the book total. The score has four parts; lower is better.
+
+- **Strain** — dose health: work over the Prilepin tolerance plus work
+  under the 0.25 floor, in session units, divided by 150.
+- **Size** — instructions to follow plus the longest single block.
+- **Rhythm** — how far the median week is from a 2.75 contrast, plus
+  missing turns and off-count peaks (only moves of at least a tenth of
+  the week's range steer the turns and the peaks).
+- **Drift** — everything off plan: group and total misses at week,
+  block, and program scale; illegal sets, unworkable days, gaps, idle
+  movements, uneven spacing, and slow builds.
+
+`score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan
+scores zero on every defect term; only spacing is nonzero today.
 
 ## Guarantees
 

@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from functools import cache
 from html import escape
@@ -1719,6 +1720,104 @@ def build_plan(cls):
     }
 
 
+def to_ir(plan):
+    """Plain-JSON version of a built plan.
+
+    Sessions store pairs under tuple keys with tuple vectors; JSON has
+    neither, so ``(a, b)`` becomes ``"a+b"`` and every tuple a list.
+    Everything else in the plan is already plain data."""
+    out = {
+        "macro": plan["macro"],
+        "class": plan["class"],
+        "annual": plan["annual"],
+        "groups": dict(plan["groups"]),
+        "mesos": [],
+    }
+    for m in plan["mesos"]:
+        weeks = []
+        for w in m["weeks"]:
+            sessions = []
+            for s in w["sessions"]:
+                sessions.append(
+                    {
+                        "size": s["size"],
+                        "vol": s["vol"],
+                        "base": s.get("base", "Day"),
+                        "movements": {g: list(v) for g, v in s["movements"].items()},
+                        "pairs": {
+                            f"{a}+{b}": [ref, list(va), list(vb)]
+                            for (a, b), (ref, va, vb) in s.get("pairs", {}).items()
+                        },
+                    }
+                )
+            weeks.append(
+                {
+                    "vol": w["vol"],
+                    "groups": dict(w["groups"]),
+                    "sessions": sessions,
+                    "bins": {g: list(v) for g, v in w["bins"].items()},
+                }
+            )
+        out["mesos"].append(
+            {
+                "name": m["name"],
+                "phase": m["phase"],
+                "vol": m["vol"],
+                "groups": dict(m["groups"]),
+                "weeks": weeks,
+            }
+        )
+    return out
+
+
+def from_ir(ir):
+    """Restore a built-plan structure from ``to_ir`` output (or its JSON
+    round trip). Rendering and scoring accept the result as built."""
+    plan = {
+        "macro": ir["macro"],
+        "class": ir["class"],
+        "annual": ir["annual"],
+        "groups": dict(ir["groups"]),
+        "mesos": [],
+    }
+    for m in ir["mesos"]:
+        weeks = []
+        for w in m["weeks"]:
+            sessions = []
+            for s in w["sessions"]:
+                pairs = {}
+                for key, (ref, va, vb) in s.get("pairs", {}).items():
+                    a, b = key.split("+")
+                    pairs[(a, b)] = (ref, tuple(va), tuple(vb))
+                sessions.append(
+                    {
+                        "size": s["size"],
+                        "vol": s["vol"],
+                        "base": s.get("base", "Day"),
+                        "movements": {g: list(v) for g, v in s["movements"].items()},
+                        "pairs": pairs,
+                    }
+                )
+            weeks.append(
+                {
+                    "vol": w["vol"],
+                    "groups": dict(w["groups"]),
+                    "sessions": sessions,
+                    "bins": {g: list(v) for g, v in w["bins"].items()},
+                }
+            )
+        plan["mesos"].append(
+            {
+                "name": m["name"],
+                "phase": m["phase"],
+                "vol": m["vol"],
+                "groups": dict(m["groups"]),
+                "weeks": weeks,
+            }
+        )
+    return plan
+
+
 def _th(label, colspan=1):
     span = f' colspan="{colspan}"' if colspan > 1 else ""
     return f'<th scope="col"{span}>{label}</th>'
@@ -2942,13 +3041,29 @@ def write_outputs(path="outputs", jobs=None):
     if not pages:
         for cls in CLASSES:
             pages[cls] = to_html(build_plan(cls))
+    import json
+
     for cls in CLASSES:
         (path / f"{cls}.html").write_text(pages[cls])
+        (path / f"{cls}.json").write_text(json.dumps(to_ir(build_plan(cls))))
 
 
 def main():
-    jobs = int(os.environ.get("WLGEN_JOBS", "0")) or None
-    write_outputs(jobs=jobs)
+    args = sys.argv[1:]
+    if args[:1] == ["audit"]:
+        from wlscore import audit
+
+        audit()
+    elif args[:1] == ["score"] and len(args) == 2:
+        import json
+
+        from wlscore import print_breakdown, score_ir
+
+        ir = json.loads(Path(args[1]).read_text())
+        print_breakdown(score_ir(ir))
+    else:
+        jobs = int(os.environ.get("WLGEN_JOBS", "0")) or None
+        write_outputs(jobs=jobs)
 
 
 if __name__ == "__main__":
