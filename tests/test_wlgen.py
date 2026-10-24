@@ -318,10 +318,12 @@ def test_training_plan_tables():
                         continue
                     movement, seq = entries[k]
                     assert cells[base + 2 * wi] == movement
-                    assert cells[base + 2 * wi + 1] == " ".join(
+                    scheme = cells[base + 2 * wi + 1]
+                    assert scheme == " ".join(
                         f'<span class="phrase">{p}</span>'
                         for p in wlgen._render_html(wlgen._parse(tuple(seq))[2])
                     )
+                    assert "," not in scheme
                 idx += 1
         assert idx == len(body)
 
@@ -445,7 +447,7 @@ def test_render_html():
     assert wlgen._render_html((("group", 80, ((3, 2), (2, 1))),)) == (
         '<span class="frac"><span class="zone">80%</span>'
         '<span class="reps">3</span></span>'
-        '<span class="sets">×2</span>, '
+        '<span class="sets">×2</span> '
         '<span class="frac"><span class="zone">80%</span>'
         '<span class="reps">2</span></span>',
     )
@@ -465,11 +467,12 @@ def test_render_html():
             ),
         )
     ) == (
-        '<span class="rep">3×</span>('
+        '<span class="wave"><span class="rep">3×</span><span class="pl">(</span>'
         '<span class="frac"><span class="zone">70%</span>'
-        '<span class="reps">3</span></span>, '
+        '<span class="reps">3</span></span> '
         '<span class="frac"><span class="zone">80%</span>'
-        '<span class="reps">2</span></span>)',
+        '<span class="reps">2</span></span>'
+        '<span class="pr">)</span></span>',
     )
 
 
@@ -535,6 +538,13 @@ def test_plan_table_uses_full_width_without_wrapping():
     assert "table.plan { width: 100%; }" in html
     assert "td.scheme { min-width: 10rem; white-space: nowrap; }" in html
     assert '<div class="phrase">' not in html
+
+
+def test_wave_parens_span_full_height():
+    html = to_html(build_plan("I"))
+    assert ".wave { display: inline-flex; align-items: center; }" in html
+    assert ".pl, .pr { font-size: 2.2em; line-height: 1; }" in html
+    assert '<span class="pl">(</span>' in html
 
 
 def test_scheme_entries_follow_slot_order():
@@ -709,29 +719,53 @@ def test_html_tables_at_every_level():
     html = to_html(build_plan("I"))
     assert html.startswith("<!DOCTYPE html>")
     assert "<title>Soviet year (I)</title>" in html
-    for section in ("macrocycle", "mesocycles", "microcycles", "training-plan"):
-        assert f'<section id="{section}">' in html
-    macro = html.split('<section id="mesocycles">')[0]
+    assert '<h1 id="volumes">Volumes</h1>' in html
+    assert '<h1 id="training-plan">Training Plan</h1>' in html
+    vols = html.split('<h1 id="training-plan">')[0]
+    assert '<h2 id="macrocycle">Macrocycle</h2>' in vols
+    assert '<h2 id="mesocycles">Mesocycles</h2>' in vols
+    assert '<h2 id="microcycles">Microcycles</h2>' in vols
+    macro = vols.split('<h2 id="mesocycles">')[0]
     assert '<th scope="col">Group</th><th scope="col">Lifts</th>' in macro
     assert "Meso sizes:" in macro
-    assert "Prep 4-2 (prep)</th>" in html
-    micro = html.split('<section id="training-plan">')[0].split(
-        '<section id="microcycles">'
-    )[1]
-    assert micro.count("<h3") == 20
-    for chunk in micro.split("<h3")[1:]:
+    assert "Prep 4-2 (prep)</th>" in vols
+    micro = vols.split('<h2 id="microcycles">')[1]
+    assert micro.count("<h3") == 5
+    assert micro.count("<h4") == 20
+    for chunk in micro.split("<h4")[1:]:
         assert '<th scope="col">Group</th>' in chunk
-    plan = html.split('<section id="training-plan">')[1]
+    plan = html.split('<h1 id="training-plan">')[1]
     assert plan.count('<table class="plan">') == 5
+    assert plan.count("<h2") == 5
 
 
 def test_html_toc():
     html = to_html(build_plan("I"))
     assert '<nav class="toc">' in html
+    assert 'href="#volumes"' in html
+    assert 'href="#training-plan"' in html
+    assert 'href="#macrocycle"' in html
+    assert 'href="#mesocycles"' in html
+    assert 'href="#microcycles"' in html
     assert 'href="#prep-4-2-prep"' in html
     assert 'href="#week-1---242-lifts"' in html
-    assert 'href="#prep-4-2-prep---training-plan"' in html
-    assert html.count("<li>") == 30
+    assert 'href="#prep-4-2-prep-1"' in html
+    assert html.count("<li>") == 35
+
+
+def test_toc_nests_volumes_and_training_plan():
+    html = to_html(build_plan("I"))
+    toc = html.split('<nav class="toc">')[1].split("</nav>")[0]
+    vols, plans = toc.split('href="#training-plan"')
+    assert vols.index('href="#volumes"') < vols.index('href="#macrocycle"')
+    assert vols.index('href="#macrocycle"') < vols.index('href="#mesocycles"')
+    assert vols.index('href="#mesocycles"') < vols.index('href="#microcycles"')
+    assert vols.index('href="#microcycles"') < vols.index('href="#prep-4-2-prep"')
+    assert vols.index('href="#prep-4-2-prep"') < vols.index(
+        'href="#week-1---242-lifts"'
+    )
+    assert 'href="#prep-4-2-prep-1"' in plans
+    assert vols.count("<ul>") == 8
 
 
 def test_toc_anchors_disambiguate_duplicates():
@@ -770,7 +804,7 @@ def test_sizes_at_every_level():
     assert "Day sizes:" not in html
     assert html.count('class="sizes"') == 6
     assert "Prep 4-2 (prep) - Week sizes: 242, 322, 196, 391" in html
-    assert html.count("<h3") == 20
+    assert html.count("<h4") == 20
 
 
 def test_write_outputs(tmp_path):
@@ -958,7 +992,7 @@ def test_html_week_bins():
             "ARI",
         ]
     )
-    weeks = to_html(build_plan("I")).split("<h3")[1:]
+    weeks = to_html(build_plan("I")).split("<h4")[1:]
     assert len(weeks) == 20
     assert all(header in chunk for chunk in weeks)
     row = weeks[-1].split('<th scope="row">Snatch</th>')[1].split("</tr>")[0]

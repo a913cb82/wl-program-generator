@@ -39,12 +39,7 @@ Five files, one per competition class, III (entry) to MS (top):
 
 Open one in a browser. Each file is self-contained (inline CSS, no scripts).
 
-A plan has four parts:
-
-- The macrocycle total, plus one group table with the meso sizes.
-- A mesocycles table (one volume column per meso), with the weekly sizes.
-- A week table with lifts per group and zone, per microcycle.
-- A training plan table per mesocycle: weeks go across, sessions and slots go down.
+A plan has two parts, Volumes and Training Plan. Volumes holds three tables: the macrocycle total (one group table plus the meso sizes), a mesocycles table (one volume column per meso, with the weekly sizes), and one week table with lifts per group and zone per microcycle. Training Plan holds one table per mesocycle: weeks go across, sessions and slots go down.
 
 Each training plan slot gets one row with two columns per week: the movement name, then its scheme with the zone over the reps, fraction-style (a real stacked fraction with a vinculum, e.g. 80% over 1+2; repeated sets show as ×N beside the fraction):
 

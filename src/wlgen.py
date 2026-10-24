@@ -1665,8 +1665,11 @@ def _render_html(items):
     out = []
     for item in items:
         if item[0] == "wave":
-            inner = ", ".join(_render_html(item[2]))
-            out.append(f'<span class="rep">{item[1]}×</span>({inner})')
+            inner = " ".join(_render_html(item[2]))
+            out.append(
+                f'<span class="wave"><span class="rep">{item[1]}×</span>'
+                f'<span class="pl">(</span>{inner}<span class="pr">)</span></span>'
+            )
         else:
             _, zlo, pairs = item
             parts = []
@@ -1678,7 +1681,7 @@ def _render_html(items):
                 if count > 1:
                     frac += f'<span class="sets">×{count}</span>'
                 parts.append(frac)
-            out.append(", ".join(parts))
+            out.append(" ".join(parts))
     return tuple(out)
 
 
@@ -2177,6 +2180,7 @@ header h1 { font-size: 2.2rem; letter-spacing: -0.01em; margin: 0 0 1rem; }
 section > h1 { font-size: 1.8rem; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 2px solid var(--line); }
 h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; }
 h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
 nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: 0.75rem; padding: 1rem 1.5rem; }
 nav.toc h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
 nav.toc ul { margin: 0.25rem 0; padding-left: 1.25rem; }
@@ -2200,28 +2204,60 @@ table.plan .wk { border-left: 2px solid var(--strong); }
 .frac .reps { padding: 0 0.4em; }
 .sets { font-weight: 600; vertical-align: middle; }
 .rep { font-weight: 600; }
+.wave { display: inline-flex; align-items: center; }
+.pl, .pr { font-size: 2.2em; line-height: 1; }
 """
 
 
+def toc_tree(entries):
+    """Nest (level, title, anchor) entries into [title, anchor, children] trees."""
+    root: list = []
+    stack = [(0, root)]
+    for level, title, anchor in entries:
+        while stack[-1][0] >= level:
+            stack.pop()
+        node = [title, anchor, []]
+        stack[-1][1].append(node)
+        stack.append((level, node[2]))
+    return root
+
+
+def toc_list(nodes):
+    """Nested <ul> table of contents for toc_tree output."""
+    parts = ["<ul>"]
+    for title, anchor, children in nodes:
+        parts.append(f'<li><a href="#{anchor}">{escape(title)}</a>')
+        if children:
+            parts.append(toc_list(children))
+        parts.append("</li>")
+    parts.append("</ul>")
+    return "".join(parts)
+
+
 def to_html(plan):
-    headings: list = []
+    headings: list = [
+        (1, "Volumes"),
+        (2, "Macrocycle"),
+        (2, "Mesocycles"),
+        (2, "Microcycles"),
+    ]
+    for m in plan["mesos"]:
+        headings.append((3, f"{m['name']} ({m['phase']})"))
+        for wi, w in enumerate(m["weeks"]):
+            headings.append((4, f"Week {wi + 1} - {w['vol']} lifts"))
+    headings.append((1, "Training Plan"))
     for m in plan["mesos"]:
         headings.append((2, f"{m['name']} ({m['phase']})"))
-        for wi, w in enumerate(m["weeks"]):
-            headings.append((3, f"Week {wi + 1} - {w['vol']} lifts"))
-    for m in plan["mesos"]:
-        headings.append((2, f"{m['name']} ({m['phase']}) - training plan"))
     anchors = iter(anchor for _, _, anchor in toc_entries(headings))
-    body = ['<section id="macrocycle">', "<h1>Macrocycle</h1>"]
+    body = ["<section>", f'<h1 id="{next(anchors)}">Volumes</h1>']
+    body.append(f'<h2 id="{next(anchors)}">Macrocycle</h2>')
     body.append(group_table(plan["groups"]))
     body.append(
         '<p class="sizes">Meso sizes: '
         + ", ".join(str(m["vol"]) for m in plan["mesos"])
         + "</p>"
     )
-    body.append("</section>")
-    body.append('<section id="mesocycles">')
-    body.append("<h1>Mesocycles</h1>")
+    body.append(f'<h2 id="{next(anchors)}">Mesocycles</h2>')
     body.append(meso_table(plan["mesos"]))
     for m in plan["mesos"]:
         body.append(
@@ -2229,49 +2265,30 @@ def to_html(plan):
             + ", ".join(str(w["vol"]) for w in m["weeks"])
             + "</p>"
         )
-    body.append("</section>")
-    body.append('<section id="microcycles">')
-    body.append("<h1>Microcycles</h1>")
+    body.append(f'<h2 id="{next(anchors)}">Microcycles</h2>')
     for m in plan["mesos"]:
         title = f"{m['name']} ({m['phase']})"
-        body.append(f'<h2 id="{next(anchors)}">{escape(title)}</h2>')
+        body.append(f'<h3 id="{next(anchors)}">{escape(title)}</h3>')
         for wi, w in enumerate(m["weeks"]):
             wtitle = f"Week {wi + 1} - {w['vol']} lifts"
-            body.append(f'<h3 id="{next(anchors)}">{escape(wtitle)}</h3>')
+            body.append(f'<h4 id="{next(anchors)}">{escape(wtitle)}</h4>')
             body.append(
                 '<div class="scroll">' + week_table(w["groups"], w["bins"]) + "</div>"
             )
     body.append("</section>")
-    body.append('<section id="training-plan">')
-    body.append("<h1>Training Plan</h1>")
+    body.append("<section>")
+    body.append(f'<h1 id="{next(anchors)}">Training Plan</h1>')
     for m in plan["mesos"]:
-        title = f"{m['name']} ({m['phase']}) - training plan"
+        title = f"{m['name']} ({m['phase']})"
         body.append(f'<h2 id="{next(anchors)}">{escape(title)}</h2>')
         body.append('<div class="scroll">' + training_table(m) + "</div>")
     body.append("</section>")
-    toc = ['<nav class="toc">', "<h2>Contents</h2>", "<ul>"]
-    open_sub = False
-    started = False
-    for level, title, anchor in toc_entries(headings):
-        link = f'<a href="#{anchor}">{escape(title)}</a>'
-        if level == 2:
-            if started:
-                if open_sub:
-                    toc.append("</ul>")
-                    open_sub = False
-                toc.append("</li>")
-            toc.append(f"<li>{link}")
-            started = True
-        else:
-            if not open_sub:
-                toc.append("<ul>")
-                open_sub = True
-            toc.append(f"<li>{link}</li>")
-    if open_sub:
-        toc.append("</ul>")
-    if started:
-        toc.append("</li>")
-    toc += ["</ul>", "</nav>"]
+    toc = [
+        '<nav class="toc">',
+        "<h2>Contents</h2>",
+        toc_list(toc_tree(toc_entries(headings))),
+        "</nav>",
+    ]
     return (
         '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
         '<meta charset="utf-8">\n'
