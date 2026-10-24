@@ -53,3 +53,7 @@ Rule from now on: every explorer gets a 5-minute budget.
   kills pair_fit discipline; +1.2 exc). Both notes harvested, worktrees
   cleared. Launched shape-6day + floor-retry (bounded floor retry now
   that caches are cheap) alongside size-again.
+
+- shape-6day REJECTED (MSLSMS leaves rhythm flat, regresses elsewhere;
+  reverted clean). Relaunched ipf-stall immediately (pre-prepped tree).
+  Running: size-again, floor-retry, ipf-stall. Spare: support-cap tree.
