@@ -57,3 +57,10 @@ Rule from now on: every explorer gets a 5-minute budget.
 - shape-6day REJECTED (MSLSMS leaves rhythm flat, regresses elsewhere;
   reverted clean). Relaunched ipf-stall immediately (pre-prepped tree).
   Running: size-again, floor-retry, ipf-stall. Spare: support-cap tree.
+
+- size-again WON (-9 instructions via wave-polish, 345a366, pace-neutral
+  size 0.9201 -> 0.9196). floor-retry KILLED clean (floor never cuts
+  strain; 15x blowup confirmed again at floor 8). Notes harvested.
+- Launched support-cap (peak-day group cap, pair-free singles) and
+  demand-sweep (proper demand-path attempt with pace guardrail).
+  Running: ipf-stall, support-cap, demand-sweep.
