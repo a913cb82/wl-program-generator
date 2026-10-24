@@ -189,3 +189,13 @@ Rule from now on: every explorer gets a 5-minute budget.
   excess; 84% is paired doubling. Top shot: I Other Snatch 70% pairs
   (7.3 exc, 10 sessions). Launched i70-gate + iclean-gate (cell #3) +
   polish-again (is the polish idempotent?).
+
+- polish-again NULL with proof (second pass changes 0/6189; +1
+  idempotence test, 130 green).
+- noise-floor measured: identical-code score spread 0.008, pace spread
+  0.03. New bar: pace delta > 0.03 (score > 0.008) counts as real.
+  Quality terms bit-stable across runs. This confirms the cap-evals
+  correction (0.013 was noise) and clears perclass-impl (+0.057/-0.015).
+- iclean-gate NO-GO (support gating breaks session shape; clean revert).
+  i70-gate killed by clock with the design preserved; relaunched as
+  i70-gate-2 (implement-only) plus beam-seed (untuned seeds).
