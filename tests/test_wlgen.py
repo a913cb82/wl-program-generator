@@ -794,10 +794,9 @@ def test_html_toc():
     assert 'href="#macrocycle"' in html
     assert 'href="#mesocycles"' in html
     assert 'href="#microcycles"' in html
-    assert 'href="#prep-4-2-prep"' in html
-    assert 'href="#week-1---242-lifts"' in html
     assert 'href="#prep-4-2-prep-1"' in html
-    assert html.count("<li>") == 35
+    assert 'href="#week-1---242-lifts"' not in html
+    assert html.count("<li>") == 10
 
 
 def test_toc_nests_volumes_and_training_plan():
@@ -807,12 +806,9 @@ def test_toc_nests_volumes_and_training_plan():
     assert vols.index('href="#volumes"') < vols.index('href="#macrocycle"')
     assert vols.index('href="#macrocycle"') < vols.index('href="#mesocycles"')
     assert vols.index('href="#mesocycles"') < vols.index('href="#microcycles"')
-    assert vols.index('href="#microcycles"') < vols.index('href="#prep-4-2-prep"')
-    assert vols.index('href="#prep-4-2-prep"') < vols.index(
-        'href="#week-1---242-lifts"'
-    )
     assert 'href="#prep-4-2-prep-1"' in plans
-    assert vols.count("<ul>") == 8
+    assert "week-1" not in toc
+    assert vols.count("<ul>") == 2
 
 
 def test_toc_anchors_disambiguate_duplicates():

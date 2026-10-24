@@ -2536,7 +2536,7 @@ def to_html(plan):
     toc = [
         '<nav class="toc">',
         "<h2>Contents</h2>",
-        toc_list(toc_tree(toc_entries(headings))),
+        toc_list(toc_tree([e for e in toc_entries(headings) if e[0] <= 2])),
         "</nav>",
     ]
     return (
