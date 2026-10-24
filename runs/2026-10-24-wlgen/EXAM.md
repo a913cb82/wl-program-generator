@@ -1,0 +1,23 @@
+# EXAM (loop config)
+
+- exam command: `.venv/bin/wlgen audit` + `pytest -q -p no:cacheprovider` (orchestrator runs both, on the orchestrator box, back-to-back for close calls)
+- gate command: `pytest -q -p no:cacheprovider` (~6s, blind, explorer runs in-tree)
+- budget: suite + audit per step, ~10 min wall per round
+- budget tag: `audit+pytest136`
+- seed policy: deterministic build (no seeds); replicate close calls back-to-back on one box
+- score file: `runs/2026-10-24-wlgen/PROGRESS.jsonl`
+- result log: `runs/2026-10-24-wlgen/games.log` (append-only, never edit)
+- target folder: `src/` (wlgen.py, wlconfig.py, wlir.py only)
+- loop branch: `research/stack-1` (never main)
+- share: 75% of box
+- exam slots: 1 (orchestrator measures; audits contend on CPU)
+- N: 3 + 1 spare idle (tests are fast; raise only if finishes starve)
+- explorer budget: HARD 5 min (mechanical briefs) to 15 min (hard lines)
+- queue target: 1 waiting while 1 exam runs
+- stop: 10 tries, 2 h, or 3 in-noise in a row on a line; stop the loop on empty queue + 3 in-noise rounds
+- forbidden:
+  - ratio locks on paired families (shape breaks; scoped lock is a no-op)
+  - gating or support-shaping pairs (support is the shape; 3 kills)
+  - generator importing scorer privates (use the wlconfig shared helper)
+  - pace-only keeps (bar: pace delta > 0.03 / score > 0.008, measured)
+  - editing wlscore weights or baselines (the ruler stays frozen)

@@ -1,0 +1,1 @@
+{"date": "2026-10-24", "id": "stack-1@215004c", "score": 0.841, "exc": 144.7, "champion": "main@0.925", "budget": "audit+pytest136", "verdict": "keep", "note": "fund-spill-2 + layer-fix-2 stacked"}
