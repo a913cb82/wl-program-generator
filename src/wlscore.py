@@ -284,40 +284,41 @@ def _entry_problems(text, seq, items, session):
     return problems
 
 
-# training-day contrast he programs, by session count in the week.
-# Measured over 72 of his weeks: 3-day 1.62, 4-day 2.33, 5-day 2.30,
-# 6-day 2.37. More sessions reach deeper valleys.
-WAVE_IDEAL = {3: 1.6, 4: 2.3, 5: 2.3, 6: 2.4}
-WAVE_BAR = 0.5
+# day-to-day movement a week must reach, as a share of its volume.
+# Measured over 72 of his weeks: 3-day 1.58, 4-day 1.35, 5-day 0.84,
+# 6-day 0.64, flattest 0.42. A flat six-day block scores 0.17.
+RHYTHM_FLOOR = 0.3
 
 
 def _week_rhythm(sessions):
-    """One week's wave over its seven days: training-day contrast against
-    his ideal for the session count, plus missing turns in day order.
-    Extra peaks are free; only moves of at least a tenth of the week's
-    range steer the turns."""
+    """One week's wave over its seven days, rest days as zeros: the
+    day-to-day movement as a share of the week's volume, plus missing
+    turns in day order. Shortfall below the floor is priced; extra peaks
+    are free. Only moves of at least a tenth of the week's range steer
+    the turns."""
+    vols = [0.0] * 7
     for s in sessions:
         if "day" not in s:
             raise ValueError(
                 "session is missing 'day': score only the JSON "
                 "that generate_json writes"
             )
-    vols = [s["vol"] for s in sorted(sessions, key=lambda s: s["day"])]
-    n = len(vols)
-    lo, hi = min(vols), max(vols)
-    ideal = WAVE_IDEAL.get(n, 2.0)
-    amplitude = abs(hi / lo - ideal) / WAVE_BAR if lo else 0.0
-    bar = (hi - lo) / 10
-    big = [d for d in (b - a for a, b in zip(vols, vols[1:])) if d and abs(d) >= bar]
+        vols[s["day"]] += s["vol"]
+    total_vol = sum(vols)
+    movement = sum(abs(b - a) for a, b in zip(vols, vols[1:])) / total_vol if total_vol else 0.0
+    shortfall = max(0.0, RHYTHM_FLOOR - movement) / RHYTHM_FLOOR
+    ordered = [s["vol"] for s in sorted(sessions, key=lambda s: s["day"])]
+    bar = (max(ordered) - min(ordered)) / 10 if ordered else 0
+    big = [d for d in (b - a for a, b in zip(ordered, ordered[1:])) if d and abs(d) >= bar]
     possible = max(0, len(big) - 1)
     turns = sum(1 for x, y in zip(big, big[1:]) if (x > 0) != (y > 0))
     return {
-        "contrast": hi / lo if lo else 0.0,
-        "amplitude": amplitude,
+        "movement": movement,
+        "shortfall": shortfall,
         "turns": turns,
         "possible": possible,
         "missing": possible - turns,
-        "total": amplitude + (possible - turns),
+        "total": shortfall + (possible - turns),
     }
 
 

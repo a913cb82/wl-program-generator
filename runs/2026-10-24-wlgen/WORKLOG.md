@@ -113,3 +113,10 @@ One entry per round. Never edit an old entry.
   the wave prices order and contrast, not the calendar. His Mon/Tue
   back-to-back heavies (69->110) support no adjacency penalty.
 - next: adjacency pricing only as new theory with his-data support
+
+## 13 — Rhythm as a floor, not a shape (2026-10-24)
+- verdict: keep (his median 0.00, ours 0.00; only flat weeks pay)
+- what changed: per-count ideals deleted; 7-day movement vs 0.3 floor + sparse turns
+- what learned: 7-vector turns punish his 5-day run-descents; sparse turns do not.
+  Floor 0.3 sits below his flattest week (0.42), above a flat block (0.17).
+- next: rhythm is a guardrail now; steering moves to strain/size/drift

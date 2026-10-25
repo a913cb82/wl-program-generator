@@ -61,7 +61,7 @@ def _sess(day, vol):
 def test_wave_rhythm_rewards_his_shape():
     from wlscore import _week_rhythm
 
-    # his Class 3 week: Mon 83, Wed 51, Fri 63 -> contrast 1.63, ideal 1.6
+    # his Class 3 week: Mon 83, Wed 51, Fri 63, rest days zero
     r = _week_rhythm([_sess(0, 83), _sess(2, 51), _sess(4, 63)])
     assert r["total"] < 0.5, r
 
@@ -69,16 +69,25 @@ def test_wave_rhythm_rewards_his_shape():
 def test_wave_rhythm_leaves_multi_peak_free():
     from wlscore import _week_rhythm
 
-    # his Class 2 week: two peaks, contrast 2.34 against a 2.3 ideal
+    # his Class 2 week: two peaks over seven days with zeros
     r = _week_rhythm([_sess(0, 69), _sess(1, 110), _sess(3, 47), _sess(5, 88)])
     assert r["total"] < 0.5, r
+
+
+def test_wave_rhythm_likes_work_rest_waves():
+    from wlscore import _week_rhythm
+
+    # three equal days with rest between: clear rhythm, no shortfall
+    r = _week_rhythm([_sess(0, 60), _sess(2, 60), _sess(4, 60)])
+    assert r["total"] == 0, r
 
 
 def test_wave_rhythm_punishes_flat_weeks():
     from wlscore import _week_rhythm
 
-    r = _week_rhythm([_sess(0, 60), _sess(2, 60), _sess(4, 60)])
-    assert r["total"] > 1.0, r
+    # six equal days and one rest: no wave, pays the shortfall
+    r = _week_rhythm([_sess(d, 60) for d in range(6)])
+    assert r["total"] > 0.4, r
 
 
 def test_wave_rhythm_needs_days():

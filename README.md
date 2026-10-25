@@ -126,7 +126,7 @@ Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the interm
 
 - **Strain** — dose health. Work over the tolerance plus work under the 0.25 floor, in session units, divided by 150.
 - **Size** — instructions to follow plus the longest single slot.
-- **Rhythm** — how far the median week is from his training-day contrast for its session count (3: 1.6, 4: 2.3, 5: 2.3, 6: 2.4), plus missing turns in day order. Each session carries its weekday in the plan JSON, spread evenly across Mon to Sat with Sunday resting. The scorer prices whatever placement it finds there. Extra peaks are free. A turn is a change of direction between days. Only moves of at least a tenth of the week's range steer the turns.
+- **Rhythm** — whether the median week has a wave. Day-to-day movement across all seven days, rest days as zeros, must reach 0.3 of the week's volume. Shortfall below that is priced. Missing turns in session order add more. Each session carries its weekday in the plan JSON. Extra peaks are free. A turn is a change of direction between sessions.
 - **Drift** — everything off plan. Group and total misses at week, mesocycle, and program scale. Group misses count only beyond the band. Total misses count in full. Illegal sets, clashes, gaps, idle movements, warmup softness, uneven spacing, and pace.
 
 The divisors (150, 9300, 25, 0.5) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on illegal sets, clashes, and idle movements. Warmup softness and bin gaps are nonzero in current plans. The generator must narrow the openers and fill or drop the holed zones.
