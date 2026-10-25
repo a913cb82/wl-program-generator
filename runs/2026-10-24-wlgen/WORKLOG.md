@@ -91,3 +91,11 @@ One entry per round. Never edit an old entry.
 - what changed: _step_ok frees climb rises, pair guard is flip-only, opener>5 defect
 - what learned: ruler banned Takano's own ramps; unpeaked-rise parked (550 us vs 1 Takano)
 - next: narrow Squat openers (generator), fill 14 bin holes
+
+## 10 — Softness pass + week gaps dropped (2026-10-24)
+- commits: 56138fe (soft), 719ad13 (week gaps), stack-1 green (146)
+- score: exc 142.5 flat; drift 81.9 -> 21.9; bad 2 (both meso-level, Takano-dirty)
+- verdict: keep both (Takano-measured, simpler scorer)
+- what changed: opener defect -> soft degree x0.05; week _bin_gaps call deleted
+- what learned: Takano weeks hole bridges 44/57; mesos/macros 0 holes; his rhythm 5.4 vs our 2.09
+- next: narrow Squat openers (soft 240), fill 2 I meso holes, rhythm ideal question

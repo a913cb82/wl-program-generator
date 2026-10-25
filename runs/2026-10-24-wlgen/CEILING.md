@@ -18,3 +18,6 @@
 - Ladder widening (+1/wave) violates Takano 847/848; parked as generator redesign, not scorer defect.
 - Takano opens 1-5 (848/848), never exceeds 5/set below 100%; pairs open 3+3 max per side.
 - The old climb rule banned Takano's own ramps (50/2->60/3); deleted. Flip guard kept (his 1 flip flags too).
+- Week contiguity is not Takano practice (bridge zones skipped weekly); meso/macro contiguity is (0 holes everywhere).
+- Softness beats hardness: opener degree x0.05, nothing binary except structural breaks.
+- Rhythm ideal 2.75 punishes Takano's flat multi-peak weeks (his median 5.4); ideal question open.

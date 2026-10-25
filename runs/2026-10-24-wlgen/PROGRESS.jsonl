@@ -1,3 +1,4 @@
 {"date": "2026-10-24", "id": "stack-1@215004c", "score": 0.841, "exc": 144.7, "champion": "main@0.925", "budget": "audit+pytest136", "verdict": "keep", "note": "fund-spill-2 + layer-fix-2 stacked"}
 {"date": "2026-10-24", "id": "stack-1@215004c", "score": 0.841, "exc": 144.7, "champion": "stack-1@215004c", "budget": "audit+pytest136", "verdict": "stop", "note": "loop stopped per rule; stack holds fund-spill-2 + layer-fix-2"}
 {"date": "2026-10-24", "id": "stack-1@takano", "score": 96.8, "exc": 142.5, "champion": "stack-1@takano", "budget": "audit+pytest145+takano", "verdict": "keep", "note": "scorer upgrade, generator must follow"}
+{"date": "2026-10-24", "id": "stack-1@soft", "score": 5.24, "exc": 142.5, "champion": "stack-1@soft", "budget": "audit+pytest146+soft-takano", "verdict": "keep", "note": "soft scorer, week gaps dropped, drift 21.9"}
