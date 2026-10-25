@@ -106,3 +106,10 @@ One entry per round. Never edit an old entry.
 - what changed: sessions carry weekday (his modal layouts), rhythm = contrast vs per-count ideal + missing turns, multi-peak free
 - what learned: his contrast grows with day count (1.6/2.3/2.3/2.4); Monday peaks 86%; Sunday never trains
 - next: close the contrast gap (ours 3.0 vs his 1.6-2.4)
+
+## 12 — Weekdays are plan data (2026-10-24)
+- verdict: keep (modal table deleted; even Mon-Sat spread; JSON carries days)
+- what learned: same vols in Mon-Fri vs spread score identically (0.081) -
+  the wave prices order and contrast, not the calendar. His Mon/Tue
+  back-to-back heavies (69->110) support no adjacency penalty.
+- next: adjacency pricing only as new theory with his-data support
