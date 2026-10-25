@@ -414,7 +414,8 @@ def _score_items(items, cpu=None):
                         out["spread_num"] += (max(gaps) - min(gaps)) / n
                         out["spread_den"] += 1
                 out["iv_micro"] += abs(week_tot - w["vol"])
-                out["gaps"] += _bin_gaps(w["bins"])
+                # no week-level bin gaps: Takano holes his weeks (bridge
+                # zones skipped); only meso and macro holes count
                 for g, vec in w["bins"].items():
                     for acc in (meso_bins, macro_bins):
                         row = acc.setdefault(g, [0] * len(vec))

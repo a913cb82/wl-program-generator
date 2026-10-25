@@ -59,7 +59,7 @@ def test_shipped_scores_clean():
         raw = _score_items([(cls, _plan(cls))])
         assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
-        assert raw["gaps"] == {"III": 0, "II": 0, "I": 12, "CMS": 0, "MS": 2}[cls], cls
+        assert raw["gaps"] == {"III": 0, "II": 0, "I": 2, "CMS": 0, "MS": 0}[cls], cls
         assert raw["soft"] == {"III": 12.0, "II": 12.0, "I": 12.0, "CMS": 93.0, "MS": 98.0}[cls], cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
