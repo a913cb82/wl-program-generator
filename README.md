@@ -120,7 +120,7 @@ Each level takes a share of the level above it.
 
 ## Representation and scoring
 
-Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. Each session lists its slots: the movement, the atom scheme, and the parsed items. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
+Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds only the class label and the sessions. Each session knows its mesocycle, week and weekday plus its movements, combined movements, and slots. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
 
 `wlgen audit` builds all five classes and prints one scoreboard row per class plus the book total. The score has four parts. Lower is better.
 

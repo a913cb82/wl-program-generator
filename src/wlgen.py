@@ -28,7 +28,6 @@ from wlconfig import (
     DAY_RULE,
     DAY_SHAPE,
     DAY_T,
-    WEEKDAYS,
     EPS,
     FAN,
     FINISH_SCAN,
@@ -57,11 +56,12 @@ from wlconfig import (
     TOL,
     VARIANTS,
     WARMUP_COST,
+    WEEKDAYS,
     is_matchable,
     slot_match,
     slot_singles,
 )
-from wlir import allocate, from_ir, macro_days, to_ir
+from wlir import _parse, allocate, atom_text, from_ir, macro_days, to_ir
 
 
 def expand(slots):
@@ -218,9 +218,7 @@ def close_bins(counts):
 def _week_bin_lifts_keyed(binkey, gap, fan, meso, week, group, lifts):
     return tuple(
         close_bins(
-            allocate(
-                lifts, _week_bins_keyed(binkey, gap, fan, meso, week, group)
-            )
+            allocate(lifts, _week_bins_keyed(binkey, gap, fan, meso, week, group))
         )
     )
 
@@ -1828,10 +1826,6 @@ def atom_total(value):
     return value if isinstance(value, int) else value[0] + value[1]
 
 
-def atom_text(value):
-    return str(value) if isinstance(value, int) else f"{value[0]}+{value[1]}"
-
-
 @cache
 def ladder(reps):
     """Allowed set sizes: the prescribed ladder plus every smaller size.
@@ -1977,80 +1971,6 @@ def _rank(cost, cx, seq, text):
     The length price matches the beam's own pruning unit of one per set,
     so a shorter order wins only when its training cost is close."""
     return (cost + LENGTH_COST * len(seq), cx, len(seq), len(text), text)
-
-
-@cache
-def _render_items(items):
-    parts = []
-    for item in items:
-        if item[0] == "wave":
-            parts.append(f"{item[1]}*({_render_items(item[2])})")
-        else:
-            _, zlo, pairs = item
-            body = ",".join(
-                f"{atom_text(value)}*{count}" if count > 1 else atom_text(value)
-                for value, count in pairs
-            )
-            parts.append(f"{zlo}%/{body}")
-    return ", ".join(parts)
-
-
-@cache
-def _normalize(items):
-    out: list = []
-    for item in items:
-        if (
-            item[0] == "group"
-            and out
-            and out[-1][0] == "group"
-            and out[-1][1] == item[1]
-        ):
-            out[-1] = ("group", item[1], out[-1][2] + tuple(item[2]))
-        else:
-            out.append(item)
-    return tuple(out)
-
-
-@cache
-def _parse(seq):
-    """Compact phrase tree: (phrase count, text, items)."""
-    if not seq:
-        return 0, "", ()
-    best = None
-
-    def take(count, items):
-        nonlocal best
-        text = _render_items(items)
-        key = (count, len(text), text)
-        if best is None or key < best[0]:
-            best = (key, count, text, items)
-
-    first = seq[0]
-    j = 1
-    while j < len(seq) and seq[j] == first:
-        j += 1
-    rest = _parse(seq[j:])
-    count = 1 + rest[0]
-    if best is None or count <= best[1]:
-        take(count, _normalize((("group", first[0], ((first[1], j),)),) + rest[2]))
-    for i in range(1, len(seq)):
-        left = _parse(seq[:i])
-        right = _parse(seq[i:])
-        count = left[0] + right[0]
-        if best is None or count <= best[1]:
-            take(count, _normalize(left[2] + right[2]))
-    for p in range(1, len(seq) // 2 + 1):
-        k = 1
-        while (k + 1) * p <= len(seq) and seq[k * p : (k + 1) * p] == seq[:p]:
-            k += 1
-        if k >= 2:
-            inner = _parse(seq[:p])
-            rest = _parse(seq[k * p :])
-            count = inner[0] + rest[0]
-            if best is None or count <= best[1]:
-                take(count, _normalize((("wave", k, inner[2]),) + rest[2]))
-    assert best is not None
-    return best[1], best[2], best[3]
 
 
 @cache
@@ -2726,14 +2646,21 @@ def session_slots(session):
 
 
 def ir_with_slots(plan):
-    """The plan's JSON representation with every session's slots
-    materialized, ready to write to disk."""
-    ir = to_ir(plan)
-    for m, im in zip(plan["mesos"], ir["mesos"]):
-        for w, iw in zip(m["weeks"], im["weeks"]):
-            for s, ins in zip(w["sessions"], iw["sessions"]):
-                ins["slots"] = session_slots(s)
-    return ir
+    """The built plan with every session's slots materialized, ready
+    for to_ir. Copies; the cached built plan is never mutated."""
+    mesos = []
+    for m in plan["mesos"]:
+        weeks = []
+        for w in m["weeks"]:
+            sessions = []
+            for s in w["sessions"]:
+                s = dict(s)
+                if "slots" not in s:
+                    s["slots"] = session_slots(s)
+                sessions.append(s)
+            weeks.append({**w, "sessions": sessions})
+        mesos.append({**m, "weeks": weeks})
+    return {**plan, "mesos": mesos}
 
 
 def _slug(text, seen):
@@ -3034,7 +2961,7 @@ def _render_class(cls):
     live plan, so the saved JSON is byte-for-byte what the page shows."""
     import json
 
-    ir = json.dumps(ir_with_slots(build_plan(cls)))
+    ir = json.dumps(to_ir(ir_with_slots(build_plan(cls))))
     return cls, to_html(from_ir(json.loads(ir))), ir
 
 

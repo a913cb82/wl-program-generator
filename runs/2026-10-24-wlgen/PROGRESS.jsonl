@@ -3,3 +3,4 @@
 {"date": "2026-10-24", "id": "stack-1@takano", "score": 96.8, "exc": 142.5, "champion": "stack-1@takano", "budget": "audit+pytest145+takano", "verdict": "keep", "note": "scorer upgrade, generator must follow"}
 {"date": "2026-10-24", "id": "stack-1@soft", "score": 5.24, "exc": 142.5, "champion": "stack-1@soft", "budget": "audit+pytest146+soft-takano", "verdict": "keep", "note": "soft scorer, week gaps dropped, drift 21.9"}
 {"date": "2026-10-24", "id": "main@wave", "score": 5.23, "exc": 153.4, "champion": "main@wave", "budget": "audit+pytest136+wave", "verdict": "keep", "note": "wave rhythm, real weekdays, outputs refreshed"}
+{"date": "2026-10-24", "id": "main@purejson", "score": 5.0, "exc": 153.4, "champion": "main@purejson", "budget": "audit+pytest138+purejson", "verdict": "keep", "note": "minimal JSON, HTML identical"}

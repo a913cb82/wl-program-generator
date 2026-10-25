@@ -27,7 +27,7 @@ from wlconfig import (
     TOL,
     slot_match,
 )
-from wlir import allocate, from_ir, macro_days
+from wlir import allocate, from_ir, macro_days, to_ir
 
 FLOOR = 0.25  # smallest useful dose in one session, in session units
 CPU_BOOK = 3.6  # frozen baseline: CPU-seconds to build the book today
@@ -45,7 +45,9 @@ def generate_json(path="outputs", classes=None, jobs=None):
     path.mkdir(exist_ok=True)
 
     def build(cls):
-        return cls, json.dumps(ir_with_slots(build_plan(cls)))
+        from wlir import to_ir as _to_ir
+
+        return cls, json.dumps(_to_ir(ir_with_slots(build_plan(cls))))
 
     if jobs is None:
         jobs = min(len(classes), os.cpu_count() or 1)
@@ -305,11 +307,17 @@ def _week_rhythm(sessions):
             )
         vols[s["day"]] += s["vol"]
     total_vol = sum(vols)
-    movement = sum(abs(b - a) for a, b in zip(vols, vols[1:])) / total_vol if total_vol else 0.0
+    movement = (
+        sum(abs(b - a) for a, b in zip(vols, vols[1:])) / total_vol
+        if total_vol
+        else 0.0
+    )
     shortfall = max(0.0, RHYTHM_FLOOR - movement) / RHYTHM_FLOOR
     ordered = [s["vol"] for s in sorted(sessions, key=lambda s: s["day"])]
     bar = (max(ordered) - min(ordered)) / 10 if ordered else 0
-    big = [d for d in (b - a for a, b in zip(ordered, ordered[1:])) if d and abs(d) >= bar]
+    big = [
+        d for d in (b - a for a, b in zip(ordered, ordered[1:])) if d and abs(d) >= bar
+    ]
     possible = max(0, len(big) - 1)
     turns = sum(1 for x, y in zip(big, big[1:]) if (x > 0) != (y > 0))
     return {
@@ -563,7 +571,7 @@ def score_book(items=None, cpu=None):
 def _plan_for(cls, raw=False):
     from wlgen import build_plan, ir_with_slots
 
-    ir = ir_with_slots(build_plan(cls))
+    ir = to_ir(ir_with_slots(build_plan(cls)))
     return ir if raw else from_ir(ir)
 
 

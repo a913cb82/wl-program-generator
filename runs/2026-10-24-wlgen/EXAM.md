@@ -3,7 +3,7 @@
 - exam command: `.venv/bin/wlgen audit` + `pytest -q -p no:cacheprovider` (orchestrator runs both, on the orchestrator box, back-to-back for close calls)
 - gate command: `pytest -q -p no:cacheprovider` (~6s, blind, explorer runs in-tree)
 - budget: suite + audit per step, ~10 min wall per round
-- budget tag: `audit+pytest138+floor` (rhythm floor 0.3 on 7-day movement, sparse turns) (scorer now counts week/meso/macro bin gaps)
+- budget tag: `audit+pytest138+purejson` (file is class+sessions only, all else derived) (scorer now counts week/meso/macro bin gaps)
 - seed policy: deterministic build (no seeds); replicate close calls back-to-back on one box
 - score file: `runs/2026-10-24-wlgen/PROGRESS.jsonl`
 - result log: `runs/2026-10-24-wlgen/games.log` (append-only, never edit)

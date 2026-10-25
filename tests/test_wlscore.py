@@ -16,8 +16,8 @@ from wlscore import (
 
 
 def _plan(cls="III"):
-    """A restored plan with stored slots, the scorer's whole input."""
-    return from_ir(ir_with_slots(build_plan(cls)))
+    """A restored plan from minimal JSON, the scorer's whole input."""
+    return from_ir(to_ir(ir_with_slots(build_plan(cls))))
 
 
 def _copy_week(plan, mi=0, wi=0):
@@ -51,7 +51,7 @@ def test_outputs_html_comes_from_json(tmp_path):
 
 def test_ir_scores_like_build():
     plan = _plan()
-    assert score_json(ir_with_slots(plan))["score"] == score_class("III")["score"]
+    assert score_json(to_ir(plan))["score"] == score_class("III")["score"]
 
 
 def _sess(day, vol):
@@ -92,6 +92,7 @@ def test_wave_rhythm_punishes_flat_weeks():
 
 def test_wave_rhythm_needs_days():
     import pytest
+
     from wlscore import _week_rhythm
 
     with pytest.raises(ValueError):
@@ -104,7 +105,10 @@ def test_shipped_scores_clean():
         assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
         assert raw["gaps"] == {"III": 0, "II": 0, "I": 2, "CMS": 0, "MS": 0}[cls], cls
-        assert raw["soft"] == {"III": 12.0, "II": 12.0, "I": 12.0, "CMS": 93.0, "MS": 98.0}[cls], cls
+        assert (
+            raw["soft"]
+            == {"III": 12.0, "II": 12.0, "I": 12.0, "CMS": 93.0, "MS": 98.0}[cls]
+        ), cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
         assert raw["ob_micro"] == 0, cls
@@ -275,8 +279,10 @@ def test_entry_problems_flags_flat_total_flip():
     from wlscore import _entry_problems
 
     # 1+2 -> 2+1 flips sides on a flat total; a rising total is free
-    session = {"movements": {"Clean": [0] * 5, "Jerk": [0] * 5},
-               "pairs": {("Clean", "Jerk"): ("Clean", (0,) * 5, (0,) * 5)}}
+    session = {
+        "movements": {"Clean": [0] * 5, "Jerk": [0] * 5},
+        "pairs": {("Clean", "Jerk"): ("Clean", (0,) * 5, (0,) * 5)},
+    }
     seq = ((70, (1, 2)), (80, (2, 1)))
     problems = _entry_problems("Clean+Jerk", seq, [], session)
     assert problems == ["Clean+Jerk: illegal order at 80%"], problems

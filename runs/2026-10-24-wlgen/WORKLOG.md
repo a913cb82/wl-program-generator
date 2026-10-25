@@ -120,3 +120,10 @@ One entry per round. Never edit an old entry.
 - what learned: 7-vector turns punish his 5-day run-descents; sparse turns do not.
   Floor 0.3 sits below his flattest week (0.42), above a flat block (0.17).
 - next: rhythm is a guardrail now; steering moves to strain/size/drift
+
+## 14 — JSON is class plus sessions (2026-10-24)
+- verdict: keep (HTML byte-identical, all pins hold, file halved)
+- what changed: to_ir strips to sessions; from_ir rebuilds rich; _parse moved to wlir
+- what learned: paired-collapse in movements is not recoverable from slots,
+  so movements and pairs stay in the file; the @cache on _parse is load-bearing
+- next: scorer reads class ground truth tables (done: nominals from CLASSES)
