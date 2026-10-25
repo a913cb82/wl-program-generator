@@ -21,3 +21,4 @@
 - Week contiguity is not Takano practice (bridge zones skipped weekly); meso/macro contiguity is (0 holes everywhere).
 - Softness beats hardness: opener degree x0.05, nothing binary except structural breaks.
 - Rhythm ideal 2.75 punishes Takano's flat multi-peak weeks (his median 5.4); ideal question open.
+- Nominals follow the class tables, never the plan: any generator-side volume shift prices as off-plan (ms-timing lesson).

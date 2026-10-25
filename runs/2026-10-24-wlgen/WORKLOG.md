@@ -127,3 +127,10 @@ One entry per round. Never edit an old entry.
 - what learned: paired-collapse in movements is not recoverable from slots,
   so movements and pairs stay in the file; the @cache on _parse is load-bearing
 - next: scorer reads class ground truth tables (done: nominals from CLASSES)
+
+## 15 — Truth-priced nominals kill invisible hacks (2026-10-26)
+- verdict: reverted ms-timing rotation on the stack (exc 142.5 -> 144.7)
+- what learned: the rotation only won because nominals followed stored vols.
+  Against ground truth tables it prices +1342 drift. Timing shifts belong
+  in the tables, not in generator code.
+- next: table-driven timing experiments replace code rotation hacks
