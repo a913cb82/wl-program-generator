@@ -392,16 +392,8 @@ FREE_SLOTS = (DAY[0], DAY[2], DAY[3], DAY[4])
 EPS = 0.01  # soft weight for a non-target host day
 BOUNDARY = 0.001  # even softer: first day after a group trained last week
 
-# weekdays a week's sessions land on, by session count. His modal
-# layouts: 3 -> Mon/Wed/Fri, 4 -> Mon/Tue/Thu/Sat,
-# 5 -> Mon/Tue/Thu/Fri/Sat, 6 -> Mon-Sat. Sunday always rests.
+# weekday names for rendering. Sunday rests; sessions spread Mon-Sat.
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-WEEKDAY_LAYOUTS = {
-    3: (0, 2, 4),
-    4: (0, 1, 3, 5),
-    5: (0, 1, 3, 4, 5),
-    6: (0, 1, 2, 3, 4, 5),
-}
 
 # week table columns
 DISPLAY_ZONES = [50, 60, 70, 80, 90, 100, 110]

@@ -28,7 +28,6 @@ from wlconfig import (
     DAY_RULE,
     DAY_SHAPE,
     DAY_T,
-    WEEKDAY_LAYOUTS,
     WEEKDAYS,
     EPS,
     FAN,
@@ -957,11 +956,18 @@ def repair_week_doses(week_groups, nominals):
     return False
 
 
+def _spread_days(n):
+    """Weekdays for n sessions, spread evenly across Mon-Sat. Sunday
+    rests. A neutral default: the plan JSON carries the days, and the
+    scorer prices whatever placement it finds there."""
+    if n <= 1:
+        return (0,) * n
+    return tuple(round(i * 5 / (n - 1)) for i in range(n))
+
+
 def _assign_weekdays(planned):
-    """Stamp each session with its weekday, in training order. Uses his
-    modal layouts; an off-table count spreads evenly from Monday."""
-    layout = WEEKDAY_LAYOUTS.get(len(planned), tuple(range(len(planned))))
-    for s, day in zip(planned, layout):
+    """Stamp each session with its weekday, in training order."""
+    for s, day in zip(planned, _spread_days(len(planned))):
         s["day"] = day
 
 

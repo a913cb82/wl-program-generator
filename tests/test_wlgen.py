@@ -1800,8 +1800,19 @@ def test_equal_classes_share_zone_bins():
     assert after.hits == before.hits + 1
 
 
-def test_sessions_land_on_his_weekdays():
-    from wlconfig import WEEKDAY_LAYOUTS
+def test_spread_days_covers_mon_to_sat():
+    from wlgen import _spread_days
+
+    assert _spread_days(0) == ()
+    assert _spread_days(1) == (0,)
+    assert _spread_days(3) == (0, 2, 5)
+    assert _spread_days(4) == (0, 2, 3, 5)
+    assert _spread_days(5) == (0, 1, 2, 4, 5)
+    assert _spread_days(6) == (0, 1, 2, 3, 4, 5)
+
+
+def test_sessions_land_on_spread_weekdays():
+    from wlgen import _spread_days, build_plan
 
     for cls in ("III", "II", "I", "CMS", "MS"):
         plan = build_plan(cls)
@@ -1810,7 +1821,7 @@ def test_sessions_land_on_his_weekdays():
                 days = [s["day"] for s in w["sessions"]]
                 assert days == sorted(days), days
                 assert 6 not in days, days  # Sunday always rests
-                assert tuple(days) == WEEKDAY_LAYOUTS[len(days)], days
+                assert tuple(days) == _spread_days(len(days)), days
 
 
 def test_build_plan_deterministic():
