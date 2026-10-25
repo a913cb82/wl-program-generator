@@ -54,6 +54,41 @@ def test_ir_scores_like_build():
     assert score_json(ir_with_slots(plan))["score"] == score_class("III")["score"]
 
 
+def _sess(day, vol):
+    return {"day": day, "vol": vol}
+
+
+def test_wave_rhythm_rewards_his_shape():
+    from wlscore import _week_rhythm
+
+    # his Class 3 week: Mon 83, Wed 51, Fri 63 -> contrast 1.63, ideal 1.6
+    r = _week_rhythm([_sess(0, 83), _sess(2, 51), _sess(4, 63)])
+    assert r["total"] < 0.5, r
+
+
+def test_wave_rhythm_leaves_multi_peak_free():
+    from wlscore import _week_rhythm
+
+    # his Class 2 week: two peaks, contrast 2.34 against a 2.3 ideal
+    r = _week_rhythm([_sess(0, 69), _sess(1, 110), _sess(3, 47), _sess(5, 88)])
+    assert r["total"] < 0.5, r
+
+
+def test_wave_rhythm_punishes_flat_weeks():
+    from wlscore import _week_rhythm
+
+    r = _week_rhythm([_sess(0, 60), _sess(2, 60), _sess(4, 60)])
+    assert r["total"] > 1.0, r
+
+
+def test_wave_rhythm_needs_days():
+    import pytest
+    from wlscore import _week_rhythm
+
+    with pytest.raises(ValueError):
+        _week_rhythm([{"vol": 60}])
+
+
 def test_shipped_scores_clean():
     for cls in ("III", "II", "I", "CMS", "MS"):
         raw = _score_items([(cls, _plan(cls))])

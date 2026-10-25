@@ -28,6 +28,8 @@ from wlconfig import (
     DAY_RULE,
     DAY_SHAPE,
     DAY_T,
+    WEEKDAY_LAYOUTS,
+    WEEKDAYS,
     EPS,
     FAN,
     FINISH_SCAN,
@@ -955,6 +957,14 @@ def repair_week_doses(week_groups, nominals):
     return False
 
 
+def _assign_weekdays(planned):
+    """Stamp each session with its weekday, in training order. Uses his
+    modal layouts; an off-table count spreads evenly from Monday."""
+    layout = WEEKDAY_LAYOUTS.get(len(planned), tuple(range(len(planned))))
+    for s, day in zip(planned, layout):
+        s["day"] = day
+
+
 def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
     """First session-size variant the week can host: the cap-driven day count
     first, source variants in table order, canonical (first) pattern preferred.
@@ -990,6 +1000,7 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
         if v == 0:
             targets.clear()
             targets.update(attempt)
+            _assign_weekdays(planned)
             return planned
         key = (v, idx)
         if best_key is None or key < best_key:
@@ -998,6 +1009,7 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
         raise ValueError("week has no feasible session-size variant")
     targets.clear()
     targets.update(best[1])
+    _assign_weekdays(best[0])
     return best[0]
 
 
@@ -2855,7 +2867,12 @@ def training_table(meso):
                     f'<td class="{move_cls}">{escape(movement)}</td>',
                     f'<td class="scheme">{phrases}</td>',
                 ]
-            first = f'<th scope="row" rowspan="{slots}">{si + 1}</th>' if k == 0 else ""
+            if k == 0:
+                day = present[0]["sessions"][si].get("day")
+                label = WEEKDAYS[day] if day is not None else si + 1
+                first = f'<th scope="row" rowspan="{slots}">{label}</th>'
+            else:
+                first = ""
             tag = '<tr class="sess">' if k == 0 else "<tr>"
             body.append(tag + first + "".join(cells) + "</tr>")
     return (

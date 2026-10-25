@@ -284,31 +284,40 @@ def _entry_problems(text, seq, items, session):
     return problems
 
 
-def _week_rhythm(vols):
-    """One week's shape: amplitude miss plus missing turns plus peaks away
-    from one. Only moves of at least a tenth of the week's range steer the
-    turns and the peaks."""
+# training-day contrast he programs, by session count in the week.
+# Measured over 72 of his weeks: 3-day 1.62, 4-day 2.33, 5-day 2.30,
+# 6-day 2.37. More sessions reach deeper valleys.
+WAVE_IDEAL = {3: 1.6, 4: 2.3, 5: 2.3, 6: 2.4}
+WAVE_BAR = 0.5
+
+
+def _week_rhythm(sessions):
+    """One week's wave over its seven days: training-day contrast against
+    his ideal for the session count, plus missing turns in day order.
+    Extra peaks are free; only moves of at least a tenth of the week's
+    range steer the turns."""
+    for s in sessions:
+        if "day" not in s:
+            raise ValueError(
+                "session is missing 'day': score only the JSON "
+                "that generate_json writes"
+            )
+    vols = [s["vol"] for s in sorted(sessions, key=lambda s: s["day"])]
     n = len(vols)
     lo, hi = min(vols), max(vols)
-    amplitude = abs(hi / lo - 2.75) / 0.25 if lo else 0.0
+    ideal = WAVE_IDEAL.get(n, 2.0)
+    amplitude = abs(hi / lo - ideal) / WAVE_BAR if lo else 0.0
     bar = (hi - lo) / 10
     big = [d for d in (b - a for a, b in zip(vols, vols[1:])) if d and abs(d) >= bar]
     possible = max(0, len(big) - 1)
     turns = sum(1 for x, y in zip(big, big[1:]) if (x > 0) != (y > 0))
-    peaks = 0
-    for i, v in enumerate(vols):
-        neigh = ([vols[i - 1]] if i > 0 else []) + ([vols[i + 1]] if i < n - 1 else [])
-        if neigh and all(v > u for u in neigh) and v - max(neigh) >= bar:
-            peaks += 1
     return {
         "contrast": hi / lo if lo else 0.0,
         "amplitude": amplitude,
         "turns": turns,
         "possible": possible,
         "missing": possible - turns,
-        "peaks": peaks,
-        "away": abs(peaks - 1),
-        "total": amplitude + (possible - turns) + abs(peaks - 1),
+        "total": amplitude + (possible - turns),
     }
 
 
@@ -385,8 +394,7 @@ def _score_items(items, cpu=None):
             shares: dict = {g: [] for g in GROUPS}
             for w in m["weeks"]:
                 nom = _nominal(cls, m["phase"], w["vol"])
-                vols = [s["vol"] for s in w["sessions"]]
-                out["rhythms"].append(_week_rhythm(vols)["total"])
+                out["rhythms"].append(_week_rhythm(w["sessions"])["total"])
                 week_tot = 0
                 for g in GROUPS:
                     actual = w["groups"].get(g, 0)

@@ -99,3 +99,10 @@ One entry per round. Never edit an old entry.
 - what changed: opener defect -> soft degree x0.05; week _bin_gaps call deleted
 - what learned: Takano weeks hole bridges 44/57; mesos/macros 0 holes; his rhythm 5.4 vs our 2.09
 - next: narrow Squat openers (soft 240), fill 2 I meso holes, rhythm ideal question
+
+## 11 — 7-day wave rhythm with real weekdays (2026-10-24)
+- score: exc 153.4 flat; rhythm 2.00 -> 2.45 (his weeks score 0.07)
+- verdict: ship (separation validates: his 0.07 vs ours 2.45)
+- what changed: sessions carry weekday (his modal layouts), rhythm = contrast vs per-count ideal + missing turns, multi-peak free
+- what learned: his contrast grows with day count (1.6/2.3/2.3/2.4); Monday peaks 86%; Sunday never trains
+- next: close the contrast gap (ours 3.0 vs his 1.6-2.4)

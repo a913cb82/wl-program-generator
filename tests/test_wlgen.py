@@ -21,6 +21,7 @@ from wlconfig import (
     SCHEDULES,
     TOL,
     VARIANTS,
+    WEEKDAYS,
     ratio_ok,
     ratio_rank,
 )
@@ -316,7 +317,8 @@ def test_training_plan_tables():
             for k in range(nslots):
                 cells = re.findall(r"<(?:td|th)[^>]*>(.*?)</(?:td|th)>", body[idx])
                 if k == 0:
-                    assert cells[0] == str(si + 1)
+                    day = present[0]["sessions"][si].get("day")
+                    assert cells[0] == (WEEKDAYS[day] if day is not None else str(si + 1))
                     assert f'rowspan="{nslots}"' in body[idx]
                     base = 1
                 else:
@@ -1796,6 +1798,19 @@ def test_equal_classes_share_zone_bins():
     finally:
         week_units("III", 0, 0, 10)
     assert after.hits == before.hits + 1
+
+
+def test_sessions_land_on_his_weekdays():
+    from wlconfig import WEEKDAY_LAYOUTS
+
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        plan = build_plan(cls)
+        for m in plan["mesos"]:
+            for w in m["weeks"]:
+                days = [s["day"] for s in w["sessions"]]
+                assert days == sorted(days), days
+                assert 6 not in days, days  # Sunday always rests
+                assert tuple(days) == WEEKDAY_LAYOUTS[len(days)], days
 
 
 def test_build_plan_deterministic():

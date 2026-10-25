@@ -59,6 +59,7 @@ def to_ir(plan):
                 entry = {
                     "size": s["size"],
                     "vol": s["vol"],
+                    "day": s.get("day"),
                     "base": s.get("base", "Day"),
                     "movements": {g: list(v) for g, v in s["movements"].items()},
                     "pairs": {
@@ -121,6 +122,7 @@ def from_ir(ir):
                 entry = {
                     "size": s["size"],
                     "vol": s["vol"],
+                    "day": s.get("day"),
                     "base": s.get("base", "Day"),
                     "movements": {g: list(v) for g, v in s["movements"].items()},
                     "pairs": pairs,
