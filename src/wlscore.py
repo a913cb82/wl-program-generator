@@ -9,6 +9,7 @@ so any JSON honoring the contract scores the same, whoever wrote it.
 """
 
 import json
+import math
 import os
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -312,18 +313,55 @@ def _entry_problems(text, seq, items, session):
     return problems
 
 
-# day-to-day movement a week must reach, as a share of its volume.
-# Measured over 72 of his weeks: 3-day 1.58, 4-day 1.35, 5-day 0.84,
-# 6-day 0.64, flattest 0.42. A flat six-day block scores 0.17.
-RHYTHM_FLOOR = 0.3
+# Movement a week must reach, per training day: the day-to-day movement
+# as a share of the week's volume, split across its sessions. Rest days
+# count as gaps between sessions, never as zeros. Measured per session
+# over his weeks: flattest 0.113, median 0.390. A flat six-day block
+# scores 0.056, a flat seven-day block 0. A light-heavy-light week
+# scores 0.667.
+RHYTHM_FLOOR = 0.10
+
+
+def _week_rest_corr(week):
+    """Pearson correlation of each session's volume with the rest days
+    before it, or None when the week has nothing to judge (fewer than
+    three sessions, one rest gap, or one volume). Heavy days should
+    follow rest: his program medians sit at +0.4 to +0.6, ours at -0.45.
+    His odd weeks reach -0.9, so only the plan median is priced, and
+    only below the neutral point."""
+    sess = sorted(week["sessions"], key=lambda s: s["day"])
+    if len(sess) < 3:
+        return None
+    gaps = [((s["day"] - sess[i - 1]["day"]) % 7) for i, s in enumerate(sess)]
+    doses = [s["vol"] for s in sess]
+    if len(set(gaps)) < 2 or len(set(doses)) < 2:
+        return None
+    mg, md = sum(gaps) / len(gaps), sum(doses) / len(doses)
+    sg = math.sqrt(sum((g - mg) ** 2 for g in gaps))
+    sd = math.sqrt(sum((d - md) ** 2 for d in doses))
+    if sg == 0 or sd == 0:
+        return None
+    return sum((g - mg) * (d - md) for g, d in zip(gaps, doses)) / sg / sd
+
+
+def _rest_shortfall(plan):
+    """Only anti-correlation is priced: the median week must not put
+    heavy days after short rest. Rewards nothing above neutral."""
+    corrs = [
+        c for c in (_week_rest_corr(w) for m in plan["mesos"] for w in m["weeks"])
+        if c is not None
+    ]
+    if not corrs:
+        return 0.0
+    return max(0.0, -median(corrs))
 
 
 def _week_rhythm(sessions):
-    """One week's wave over its seven days, rest days as zeros: the
-    day-to-day movement as a share of the week's volume, plus missing
-    turns in day order. Shortfall below the floor is priced; extra peaks
-    are free. Only moves of at least a tenth of the week's range steer
-    the turns."""
+    """One week's wave: the day-to-day movement as a share of the week's
+    volume, split across its training days, plus missing turns in day
+    order. Rest days are the gaps the movement crosses, never zeros.
+    Shortfall below the floor is priced; extra peaks are free. Only
+    moves of at least a tenth of the week's range steer the turns."""
     vols = [0.0] * 7
     for s in sessions:
         if "day" not in s:
@@ -338,7 +376,9 @@ def _week_rhythm(sessions):
         if total_vol
         else 0.0
     )
-    shortfall = max(0.0, RHYTHM_FLOOR - movement) / RHYTHM_FLOOR
+    trained = sum(1 for s in sessions if s["vol"])
+    per_day = movement / trained if trained else 0.0
+    shortfall = max(0.0, RHYTHM_FLOOR - per_day) / RHYTHM_FLOOR
     ordered = [s["vol"] for s in sorted(sessions, key=lambda s: s["day"])]
     bar = (max(ordered) - min(ordered)) / 10 if ordered else 0
     big = [
@@ -418,6 +458,7 @@ def _score_items(items, cpu=None):
         "meso_spread_den": 0,
         "soft": 0.0,
         "intensity": 0.0,
+        "rest": 0.0,
     }
     for cls, plan in items:
         macro_nom = {g: 0 for g in GROUPS}
@@ -519,6 +560,7 @@ def _score_items(items, cpu=None):
         out["iv_macro"] += abs(sum(macro_act.values()) - _macro_vol(cls))
         out["gaps"] += _bin_gaps(macro_bins)
         out["intensity"] += _intensity_shortfall(plan)
+        out["rest"] += _rest_shortfall(plan)
     if cpu is not None:
         out["cpu"] = cpu
     return out
@@ -527,9 +569,11 @@ def _score_items(items, cpu=None):
 def _finalize(raw, cpu=None):
     strain = (raw["excess"] + raw["shortfall"]) / 150
     size = (raw["instructions"] / 9300 + raw["longest"] / 25) / 2
-    rhythm = (median(raw["rhythms"]) if raw["rhythms"] else 0.0) + raw[
-        "intensity"
-    ]
+    rhythm = (
+        (median(raw["rhythms"]) if raw["rhythms"] else 0.0)
+        + raw["intensity"]
+        + raw["rest"]
+    )
     spread_micro = raw["spread_num"] / raw["spread_den"] if raw["spread_den"] else 0.0
     spread_meso = (
         raw["meso_spread_num"] / raw["meso_spread_den"]
@@ -564,6 +608,7 @@ def _finalize(raw, cpu=None):
         "rhythm_weeks": list(raw["rhythms"]),
         "rhythm": rhythm,
         "intensity": raw["intensity"],
+        "rest": raw["rest"],
         "ob_micro": raw["ob_micro"],
         "iv_micro": raw["iv_micro"],
         "iv_meso": raw["iv_meso"],

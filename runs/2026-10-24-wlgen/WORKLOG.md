@@ -142,3 +142,14 @@ One entry per round. Never edit an old entry.
   hits his own weeks at zero; T=2 sine is singular on integers.
   The floor beats waves for presence; waves score intensity shape.
 - next: volume waves wait for generation; taper shape unpriced
+
+## 17 — Zeros out of rhythm (2026-10-26)
+- verdict: keep (rest as gaps, not zeros)
+- what changed: movement floor now per training day (0.10, his min 0.113);
+  new rest-before-heavy median price (his plan medians +0.4..+0.6, ours -0.45)
+- what learned: movement scales with rest days (3-day 2.0 vs 6-day 0.9),
+  so the old floor priced schedule; load curves smooth away shape (our
+  weeks fit sines better than his); dose x preceding-gap median splits
+  +0.77 vs -0.45 with his odd weeks rescued by the median; T=2 sine is
+  singular on integer days
+- next: CMS/MS program parse for level-vs-program diff curves

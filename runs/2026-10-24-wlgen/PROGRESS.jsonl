@@ -5,3 +5,4 @@
 {"date": "2026-10-24", "id": "main@wave", "score": 5.23, "exc": 153.4, "champion": "main@wave", "budget": "audit+pytest136+wave", "verdict": "keep", "note": "wave rhythm, real weekdays, outputs refreshed"}
 {"date": "2026-10-24", "id": "main@purejson", "score": 5.0, "exc": 153.4, "champion": "main@purejson", "budget": "audit+pytest138+purejson", "verdict": "keep", "note": "minimal JSON, HTML identical"}
 {"date": "2026-10-26", "id": "main@wavescore", "score": 5.37, "exc": 153.4, "champion": "main@wavescore", "budget": "audit+pytest147+wavescore", "verdict": "keep", "note": "intensity wave floor, scorer only"}
+{"date": "2026-10-26", "id": "main@eventweeks", "score": 5.58, "exc": 153.4, "champion": "main@eventweeks", "budget": "audit+pytest152+eventweeks", "verdict": "keep", "note": "rest as gaps; per-session floor; rest-before-heavy median"}

@@ -121,6 +121,46 @@ def test_intensity_wave_punishes_flat():
     assert _intensity_shortfall(plan) > 0.9
 
 
+def _rest_week(vols_by_day):
+    return {"sessions": [
+        {"day": d, "vol": v} for d, v in sorted(vols_by_day.items()) if v
+    ]}
+
+
+def test_rest_corr_rewards_heavy_after_rest():
+    from wlscore import _week_rest_corr
+
+    # heavy Monday after the weekend gap, light midweek after short gaps
+    assert _week_rest_corr(_rest_week({0: 100, 2: 40, 4: 40})) > 0.9
+
+
+def test_rest_corr_punishes_heavy_after_short_rest():
+    from wlscore import _week_rest_corr
+
+    # light Monday after the weekend, heavy midweek after one rest day
+    assert _week_rest_corr(_rest_week({0: 40, 2: 100, 4: 100})) < -0.9
+
+
+def test_rest_corr_abstains_on_flat_weeks():
+    from wlscore import _week_rest_corr
+
+    assert _week_rest_corr(_rest_week({0: 60, 2: 60, 4: 60})) is None
+
+
+def test_per_session_floor_passes_light_heavy_light():
+    from wlscore import RHYTHM_FLOOR, _week_rhythm
+
+    r = _week_rhythm([{"day": 0, "vol": 60}, {"day": 2, "vol": 60}, {"day": 4, "vol": 60}])
+    assert r["shortfall"] == 0
+
+
+def test_per_session_floor_fails_flat_block():
+    from wlscore import RHYTHM_FLOOR, _week_rhythm
+
+    r = _week_rhythm([{"day": d, "vol": 60} for d in range(6)])
+    assert r["shortfall"] > 0.4
+
+
 def test_wave_rhythm_needs_days():
     import pytest
 
