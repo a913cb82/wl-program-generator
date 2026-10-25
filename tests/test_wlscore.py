@@ -57,9 +57,10 @@ def test_ir_scores_like_build():
 def test_shipped_scores_clean():
     for cls in ("III", "II", "I", "CMS", "MS"):
         raw = _score_items([(cls, _plan(cls))])
-        assert raw["illegal"] == {"III": 8, "II": 8, "I": 9, "CMS": 25, "MS": 25}[cls], cls
+        assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
         assert raw["gaps"] == {"III": 0, "II": 0, "I": 12, "CMS": 0, "MS": 2}[cls], cls
+        assert raw["soft"] == {"III": 12.0, "II": 12.0, "I": 12.0, "CMS": 93.0, "MS": 98.0}[cls], cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
         assert raw["ob_micro"] == 0, cls
@@ -247,10 +248,18 @@ def test_entry_problems_allows_flat_waves():
     assert _entry_problems("Squat", seq, [], session) == []
 
 
-def test_entry_problems_flags_hard_opener():
+def test_entry_problems_ignores_hard_opener():
     from wlscore import _entry_problems
 
-    # Takano opens 1-5 in 848/848 slots; 12 is work, not a warmup
+    # openers are soft-priced now, never a defect
     session = {"movements": {"Squat": [0, 0, 0, 0, 0]}, "pairs": {}}
-    problems = _entry_problems("Squat", ((50, 12), (60, 7)), [], session)
-    assert problems == ["Squat: opener too hard"], problems
+    assert _entry_problems("Squat", ((50, 12), (60, 7)), [], session) == []
+
+
+def test_soft_opener_prices_excess_reps():
+    from wlscore import _soft_opener
+
+    assert _soft_opener([]) == 0
+    assert _soft_opener([(50, 5)]) == 0
+    assert _soft_opener([(50, 12), (60, 7)]) == 7
+    assert _soft_opener([(80, (2, 1))]) == 0

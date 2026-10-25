@@ -135,6 +135,17 @@ def _bin_gaps(bins):
     return count
 
 
+def _soft_opener(seq):
+    """Warmup degree: reps over five in the opening set. Takano opens
+    1-5 in 848/848 slots; more is work, priced by how much more."""
+    if not seq:
+        return 0
+    value = seq[0][1]
+    if isinstance(value, list):
+        value = tuple(value)
+    return max(0, _atom_total(value) - 5)
+
+
 def _step_ok(prev_zone, prev_value, zone, value, seen, present):
     """One set may follow another: rises are capped (a set may revisit a
     lower zone only once seen), climbs step to the next zone present, and
@@ -221,18 +232,12 @@ def _entry_problems(text, seq, items, session):
         present = sorted({zlo for zlo, _ in seq})
         seen: set = set()
         prev = None
-        first = True
         for zlo, value in seq:
             if prev is not None and not _step_ok(
                 prev[0], prev[1], zlo, value, seen, present
             ):
                 problems.append(f"{text}: illegal order at {zlo}%")
                 break
-            if first and _atom_total(value) > 5:
-                # Takano opens 1-5 in 848/848 slots; more is work
-                problems.append(f"{text}: opener too hard")
-                break
-            first = False
             seen.add(zlo)
             prev = (zlo, value)
         if _slot_total(items) != sum(session["movements"].get(g, [])):
@@ -263,17 +268,12 @@ def _entry_problems(text, seq, items, session):
         present = sorted({zlo for zlo, _ in seq})
         seen = set()
         prev = None
-        first = True
         for zlo, value in seq:
             if prev is not None and not _step_ok(
                 prev[0], prev[1], zlo, value, seen, present
             ):
                 problems.append(f"{text}: illegal order at {zlo}%")
                 break
-            if first and _atom_total(value) > 5:
-                problems.append(f"{text}: opener too hard")
-                break
-            first = False
             seen.add(zlo)
             prev = (zlo, value)
         want = sum(session["movements"].get(a, [])) + sum(
@@ -372,6 +372,7 @@ def _score_items(items, cpu=None):
         "spread_den": 0,
         "meso_spread_num": 0.0,
         "meso_spread_den": 0,
+        "soft": 0.0,
     }
     for cls, plan in items:
         macro_nom = {g: 0 for g in GROUPS}
@@ -438,6 +439,7 @@ def _score_items(items, cpu=None):
                         out["instructions"] += _count(slot_items)
                         out["longest"] = max(out["longest"], len(seq))
                         out["slots"] += 1
+                        out["soft"] += _soft_opener(seq)
                         out["illegal"] += len(_entry_problems(text, seq, slot_items, s))
                     for g, dose in _dose(s).items():
                         score = _session_score(dose)
@@ -498,6 +500,7 @@ def _finalize(raw, cpu=None):
         + 5 * (raw["illegal"] + raw["clash"] + raw["gaps"])
         + 2 * raw["idle"]
         + 4 * raw["idle_meso"]
+        + 0.05 * raw["soft"]
         + spread_micro
         + spread_meso
         + pace
@@ -523,6 +526,7 @@ def _finalize(raw, cpu=None):
         "gaps": raw["gaps"],
         "idle": raw["idle"],
         "idle_meso": raw["idle_meso"],
+        "soft": raw["soft"],
         "spread_micro": spread_micro,
         "spread_meso": spread_meso,
         "pace": pace,
@@ -562,6 +566,7 @@ def _row(label, r):
         f"{r['drift']:6.2f} (off {r['ob_micro'] + r['ob_meso'] + r['ob_macro']:5.1f} "
         f"vol {r['iv_micro'] + r['iv_meso'] + r['iv_macro']:5.1f} "
         f"bad {r['illegal'] + r['clash'] + r['gaps'] + r['idle'] + r['idle_meso']:d} "
+        f"soft {r['soft']:5.1f} "
         f"spread {r['spread_micro'] + r['spread_meso']:4.2f} "
         f"pace {r['pace']:+.2f}) | "
         f"score {r['score']:.3f}"
