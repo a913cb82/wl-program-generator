@@ -90,6 +90,37 @@ def test_wave_rhythm_punishes_flat_weeks():
     assert r["total"] > 0.4, r
 
 
+def _intensity_plan(zones):
+    """One meso of single-session weeks at the given mean zones."""
+    from wlconfig import BIN_GROUP, BIN_ZONES
+
+    plan = {"mesos": []}
+    weeks = []
+    for z in zones:
+        grid = BIN_ZONES[BIN_GROUP["Squat"]]
+        idx = min(range(len(grid)), key=lambda i: abs(grid[i] - z))
+        vec = [0] * len(grid)
+        vec[idx] = 10
+        weeks.append({"sessions": [{"day": 0, "vol": 10, "movements": {"Squat": vec}, "pairs": {}}]})
+    plan["mesos"].append({"weeks": weeks})
+    return plan
+
+
+def test_intensity_wave_rewards_buildup():
+    from wlscore import _intensity_shortfall
+
+    # rises into a comp peak, meet week dropped: contains a wave
+    plan = _intensity_plan([68, 70, 72, 74, 76, 78, 76, 70])
+    assert _intensity_shortfall(plan) == 0
+
+
+def test_intensity_wave_punishes_flat():
+    from wlscore import _intensity_shortfall
+
+    plan = _intensity_plan([72] * 8)
+    assert _intensity_shortfall(plan) > 0.9
+
+
 def test_wave_rhythm_needs_days():
     import pytest
 

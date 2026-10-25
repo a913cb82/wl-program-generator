@@ -28,6 +28,7 @@ from wlconfig import (
     slot_match,
 )
 from wlir import allocate, from_ir, macro_days, to_ir
+from wlwaves import INTENSITY_WAVE_FLOOR, fit_amplitude
 
 FLOOR = 0.25  # smallest useful dose in one session, in session units
 CPU_BOOK = 3.6  # frozen baseline: CPU-seconds to build the book today
@@ -100,6 +101,31 @@ def _capacity(zlo):
 def _session_score(dose):
     """One session's reps at each zone as a share of Prilepin's capacity."""
     return sum(n / _capacity(z) for z, n in dose.items())
+
+
+def _week_intensity(week):
+    """Rep-weighted mean zone of one week, all groups together."""
+    num = den = 0
+    for s in week["sessions"]:
+        for g, counts in s["movements"].items():
+            zones = BIN_ZONES[BIN_GROUP[g]]
+            for z, n in zip(zones, counts):
+                num += z * n
+                den += n
+    return num / den if den else 0
+
+
+def _intensity_shortfall(plan):
+    """The plan must contain an annual intensity wave: fit the wave to
+    the weekly intensities (meet week dropped, it tapers by design)
+    and price the shortfall below the fitted floor."""
+    weeks = [w for m in plan["mesos"] for w in m["weeks"]][:-1]
+    if len(weeks) < 2:
+        return 0.0
+    n = len(weeks) + 1
+    fracs = [(i + 0.5) / n for i in range(len(weeks))]
+    amp = fit_amplitude(fracs, [_week_intensity(w) for w in weeks])
+    return max(0.0, INTENSITY_WAVE_FLOOR - amp) / INTENSITY_WAVE_FLOOR
 
 
 def _dose(session):
@@ -391,6 +417,7 @@ def _score_items(items, cpu=None):
         "meso_spread_num": 0.0,
         "meso_spread_den": 0,
         "soft": 0.0,
+        "intensity": 0.0,
     }
     for cls, plan in items:
         macro_nom = {g: 0 for g in GROUPS}
@@ -491,6 +518,7 @@ def _score_items(items, cpu=None):
             )
         out["iv_macro"] += abs(sum(macro_act.values()) - _macro_vol(cls))
         out["gaps"] += _bin_gaps(macro_bins)
+        out["intensity"] += _intensity_shortfall(plan)
     if cpu is not None:
         out["cpu"] = cpu
     return out
@@ -499,7 +527,9 @@ def _score_items(items, cpu=None):
 def _finalize(raw, cpu=None):
     strain = (raw["excess"] + raw["shortfall"]) / 150
     size = (raw["instructions"] / 9300 + raw["longest"] / 25) / 2
-    rhythm = median(raw["rhythms"]) if raw["rhythms"] else 0.0
+    rhythm = (median(raw["rhythms"]) if raw["rhythms"] else 0.0) + raw[
+        "intensity"
+    ]
     spread_micro = raw["spread_num"] / raw["spread_den"] if raw["spread_den"] else 0.0
     spread_meso = (
         raw["meso_spread_num"] / raw["meso_spread_den"]
@@ -533,6 +563,7 @@ def _finalize(raw, cpu=None):
         "size": size,
         "rhythm_weeks": list(raw["rhythms"]),
         "rhythm": rhythm,
+        "intensity": raw["intensity"],
         "ob_micro": raw["ob_micro"],
         "iv_micro": raw["iv_micro"],
         "iv_meso": raw["iv_meso"],

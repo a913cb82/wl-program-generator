@@ -134,3 +134,11 @@ One entry per round. Never edit an old entry.
   Against ground truth tables it prices +1342 drift. Timing shifts belong
   in the tables, not in generator code.
 - next: table-driven timing experiments replace code rotation hacks
+
+## 16 — Intensity wave joins the scorer (2026-10-26)
+- verdict: keep (his ex-taper A 0.028-0.041, ours 0.002-0.012, floor 0.02)
+- what changed: rhythm gains fitted-amplitude shortfall; wlwaves.py ships
+- what learned: weekly volume sines fit nothing (R2<=0.1); alternation depth
+  hits his own weeks at zero; T=2 sine is singular on integers.
+  The floor beats waves for presence; waves score intensity shape.
+- next: volume waves wait for generation; taper shape unpriced
