@@ -153,3 +153,15 @@ One entry per round. Never edit an old entry.
   +0.77 vs -0.45 with his odd weeks rescued by the median; T=2 sine is
   singular on integer days
 - next: CMS/MS program parse for level-vs-program diff curves
+
+## 18 — Taper slack stays home; days gain character (2026-10-26)
+- verdict: keep (meso conservation exact: III +5/+5, MS +6/+7)
+- what changed: taper_topup hands week-4 90s to weeks 1-3 of Comp 2
+  (m-level for pairs preserves tier ratios; per-session reinforce for
+  singles); zone_alloc peak 0.8 fits his 1.12x top concentration
+- what learned: fixing taper semantics first (raw vs shifted cost a
+  test each); pair splits quantize single 90s away (ratio rounding);
+  m-column edits after ra/rb are dead code; build_plan cache poisons
+  counterfactual tests (use __wrapped__); integer topups go
+  winner-take-all across channels
+- next: exc 160.9 (+5%: 3.9 required slack + 3.6 honest heavy days)

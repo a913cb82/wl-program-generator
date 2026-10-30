@@ -111,6 +111,8 @@ Each level takes a share of the level above it.
 - Each class has a yearly zone mix from Takano's tables.
 - Prep sits below that mix, comp above it, and the gap grows with class. Higher classes rise in intensity across the three prep mesocycles too.
 - The last comp week tapers: snatch and clean and jerk stay below 90%.
+- The taper slack stays in its block: the cut top lifts move to the first three weeks of the same block.
+- Heavy days carry the top: each zone spreads across days in proportion to day size, raised to 0.8, so big days hold more of the heavy lifts while warm-ups stay everywhere.
 
 ### Sessions and sets
 

@@ -1586,6 +1586,110 @@ def test_pair_ratio_never_widens_with_weight():
                         assert ranks == sorted(ranks, reverse=True)
 
 
+def test_take_up_slack_exact():
+    from wlgen import take_up_slack
+
+    zones = [60, 70, 80, 90, 100]
+    counts = [10, 20, 15, 8, 4]
+    out = take_up_slack(counts, zones, 5)
+    assert sum(out) == sum(counts)
+    assert sum(out[3:]) == sum(counts[3:]) + 5
+    assert all(v >= 0 for v in out)
+    assert take_up_slack(counts, zones, 0) == counts
+
+
+def test_take_up_slack_keeps_every_zone_alive():
+    from wlgen import take_up_slack
+
+    zones = [60, 70, 80, 90, 100]
+    counts = [1, 30, 25, 6, 2]
+    out = take_up_slack(counts, zones, 4)
+    assert sum(out) == sum(counts)
+    assert all(v >= 1 for v in out)
+    assert sum(out[3:]) == sum(counts[3:]) + 4
+
+
+def _untapered_90(cls, mi, wi, g, total):
+    from wlgen import allocate, close_bins, untapered_week_bins
+
+    counts = close_bins(allocate(total, untapered_week_bins(cls, mi, wi, g)))
+    zones = __import__("wlconfig").BIN_ZONES[
+        __import__("wlconfig").BIN_GROUP[g]
+    ]
+    return sum(n for n, z in zip(counts, zones) if z >= 90)
+
+
+def _meso_90(meso, g):
+    from wlconfig import BIN_GROUP, BIN_ZONES
+
+    zones = BIN_ZONES[BIN_GROUP[g]]
+    return sum(
+        sum(n for n, z in zip(w["bins"][g], zones) if z >= 90) for w in meso["weeks"]
+    )
+
+
+def _tapered_groups():
+    from wlconfig import BIN_GROUP, GROUPS
+
+    return [g for g in GROUPS if BIN_GROUP[g] in ("Snatch", "CJ")]
+
+
+def test_taper_topup_sums_to_slack():
+    from wlgen import build_plan, taper_topup
+    from wlconfig import GROUPS
+
+    for cls in ("III", "MS"):
+        meso = build_plan(cls)["mesos"][-1]
+        week_groups = [{g: sum(w["bins"][g]) for g in GROUPS} for w in meso["weeks"]]
+        top = taper_topup(cls, 4, week_groups)
+        assert sum(top[3].values()) == 0
+        assert sum(sum(d.values()) for d in top) > 0
+
+
+def test_comp2_keeps_taper_slack():
+    import wlgen
+    from wlgen import build_plan, taper_topup
+    from wlconfig import GROUPS
+
+    for cls in ("III", "MS"):
+        # bypass the build cache: the counterfactual needs a fresh plan
+        fresh = wlgen.build_plan.__wrapped__
+        meso = fresh(cls)["mesos"][-1]
+        assert meso["phase"] == "comp"
+        week_groups = [{g: sum(w["bins"][g]) for g in GROUPS} for w in meso["weeks"]]
+        slack = sum(sum(d.values()) for d in taper_topup(cls, 4, week_groups))
+        assert slack > 0
+        tapered = _tapered_groups()
+        real = sum(_meso_90(meso, g) for g in tapered)
+        orig = wlgen.taper_topup
+        try:
+            wlgen.taper_topup = lambda *a: [{g: 0 for g in GROUPS} for _ in range(4)]
+            base = fresh(cls)["mesos"][-1]
+        finally:
+            wlgen.taper_topup = orig
+        plain = sum(_meso_90(base, g) for g in tapered)
+        assert real - plain >= slack - 3
+        for g in ("Snatch", "Clean"):
+            final = meso["weeks"][3]["bins"][g]
+            assert sum(n for n, z in zip(final, [60, 70, 80, 90, 100]) if z >= 90) == 0
+
+
+def test_zone_alloc_peak_concentrates_top():
+    from wlgen import zone_alloc
+
+    counts = [20, 12, 8, 5]
+    lifts = [25, 20]
+    flat = zone_alloc(counts, lifts, peak=0.0)
+    peaked = zone_alloc(counts, lifts, peak=8.0)
+    for out in (flat, peaked):
+        assert [sum(row) for row in out] == lifts
+        assert [sum(row[z] for row in out) for z in range(4)] == counts
+    assert all(row[0] >= 1 for row in peaked)
+    vol_share = lifts[0] / sum(lifts)
+    assert peaked[0][-1] / counts[-1] > flat[0][-1] / counts[-1]
+    assert peaked[0][-1] / counts[-1] > vol_share
+
+
 def test_zone_alloc_margins_and_warmup():
     counts = [8, 5, 4, 2]
     lifts = [10, 9]

@@ -6,3 +6,4 @@
 {"date": "2026-10-24", "id": "main@purejson", "score": 5.0, "exc": 153.4, "champion": "main@purejson", "budget": "audit+pytest138+purejson", "verdict": "keep", "note": "minimal JSON, HTML identical"}
 {"date": "2026-10-26", "id": "main@wavescore", "score": 5.37, "exc": 153.4, "champion": "main@wavescore", "budget": "audit+pytest147+wavescore", "verdict": "keep", "note": "intensity wave floor, scorer only"}
 {"date": "2026-10-26", "id": "main@eventweeks", "score": 5.58, "exc": 153.4, "champion": "main@eventweeks", "budget": "audit+pytest152+eventweeks", "verdict": "keep", "note": "rest as gaps; per-session floor; rest-before-heavy median"}
+{"date": "2026-10-26", "id": "main@taperhome", "score": 5.58, "exc": 160.9, "champion": "main@taperhome", "budget": "audit+pytest157+taperhome", "verdict": "keep", "note": "taper slack in-meso; peak 0.8"}

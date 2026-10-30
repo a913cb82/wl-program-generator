@@ -169,8 +169,11 @@ def _canon(cls):
     return (BIN_CLASS[cls], GAP[cls], cls in FAN)
 
 
-@cache
-def _week_bins_keyed(binkey, gap, fan, meso, week, group):
+def _shifted_fracs(binkey, gap, fan, meso, week, group, taper_week):
+    """Yearly bins shifted for one microcycle. The final week keeps the
+    raw bins when the taper is on (the taper deletes from there); with
+    the taper off it shifts like a base comp week, the baseline the
+    taper deletes from."""
     bt = BIN_GROUP[group]
     zones = BIN_ZONES[bt]
     bins = BINS[binkey][bt]
@@ -183,10 +186,53 @@ def _week_bins_keyed(binkey, gap, fan, meso, week, group):
     elif meso < len(MACRO) - 1:
         delta = wp * gap
     else:
-        if week == 3:
-            return taper(bins, bt)
+        if week == 3 and taper_week:
+            return bt, list(bins)
         delta = wp * gap + (gap if week == 2 else 0)
-    return shift(bins, zones, ari(bins, zones) + delta)
+    return bt, shift(bins, zones, ari(bins, zones) + delta)
+
+
+@cache
+def _week_bins_keyed(binkey, gap, fan, meso, week, group):
+    bt, out = _shifted_fracs(binkey, gap, fan, meso, week, group, True)
+    if meso == len(MACRO) - 1 and week == 3:
+        return taper(out, bt)
+    return out
+
+
+def untapered_week_bins(cls, meso, week, group):
+    """Zone fractions with the final-week taper switched off: the baseline
+    the taper deletes from, so the meso can take the slack back up."""
+    return list(_shifted_fracs(*_canon(cls), meso, week, group, False)[1])
+
+
+def take_up_slack(counts, zones, extra):
+    """Move extra lifts into zones at 90% and above, taking them from
+    below-90 zones in proportion. Never empties a zone that holds lifts,
+    so week contiguity survives. Totals stay exact. The taper meso uses
+    this to hand its final week back to the first three weeks."""
+    out = list(counts)
+    if extra <= 0:
+        return out
+    top = [i for i, z in enumerate(zones) if z >= 90]
+    low = [i for i, z in enumerate(zones) if z < 90]
+    if not top:
+        return out
+    room = [max(0, out[i] - 1) if out[i] else 0 for i in low]
+    extra = min(extra, sum(room))
+    if extra <= 0:
+        return out
+    tpool = sum(out[i] for i in top)
+    if tpool:
+        add = allocate(extra, [out[i] for i in top])
+    else:
+        add = [extra] + [0] * (len(top) - 1)
+    for i, a in zip(top, add):
+        out[i] += a
+    take = allocate(extra, room)
+    for i, t in zip(low, take):
+        out[i] -= t
+    return out
 
 
 def week_bins(cls, meso, week, group):
@@ -650,13 +696,67 @@ def session_prior(targets, nsessions, quota=None, prev_last=None):
     return out
 
 
-def zone_alloc(counts, lifts):
+def reinforce(vec, zones, extra):
+    """Fold extra 90%+ lifts into a session that already reaches the top:
+    sessions holding 90 get more, sessions holding 80 grow into 90, lower
+    sessions are left alone so no gap opens for the ramp repair to undo.
+    Lifts come from the session's own largest sub-90 zone, never emptying
+    one. Returns the new vector and how many lifts stuck."""
+    out = list(vec)
+    if extra <= 0:
+        return out, 0
+    if not any(c and z >= 80 for c, z in zip(out, zones)):
+        return out, 0
+    before = sum(c for c, z in zip(out, zones) if z >= 90)
+    out = take_up_slack(out, zones, extra)
+    return out, sum(c for c, z in zip(out, zones) if z >= 90) - before
+
+
+def spread_extra(vecs, zones, extra):
+    """Share extra 90%+ lifts across session vectors, one lift per pass:
+    90-holders first, then 80-holders, in session order. Stops when the
+    extra is placed or no session can take more. Returns total placed."""
+    order = sorted(
+        range(len(vecs)),
+        key=lambda s: (
+            0 if any(c and z >= 90 for c, z in zip(vecs[s], zones)) else 1,
+            s,
+        ),
+    )
+    placed = 0
+    while placed < extra:
+        stuck = True
+        for s in order:
+            if placed >= extra:
+                break
+            vecs[s], took = reinforce(vecs[s], zones, 1)
+            if took:
+                placed += 1
+                stuck = False
+        if stuck:
+            break
+    return placed
+
+
+def zone_alloc(counts, lifts, peak=0.8):
     """Split one group's week zone counts over its sessions. A flat prior gives
     every session a share of every zone, so each carries its own warmup ramp;
-    larger sessions pick up more of the top through the column totals."""
+    larger sessions pick up more of the top through the column totals. The
+    peak knob concentrates the top on big days: each zone's prior weighs a
+    session by its lifts to the power of peak times the zone's rank, so the
+    warmup base stays flat while the peak gathers where the volume is.
+    The default peak fits Takano: his heaviest day carries 1.12 times its
+    volume share of the week's top zone lifts."""
     ztop = max((z for z, c in enumerate(counts) if c), default=0)
     rows = counts[: ztop + 1]
-    m = fit([[1.0] * len(lifts) for _ in rows], rows, lifts)
+    if ztop and peak:
+        prior = [
+            [lifts[j] ** (peak * z / ztop) for j in range(len(lifts))]
+            for z in range(len(rows))
+        ]
+    else:
+        prior = [[1.0] * len(lifts) for _ in rows]
+    m = fit(prior, rows, lifts)
     close_ramps(m)
     return [[m[z][s] for z in range(len(rows))] for s in range(len(lifts))]
 
@@ -969,7 +1069,7 @@ def _assign_weekdays(planned):
         s["day"] = day
 
 
-def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
+def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None, topup=None):
     """First session-size variant the week can host: the cap-driven day count
     first, source variants in table order, canonical (first) pattern preferred.
 
@@ -997,7 +1097,9 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None):
             continue
         attempt = dict(targets)
         try:
-            planned = plan_sessions(session_list, attempt, nom, cls, mi, wi, prev_last)
+            planned = plan_sessions(
+                session_list, attempt, nom, cls, mi, wi, prev_last, topup
+            )
         except ValueError:
             continue
         v = count_dose_violations(planned)
@@ -1322,7 +1424,7 @@ def pair_fit(moved, vols, targets, nom, prior, cls, mi, wi):
     return None, None
 
 
-def pair_zones(cls, mi, wi, pairs):
+def pair_zones(cls, mi, wi, pairs, pair_topup=None):
     """One zone list per movement from the pair's shared unit blocks.
 
     Units of one reference-zone family split across that family's paired
@@ -1367,6 +1469,17 @@ def pair_zones(cls, mi, wi, pairs):
         m = [[m_rem[z][k] + res[k][z] for k in range(nS)] for z in range(len(counts))]
         lo = BIN_ZONES[bt]
         nz_full = len(BIN_ZONES[bt])
+        extras = (
+            allocate(pair_topup.get(bt, 0), [it[3] for it in items])
+            if pair_topup and pair_topup.get(bt)
+            else [0] * len(items)
+        )
+        for k, dk in enumerate(extras):
+            if not dk:
+                continue
+            col = take_up_slack([m[z][k] for z in range(len(counts))], lo[: len(counts)], dk)
+            for z in range(len(counts)):
+                m[z][k] = col[z]
         for k, (j, a, b, _t, (rh, rm, rl), ref) in enumerate(items):
             ratios = [
                 rh if lo[z] >= 90 else rm if lo[z] == 80 else rl
@@ -1454,7 +1567,32 @@ def consolidate_doses(moved, pairs):
     return False
 
 
-def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
+def taper_topup(cls, mi, week_groups):
+    """Extra 90%+ lifts owed to weeks 1-3 of the taper meso: the untapered
+    final week would have placed them, the taper deletes them, and the
+    block takes them back up in proportion to week volume. Totals stay
+    estimates: pair snapping flexes group totals afterwards by a lift."""
+    out = [{g: 0 for g in GROUPS} for _ in range(4)]
+    if mi != len(MACRO) - 1:
+        return out
+    zones_by_group = {}
+    for g in GROUPS:
+        bt = BIN_GROUP[g]
+        if bt not in ("Snatch", "CJ"):
+            continue
+        zones = BIN_ZONES[bt]
+        zones_by_group[g] = zones
+        u4 = close_bins(allocate(week_groups[3][g], untapered_week_bins(cls, mi, 3, g)))
+        slack = sum(n for n, z in zip(u4, zones) if z >= 90)
+        vols = [week_groups[w][g] for w in range(3)]
+        if slack <= 0 or sum(vols) == 0:
+            continue
+        for w, share in zip(range(3), allocate(slack, vols)):
+            out[w][g] = share
+    return out
+
+
+def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup=None):
     """Fill each day with the day template and exact group x zone lifts."""
     vols = [s["vol"] for s in session_list]
     rows = [targets[g] for g in GROUPS]
@@ -1470,7 +1608,27 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
         s["base"] = "Day"
         s["movements"] = {}
         s["pairs"] = {}
-    paired, actual, refdata = pair_zones(cls, mi, wi, pairs) if pairs else ({}, {}, {})
+    gidx = {g: i for i, g in enumerate(GROUPS)}
+    paired_cells = {
+        (j, g) for j, plist in pairs.items() for a, b, *_ in plist for g in (a, b)
+    }
+    unpaired_extra: dict = {}
+    pair_topup: dict = {}
+    if topup:
+        for g, t in topup.items():
+            if not t or g not in gidx:
+                continue
+            i = gidx[g]
+            total = sum(moved[i])
+            unpaired = sum(
+                moved[i][j] for j in range(len(vols)) if (j, g) not in paired_cells
+            )
+            extra_u = round(t * unpaired / total) if total else 0
+            unpaired_extra[g] = extra_u
+            pair_topup[BIN_GROUP[g]] = pair_topup.get(BIN_GROUP[g], 0) + t - extra_u
+    paired, actual, refdata = (
+        pair_zones(cls, mi, wi, pairs, pair_topup) if pairs else ({}, {}, {})
+    )
     idx = {g: i for i, g in enumerate(GROUPS)}
     for j, plist in pairs.items():
         paired_here = {g for a, b, *_ in plist for g in (a, b)}
@@ -1555,6 +1713,9 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None):
         if active:
             counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active))
             zones = zone_alloc(counts, [moved[i][j] for j in active])
+            extra_u = unpaired_extra.get(g, topup.get(g, 0) if topup else 0)
+            if extra_u and zones:
+                spread_extra(zones, BIN_ZONES[BIN_GROUP[g]][: len(zones[0])], extra_u)
             # Ramp repair: every active session shows a dose in each zone
             # below its top that the week holds in force. Zone 0 is owed
             # when the week holds one per active session (this split's
@@ -1679,10 +1840,12 @@ def build_plan(cls):
             for g in GROUPS:
                 planned[g] += week_groups[-1][g]
         repair_week_doses(week_groups, nominal)
+        meso_topup = taper_topup(cls, mi, week_groups)
         weeks = []
         for wi, (wv, nom) in enumerate(zip(week_vols, nominal)):
             groups = week_groups[wi]
-            sessions = week_sessions(wv, groups, nom, cls, mi, wi, prev_last)
+            topup = meso_topup[wi] if meso_topup else None
+            sessions = week_sessions(wv, groups, nom, cls, mi, wi, prev_last, topup)
             prev_last = set(sessions[-1]["movements"]) if sessions else None
             weeks.append(
                 {
