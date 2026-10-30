@@ -195,7 +195,7 @@ def test_book_numbers_match_research():
     assert round(book["excess"], 1) == 161.2
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9140
+    assert book["instructions"] == 9139
     assert book["slots"] == 1291
     assert book["longest"] == 22
 

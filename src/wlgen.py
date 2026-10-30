@@ -770,12 +770,15 @@ def close_session(vec, zones):
 
 def spread_extra(vecs, zones, extra):
     """Share extra 90%+ lifts across session vectors, one lift per pass:
-    90-holders first, then 80-holders, in session order. Stops when the
-    extra is placed or no session can take more. Returns total placed."""
+    sessions holding 80 with the fewest tops first, so taper extras
+    spread onto light days instead of gathering on the heavy one. Only
+    80-holders take, so no gap opens for the ramp repair to undo. Stops
+    when the extra is placed or no session can take more."""
     order = sorted(
         range(len(vecs)),
         key=lambda s: (
-            0 if any(c and z >= 90 for c, z in zip(vecs[s], zones)) else 1,
+            0 if any(c and z >= 80 for c, z in zip(vecs[s], zones)) else 1,
+            sum(c for c, z in zip(vecs[s], zones) if z >= 90),
             s,
         ),
     )

@@ -1982,3 +1982,15 @@ def test_build_plan_deterministic():
     finally:
         build_plan("III")
     assert again == first
+
+
+def test_spread_extra_favors_light_sessions():
+    from wlgen import spread_extra
+
+    zones = [60, 70, 80, 90, 100]
+    vecs = [[0, 4, 2, 2, 0], [0, 2, 1, 0, 0]]
+    assert spread_extra(vecs, zones, 1) == 1
+    # the extra 90 lands on the session without tops, not the rich one
+    assert sum(c for c, z in zip(vecs[1], zones) if z >= 90) == 1
+    assert sum(c for c, z in zip(vecs[0], zones) if z >= 90) == 2
+    assert sum(sum(v) for v in vecs) == 11

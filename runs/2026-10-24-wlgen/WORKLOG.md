@@ -178,3 +178,17 @@ One entry per round. Never edit an old entry.
   spreading strands lone 100s (session gaps) that only an own-top cascade
   fixes; +0.17 shortfall is the priced cost of starved thin tops
 - next: Narrow Squat openers (soft driver); fill 2 I meso holes
+
+## 20 — Taper topup spreads onto light days (2026-10-30)
+- verdict: keep (comp III 0.980 -> 0.972, II -> 0.972, I 1.023 -> 0.994;
+  book 5.426 -> 5.418, instr -1, all else pinned)
+- what changed: spread_extra deals 80-holders fewest-tops-first (was
+  90-holders first); paired path untouched (its units-proportional split
+  is concentration-neutral, take_up_slack's 90-vs-100 pick never moves
+  the >=90 metric)
+- what learned: topup runs Comp2 only so the fix touches comp alone;
+  extras are 1-3 lifts, so the lever fades in big weeks (CMS comp 1.052,
+  MS comp 1.143 unmoved) where his programs give no ground truth anyway;
+  remaining comp concentration lives in repair demotion (guarantee
+  change, not attempted)
+- next: Narrow Squat openers (soft driver); fill 2 I meso holes
