@@ -165,3 +165,16 @@ One entry per round. Never edit an old entry.
   counterfactual tests (use __wrapped__); integer topups go
   winner-take-all across channels
 - next: exc 160.9 (+5%: 3.9 required slack + 3.6 honest heavy days)
+
+## 19 — Phase-keyed spread: prep gathers, comp spreads (2026-10-30)
+- verdict: keep (book 5.560 -> 5.426; I prep 1.154 vs his 1.16, comp 1.023 vs his 0.98)
+- what changed: PHASE_PEAK prep 2.0 / comp -0.3 threads into unpaired
+  (zone_alloc) and paired (pair_zones) priors; close_session fills lone-top
+  gaps at 90+ from the session's own top; close_week fills week holes from
+  unpaired tops (paired render vectors untouched)
+- what learned: priors move zone_alloc-level concentration 1.02 -> 1.24
+  but final bins plateau near 1.13 (repairs dominate); machinery has a
+  natural 1.1 floor so comp needs a negative peak to reach 0.98; thin
+  spreading strands lone 100s (session gaps) that only an own-top cascade
+  fixes; +0.17 shortfall is the priced cost of starved thin tops
+- next: Narrow Squat openers (soft driver); fill 2 I meso holes

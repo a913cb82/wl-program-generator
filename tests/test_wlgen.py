@@ -1674,6 +1674,52 @@ def test_comp2_keeps_taper_slack():
             assert sum(n for n, z in zip(final, [60, 70, 80, 90, 100]) if z >= 90) == 0
 
 
+def test_phase_peak_mapping():
+    from wlgen import phase_peak
+
+    for mi in (0, 1, 2):
+        assert phase_peak("III", mi) > 0
+    for mi in (3, 4):
+        assert phase_peak("III", mi) < 0
+
+
+def _week_concentration(week):
+    """Heaviest session's share of the week's top-zone lifts over its
+    volume share, per group; medians judge the week's character."""
+    from wlconfig import BIN_GROUP, BIN_ZONES
+
+    out = []
+    sessions = week["sessions"]
+    groups = {g for s in sessions for g in s["movements"]}
+    for g in groups:
+        zones = BIN_ZONES[BIN_GROUP[g]]
+        lifts = [sum(s["movements"].get(g, [])) for s in sessions]
+        if sum(lifts) < 20 or sum(1 for v in lifts if v) < 2:
+            continue
+        tops = [
+            sum(n for n, z in zip(s["movements"].get(g, []), zones) if z >= 90)
+            for s in sessions
+        ]
+        if sum(tops) == 0:
+            continue
+        h = max(range(len(sessions)), key=lambda j: lifts[j])
+        out.append((tops[h] / sum(tops)) / (lifts[h] / sum(lifts)))
+    return out
+
+
+def test_prep_weeks_concentrate_top():
+    import statistics as st
+
+    from wlgen import build_plan
+
+    prep, comp = [], []
+    for m in build_plan("III")["mesos"]:
+        for w in m["weeks"]:
+            (prep if m["phase"] == "prep" else comp).extend(_week_concentration(w))
+    assert 1.06 <= st.median(prep) <= 1.26, st.median(prep)
+    assert 0.90 <= st.median(comp) <= 1.10, st.median(comp)
+
+
 def test_zone_alloc_peak_concentrates_top():
     from wlgen import zone_alloc
 

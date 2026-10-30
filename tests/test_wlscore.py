@@ -176,10 +176,10 @@ def test_shipped_scores_clean():
         assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
         assert raw["gaps"] == {"III": 0, "II": 0, "I": 2, "CMS": 0, "MS": 0}[cls], cls
-        # taper slack plus peak 0.8 (2026-10-26): fewer soft openers
+        # taper slack plus phase peak (2026-10-26): fewer soft openers
         assert (
             raw["soft"]
-            == {"III": 5.0, "II": 5.0, "I": 5.0, "CMS": 84.0, "MS": 94.0}[cls]
+            == {"III": 8.0, "II": 8.0, "I": 5.0, "CMS": 74.0, "MS": 82.0}[cls]
         ), cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
@@ -191,11 +191,11 @@ def test_shipped_scores_clean():
 
 def test_book_numbers_match_research():
     book = score_book()
-    # 157.3 taper slack taken up + 3.6 peak concentration (2026-10-26)
-    assert round(book["excess"], 1) == 160.9
-    # one hosted cell in the book lands just under the floor
-    assert book["shortfall"] < 0.1
-    assert book["instructions"] == 9265
+    # 157.3 taper slack taken up + phase peak (2026-10-26)
+    assert round(book["excess"], 1) == 161.2
+    # phase peak starves a few thin tops just under the floor
+    assert book["shortfall"] < 0.2
+    assert book["instructions"] == 9140
     assert book["slots"] == 1291
     assert book["longest"] == 22
 

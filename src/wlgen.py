@@ -712,6 +712,62 @@ def reinforce(vec, zones, extra):
     return out, sum(c for c, z in zip(out, zones) if z >= 90) - before
 
 
+def close_week(unpaired, paired_vecs, zones):
+    """Fill week-level zone holes from unpaired sessions' own tops: move a
+    top unit down into the hole. Shrinking a range never opens a session
+    gap, and paired sessions (rendered from their own vectors) stay
+    untouched. Totals stay exact. Stops when no hole has an unpaired
+    donor above it; paired-covered holes are the spanning test's call."""
+    vecs = [v for _, v in unpaired]
+    while True:
+        week = [0] * len(zones)
+        for v in vecs:
+            for z, c in enumerate(v):
+                week[z] += c
+        for _, pv in paired_vecs:
+            for z, c in enumerate(pv[: len(week)]):
+                week[z] += c
+        used = [z for z, n in enumerate(week) if n]
+        if not used:
+            return
+        hole = next((z for z in range(used[0], used[-1] + 1) if not week[z]), None)
+        if hole is None:
+            return
+        donor = None
+        for s, v in unpaired:
+            top = max((x for x in range(len(v)) if v[x]), default=None)
+            if top is not None and top > hole:
+                donor = (s, v, top)
+                break
+        if donor is None:
+            return
+        _, v, top = donor
+        v[top] -= 1
+        v[hole] += 1
+
+
+def close_session(vec, zones):
+    """Fill a session's interior gaps at 90% and above from its own upper
+    zones. Rounding can strand a lone top above an empty zone that the
+    gated repairs leave alone; moving the top down keeps the session
+    contiguous and the 90+ mass exact, since both sides stay at 90%+."""
+    v = list(vec)
+    for _ in range(len(v)):
+        used = [z for z, c in enumerate(v) if c]
+        if not used:
+            return v
+        gap = next(
+            (z for z in range(used[0], used[-1] + 1) if not v[z] and zones[z] >= 90),
+            None,
+        )
+        if gap is None:
+            return v
+        src = next(z for z in range(gap + 1, len(v)) if v[z])
+        v[src] -= 1
+        v[gap] += 1
+    return v
+
+
 def spread_extra(vecs, zones, extra):
     """Share extra 90%+ lifts across session vectors, one lift per pass:
     90-holders first, then 80-holders, in session order. Stops when the
@@ -738,15 +794,25 @@ def spread_extra(vecs, zones, extra):
     return placed
 
 
-def zone_alloc(counts, lifts, peak=0.8):
+# Top-zone spread by phase, fitted to Takano: his prep weeks concentrate
+# the top on the heavy day (1.16 times its volume share), his precomp weeks
+# spread it evenly so every day touches heavy (0.98). The peak knob does
+# both: positive gathers, negative spreads against day size.
+PHASE_PEAK = {"prep": 2.0, "comp": -0.3}
+
+
+def phase_peak(cls, mi):
+    """Zone-alloc peak for one meso: concentration in prep, flat in comp."""
+    return PHASE_PEAK[CLASSES[cls]["macro"][mi][1]]
+
+
+def zone_alloc(counts, lifts, peak=0.0):
     """Split one group's week zone counts over its sessions. A flat prior gives
     every session a share of every zone, so each carries its own warmup ramp;
     larger sessions pick up more of the top through the column totals. The
     peak knob concentrates the top on big days: each zone's prior weighs a
     session by its lifts to the power of peak times the zone's rank, so the
-    warmup base stays flat while the peak gathers where the volume is.
-    The default peak fits Takano: his heaviest day carries 1.12 times its
-    volume share of the week's top zone lifts."""
+    warmup base stays flat while the peak gathers where the volume is."""
     ztop = max((z for z, c in enumerate(counts) if c), default=0)
     rows = counts[: ztop + 1]
     if ztop and peak:
@@ -1464,7 +1530,16 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None):
             counts[z] - sum(res[k][z] for k in range(nS)) for z in range(len(counts))
         ]
         rem_units = [units[k] - sum(res[k]) for k in range(nS)]
-        m_rem = fit([[1.0] * nS for _ in rem_counts], rem_counts, rem_units)
+        peak = phase_peak(cls, mi)
+        ztop = max((z for z, c in enumerate(rem_counts) if c), default=0)
+        if ztop and peak:
+            prior = [
+                [rem_units[k] ** (peak * z / ztop) if rem_units[k] else 1.0 for k in range(nS)]
+                for z in range(len(rem_counts))
+            ]
+        else:
+            prior = [[1.0] * nS for _ in rem_counts]
+        m_rem = fit(prior, rem_counts, rem_units)
         close_ramps(m_rem)
         m = [[m_rem[z][k] + res[k][z] for k in range(nS)] for z in range(len(counts))]
         lo = BIN_ZONES[bt]
@@ -1712,7 +1787,9 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
         active = [j for j in range(len(vols)) if moved[i][j] and (j, g) not in paired]
         if active:
             counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active))
-            zones = zone_alloc(counts, [moved[i][j] for j in active])
+            zones = zone_alloc(
+                counts, [moved[i][j] for j in active], peak=phase_peak(cls, mi)
+            )
             extra_u = unpaired_extra.get(g, topup.get(g, 0) if topup else 0)
             if extra_u and zones:
                 spread_extra(zones, BIN_ZONES[BIN_GROUP[g]][: len(zones[0])], extra_u)
@@ -1770,6 +1847,15 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
                     )
                     z[src] -= 1
                     z[x] += 1
+            paired_here = [(j, paired[(j, g)]) for j in range(len(vols)) if (j, g) in paired]
+            if active:
+                close_week(
+                    list(zip(active, zones)),
+                    paired_here,
+                    BIN_ZONES[BIN_GROUP[g]][: len(zones[0])],
+                )
+            zg = BIN_ZONES[BIN_GROUP[g]][: len(zones[0])]
+            zones = [close_session(z, zg) for z in zones]
             for j, z in zip(active, zones):
                 session_list[j]["movements"][g] = z + [0] * (nz - len(z))
         for j in range(len(vols)):
