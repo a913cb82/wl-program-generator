@@ -229,6 +229,21 @@ def _slot_total(items):
     return total
 
 
+def _side_total(items, idx):
+    """One side's reps of a complex scheme: the value at position idx."""
+    total = 0
+    for item in items:
+        if item[0] == "wave":
+            total += item[1] * _side_total(item[2], idx)
+        else:
+            _, _, pairs = item
+            for value, count in pairs:
+                while not isinstance(value, tuple):
+                    value = (value, value)
+                total += value[idx] * count
+    return total
+
+
 def _count(items):
     """Things the athlete must remember, counted off the stored items:
     every set-group and every repeat suffix. A wave's body counts once
@@ -269,13 +284,31 @@ def _entry_problems(text, seq, items, session):
                 break
             seen.add(zlo)
             prev = (zlo, value)
-        if _slot_total(items) != sum(session["movements"].get(g, [])):
+        slots = session.get("slots", [])
+        paired_side = sum(
+            _side_total(sl.get("items", ()), sl["movement"].split("+").index(g))
+            for sl in slots
+            if "+" in sl["movement"] and g in sl["movement"].split("+")
+        )
+        singles = [
+            _slot_total(sl.get("items", ()))
+            for sl in slots
+            if sl["movement"] == g
+        ]
+        others = sum(singles) - _slot_total(items)
+        cell = sum(session["movements"].get(g, [])) - paired_side - others
+        if _slot_total(items) != cell:
             problems.append(f"{text}: scheme does not match the cell")
     else:
         a, b = parts
         key = (a, b) if (a, b) in PAIR_REF else (b, a)
-        ref = session.get("pairs", {}).get(key, (PAIR_REF.get(key),))[0]
-        ref = ref or PAIR_REF[key]
+        other = (b, a) if key == (a, b) else (a, b)
+        stored = session.get("pairs", {})
+        ref = stored.get(key, stored.get(other, (PAIR_REF.get(key),)))[0]
+        ref = ref or PAIR_REF.get(key)
+        if ref is None:
+            problems.append(f"{text}: unknown complex")
+            return problems
         zones = BIN_ZONES[BIN_GROUP[ref]]
         if any(zlo not in zones for zlo, _ in seq):
             problems.append(f"{text}: zone outside the {ref} ladder")
@@ -305,8 +338,30 @@ def _entry_problems(text, seq, items, session):
                 break
             seen.add(zlo)
             prev = (zlo, value)
-        want = sum(session["movements"].get(a, [])) + sum(
-            session["movements"].get(b, [])
+        slots = session.get("slots", [])
+        solo = sum(
+            _slot_total(sl.get("items", ()))
+            for sl in slots
+            if sl["movement"] in (a, b)
+        )
+        pa_total = pb_total = 0
+        for sl in slots:
+            p2 = sl["movement"].split("+")
+            if len(p2) != 2:
+                continue
+            it = sl.get("items", ())
+            if a in p2:
+                pa_total += _side_total(it, p2.index(a))
+            if b in p2:
+                pb_total += _side_total(it, p2.index(b))
+        cur_a = _side_total(items, 0)
+        cur_b = _side_total(items, 1)
+        want = (
+            sum(session["movements"].get(a, []))
+            + sum(session["movements"].get(b, []))
+            - solo
+            - (pa_total - cur_a)
+            - (pb_total - cur_b)
         )
         if _slot_total(items) != want:
             problems.append(f"{text}: scheme does not match the cell")

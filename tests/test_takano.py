@@ -1,0 +1,208 @@
+"""Takano programs in our JSON format: exercise map, zone floor,
+X-zone inference and scheme parsing. Every non-obvious decision from
+the mapping review is pinned here."""
+
+from takano import (
+    EXERCISE_MAP,
+    floor_zone,
+    infer_x_zone,
+    parse_scheme,
+    split_complex,
+)
+
+
+def test_map_covers_every_raw_name():
+    from wlconfig import GROUPS
+
+    valid = set(GROUPS) | {"drop"}
+    for raw, mapped in EXERCISE_MAP.items():
+        assert isinstance(raw, str) and raw, raw
+        if mapped == "drop":
+            continue
+        kind = mapped[0]
+        assert kind in ("single", "pair", "triple"), (raw, mapped)
+        for g in mapped[1]:
+            assert g in valid, (raw, mapped)
+
+
+def test_map_complexes_are_pairs():
+    assert EXERCISE_MAP["Clean & Jerk"] == ("pair", ("Clean", "Jerk"))
+    assert EXERCISE_MAP["Power Clean & Power Jerk"] == (
+        "pair",
+        ("Other Clean", "Other Jerk"),
+    )
+    assert EXERCISE_MAP["Power Clean & Jerk"] == ("pair", ("Other Clean", "Jerk"))
+    assert EXERCISE_MAP["Snatch High Pull & Snatch"] == ("pair", ("SnPull", "Snatch"))
+    assert EXERCISE_MAP["Clean High Pull & Clean"] == ("pair", ("ClPull", "Clean"))
+    assert EXERCISE_MAP["Power Clean & Front Squat & Jerk"] == (
+        "triple",
+        ("Other Clean", "Other Squat", "Jerk"),
+    )
+
+
+def test_map_review_decisions():
+    # extension == pull
+    assert EXERCISE_MAP["Clean Extension"] == ("single", ("ClPull",))
+    assert EXERCISE_MAP["Snatch Extension"] == ("single", ("SnPull",))
+    # behind the neck / rack
+    assert EXERCISE_MAP["Behind the Neck Power Jerk"] == ("single", ("Other Jerk",))
+    assert EXERCISE_MAP["Jerk off Rack"] == ("single", ("Jerk",))
+    assert EXERCISE_MAP["Behind the Neck Push Press"] == ("single", ("Press",))
+    # power jerk
+    assert EXERCISE_MAP["Power Jerk"] == ("single", ("Other Jerk",))
+    # squat variants incl. jumping
+    assert EXERCISE_MAP["Overhead Squat"] == ("single", ("Other Squat",))
+    assert EXERCISE_MAP["Jumping Back Squat"] == ("single", ("Other Squat",))
+    # press bucket incl. bench
+    assert EXERCISE_MAP["Push Press"] == ("single", ("Press",))
+    assert EXERCISE_MAP["Bench Press"] == ("single", ("Press",))
+    # hinge bucket
+    assert EXERCISE_MAP["Good Morning"] == ("single", ("Fundamental",))
+    assert EXERCISE_MAP["Romanian Deadlift"] == ("single", ("Fundamental",))
+    # lunges drop
+    assert EXERCISE_MAP["Lunge"] == "drop"
+
+
+def test_floor_zone_rounds_down():
+    assert floor_zone(65, [60, 70, 80, 90, 100]) == 60
+    assert floor_zone(75, [60, 70, 80, 90, 100]) == 70
+    assert floor_zone(85, [60, 70, 80, 90, 100]) == 80
+    assert floor_zone(95, [60, 70, 80, 90, 100]) == 90
+    assert floor_zone(105, [60, 70, 80, 90, 100]) == 100
+    assert floor_zone(110, [50, 60, 70, 80, 90, 100, 110]) == 110
+    assert floor_zone(50, [60, 70, 80, 90, 100]) == 60
+    assert floor_zone(95, [50, 60, 70, 80, 90]) == 90
+
+
+def test_infer_x_zone_by_reps():
+    assert infer_x_zone(8) == 75
+    assert infer_x_zone(7) == 75
+    assert infer_x_zone(6) == 80
+    assert infer_x_zone(4) == 85
+    assert infer_x_zone(3) == 85
+    assert infer_x_zone(2) == 90
+    assert infer_x_zone(1) == 90
+
+
+def test_parse_single_sets():
+    assert parse_scheme("50%/3, 60%/3, (70%/2)2", False) == [
+        (50, 3),
+        (60, 3),
+        (70, 2),
+        (70, 2),
+    ]
+
+
+def test_parse_single_plus_is_consecutive_sets():
+    assert parse_scheme("60%/2+1", False) == [(60, 2), (60, 1)]
+    assert parse_scheme("60%/3+3", False) == [(60, 3), (60, 3)]
+
+
+def test_parse_complex_plus_is_per_side():
+    assert parse_scheme("60%/2+1", True) == [(60, [2, 1])]
+    assert parse_scheme("(80%/2+1)2", True) == [(80, [2, 1]), (80, [2, 1])]
+
+
+def test_parse_x_zone_uses_rep_inference():
+    assert parse_scheme("(X/4)4", False) == [(85, 4)] * 4
+    assert parse_scheme("(X/7)2", False) == [(75, 7)] * 2
+
+
+def test_parse_strips_tallies_and_strays():
+    assert parse_scheme("50%/3, 60%/3, 65%/2, (70%/2)2   13:13:13", False) == [
+        (50, 3),
+        (60, 3),
+        (65, 2),
+        (70, 2),
+        (70, 2),
+    ]
+    assert parse_scheme("(75%/3)2  18:18::87", False) == [(75, 3)] * 2
+    assert parse_scheme("85%/2 80%/3", False) == [(85, 2), (80, 3)]
+
+
+def test_parse_repairs_unbalanced_parens():
+    assert parse_scheme("(85%/2+1", True) == [(85, [2, 1])]
+    assert parse_scheme("90%/1+1)3", True) == [(90, [1, 1])] * 3
+
+
+def test_parse_max_singles():
+    assert parse_scheme("max-5", False) == [(90, 1)] * 5
+    assert parse_scheme("95%+/1", False) == [(95, 1)]
+    assert parse_scheme("max (90%/2)3", False) == [(90, 2)] * 3
+
+
+def test_parse_added_kg_strips_to_base():
+    assert parse_scheme("(100%+10 Kg/4)5", False) == [(100, 4)] * 5
+    assert parse_scheme("(105% + 10 Kg/2)6", False) == [(105, 2)] * 6
+
+
+def test_split_complex_prefers_known_pair():
+    assert split_complex(("Other Clean", "Other Squat", "Jerk")) == (
+        ("Other Clean", "Jerk"),
+        ("Other Squat",),
+    )
+
+
+def test_build_session_produces_schema_json(tmp_path):
+    from takano import build_session
+
+    session = build_session(
+        [
+            "1) Snatch: 50%/3, 60%/3, (70%/2)2   13:13:13",
+            "2) Clean & Jerk: 60%/2+1   15:15:98",
+            "3) Back Squat: (80%/3)2   12:27:110",
+        ],
+        0,
+    )
+    assert session["day"] == 0
+    # his 50% warmups fold to the 60 base, like below-range maps below
+    assert session["movements"]["Snatch"] == [6, 4, 0, 0, 0]
+    assert session["movements"]["Squat"] == [0, 0, 0, 6, 0]
+    assert session["movements"]["Clean"] == [2, 0, 0, 0, 0]
+    assert session["movements"]["Jerk"] == [1, 0, 0, 0, 0]
+    key = ("Clean", "Jerk")
+    assert session["pairs"][key][0] == "Clean"
+    assert list(session["pairs"][key][1]) == session["movements"]["Clean"]
+    assert list(session["pairs"][key][2]) == session["movements"]["Jerk"]
+    by_move = {sl["movement"]: sl["seq"] for sl in session["slots"]}
+    assert by_move["Snatch"] == [[60, 3], [60, 3], [70, 2], [70, 2]]
+    assert by_move["Clean+Jerk"] == [[60, [2, 1]]]
+    assert by_move["Squat"] == [[80, 3], [80, 3]]
+
+
+def _load_fixture(cls):
+    import json
+
+    from wlir import from_ir
+
+    with open(f"tests/fixtures/takano-{cls}.json") as f:
+        return from_ir(json.load(f))
+
+
+def test_fixtures_load_all_sessions():
+    assert sum(len(w["sessions"]) for m in _load_fixture("III")["mesos"] for w in m["weeks"]) == 26
+    assert sum(len(w["sessions"]) for m in _load_fixture("II")["mesos"] for w in m["weeks"]) == 26
+    # the 58-week I program loads its overlapping 20-week prefix
+    got = sum(len(w["sessions"]) for m in _load_fixture("I")["mesos"] for w in m["weeks"])
+    assert got == 88
+
+
+def test_fixtures_render_and_score():
+    from wlgen import to_html
+    from wlscore import _score_items
+
+    # illegal/gaps/soft/shortfall are his genuine rule breaks under our
+    # movement rules; clash/idle are grid artifacts (his weeks beyond our
+    # 20-week grid stand empty, his day mixes predate our templates)
+    pins = {
+        "III": {"illegal": 6, "clash": 11, "idle": 119, "gaps": 0, "soft": 8.0},
+        "II": {"illegal": 15, "clash": 11, "idle": 112, "gaps": 0, "soft": 6.0},
+        "I": {"illegal": 103, "clash": 31, "idle": 14, "gaps": 1, "soft": 23.0},
+    }
+    for cls, pin in pins.items():
+        plan = _load_fixture(cls)
+        html = to_html(plan)
+        assert "Training Plan" in html
+        raw = _score_items([(cls, plan)])
+        for key, value in pin.items():
+            assert raw[key] == value, (cls, key)

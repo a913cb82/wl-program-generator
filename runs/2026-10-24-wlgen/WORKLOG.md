@@ -192,3 +192,17 @@ One entry per round. Never edit an old entry.
   remaining comp concentration lives in repair demotion (guarantee
   change, not attempted)
 - next: Narrow Squat openers (soft driver); fill 2 I meso holes
+
+## 21 — Takano programs saved in our JSON format (2026-10-30)
+- verdict: keep (fixtures render + score; all 177 green, mypy/ruff clean)
+- what changed: src/takano.py converts the parsed PDF dump
+  (tests/fixtures/takano_prog.json) to tests/fixtures/takano-{III,II,I}.json
+  in our schema; map table auditable in-repo; zones floored to grid;
+  X zones inferred by reps; single+pair coexistence accounted in scorer
+  (no-op for our plans: 160 untouched green)
+- what learned: his "&" is per-side for complexes ([2,1]) but consecutive
+  sets for singles; OCR needs paren-aware splitting + %N repair; max work
+  becomes 90-singles; his illegals under our rules are all genuine (84
+  oversize assistance sets, 19 wide C&J ratios in I); clash/idle on his
+  files are grid artifacts, illegal/gaps/soft are signal
+- next: Narrow Squat openers (soft driver); fill 2 I meso holes
