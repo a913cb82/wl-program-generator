@@ -27,7 +27,7 @@ count, complex share, feasibility.
 Gate: zero infeasible weeks, book not worse, solo SnPull > 0.
 Rollback: delete the slot line.
 
-### B. Pull-day quotas (config only)
+### B. subsumed by the stagger verdict (quotas lose to margins)
 
 Retune DAY_QUOTA so SnPull heavy days differ from Snatch heavy
 days (Roman alternating pull days). Light pull dose may still

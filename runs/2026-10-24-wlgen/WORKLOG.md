@@ -523,3 +523,28 @@ One entry per round. Never edit an old entry.
   conserve group totals by construction, so selection needs no
   retune. Pins current, outputs regenerated. Complexes track done
   pending tops-first (solo heavies, share, marathons, density).
+
+## 36 — dose-gated pairing shipped (9e7a63e); slot/stagger rejected
+- Step A slot 5: MS infeasible (fit packs 6-movement sessions, refit
+  cannot place ballast). Reverted. Within-slot stagger: quotas lose
+  to margins (big doses re-concentrate). Reverted. Walls documented.
+- Step C shipped: cover_session tries solo first for tech pairs over
+  PAIR_DOSE_CAP=40 (Takano max), pairing as fallback. Same solution
+  space, new order: zero feasibility risk by construction.
+- I/CMS fusion -10%, solo SnPull 0->34 lifts, share 37.5->35.2%,
+  (1,1)-cap earlier killed test (3,3)s (book 2.67->2.52). MS big
+  days full -> fallback; MS room waits on tops-first.
+- 2 pattern flips to SMSMSM (splittable medium days beat one L-day
+  hogging dose; peak-less alternation is legit rhythm). Solo SnPull
+  modes 80x4/90x4/100x3 (REPS-max, Takano 90x3/100x2-3 staple).
+- 211 green. Book 2.52->2.49 (soft 96->84).
+
+## 37 — spiky-90 spike: no lever (reverted without trace)
+- Exponent 3.0 on Comp1 top-zone row: blocks 17->17. The pair_zones
+  fit holds exact margins (session totals x zone totals), so no
+  prior reweighting moves 90-mass across sessions. Density needs
+  zone-aware session splits (tops-first). Quota-2 also spiked and
+  rejected (marathons 97->113: overlap fattens pair slots).
+- Remaining violations all reduce to room: MS fusion, MS marathons,
+  block density need solo/L-day capacity (tops-first). Nothing left
+  that a small config change can fix. Capacity track done.
