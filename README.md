@@ -61,11 +61,11 @@ Ten files, one HTML page plus one JSON file per competition class, III (entry) t
 
 | File | Class | Annual lifts |
 |------|-------|-------------:|
-| `outputs/III.html` | Class III | 12000 |
-| `outputs/II.html` | Class II | 12000 |
-| `outputs/I.html` | Class I | 15000 |
-| `outputs/CMS.html` | CMS | 15000 |
-| `outputs/MS.html` | MS | 18000 |
+| `outputs/III.html` | Class III | 13000 |
+| `outputs/II.html` | Class II | 13000 |
+| `outputs/I.html` | Class I | 17500 |
+| `outputs/CMS.html` | CMS | 17500 |
+| `outputs/MS.html` | MS | 22000 |
 
 Open one in a browser. Each file is self-contained (inline CSS, no scripts).
 
@@ -108,11 +108,12 @@ Each level takes a share of the level above it.
 ### Intensity
 
 - The plan buckets intensity into zones at 60%, 70%, 80% and up.
-- Each class has a yearly zone mix from Takano's tables.
+- Each class has a yearly zone mix measured from Takano's sample programs.
 - Prep sits below that mix, comp above it, and the gap grows with class. Higher classes rise in intensity across the three prep mesocycles too.
 - The last comp week tapers: snatch and clean and jerk stay below 90%.
 - The taper slack stays in its block: the cut top lifts move to the first three weeks of the same block.
 - Heavy days carry the top in prep, all days touch it before the contest: each zone spreads across days in proportion to day size, raised to 2.0 in prep so big days gather the heavy lifts, and to -0.3 in comp so the top spreads evenly. Warm-ups stay everywhere either way.
+- Heavier lifters train the same shape lighter, lighter lifters heavier. Middleweight is the default.
 
 ### Sessions and sets
 
@@ -122,7 +123,7 @@ Each level takes a share of the level above it.
 
 ## Representation and scoring
 
-Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds only the class label and the sessions. Each session knows its mesocycle, week and weekday plus its movements, combined movements, and slots. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
+Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds the class label and the sessions, plus bodyweight when it is not middleweight. Each session knows its mesocycle, week and weekday plus its movements, combined movements, and slots. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
 
 `wlgen audit` builds all five classes and prints one scoreboard row per class plus the book total. The score has four parts. Lower is better.
 
@@ -131,7 +132,7 @@ Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the interm
 - **Rhythm** — whether the median week has a wave, whether heavy days follow rest, and whether the plan has an intensity wave. Day-to-day movement as a share of the week's volume, split across its training days, must reach 0.1 per day. Rest days count as the gaps between sessions, never as zeros. Shortfall below that is priced. The median week must not put heavy days after short rest. Only missing rest is priced, nothing above neutral. Missing turns in session order add more. Each session carries its weekday in the plan JSON. Extra peaks are free. A turn is a change of direction between sessions. The intensity wave fits an annual sine, peaking at 0.85 of plan length, to the weekly mean zones with the meet week dropped. Shortfall below a fitted depth of 0.02 is priced.
 - **Drift** — everything off plan. Group and total misses at week, mesocycle, and program scale. Group misses count only beyond the band. Total misses count in full. Illegal sets, clashes, gaps, idle movements, warmup softness, uneven spacing, and pace.
 
-The divisors (150, 9300, 25, 0.5) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on illegal sets, clashes, and idle movements. Warmup softness and bin gaps are nonzero in current plans. The generator must narrow the openers and fill or drop the holed zones.
+The divisors (150, 9300, 25, 0.5) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on illegal sets, clashes, and idle movements. Warmup softness is nonzero in current plans. The generator must narrow the openers.
 
 ## Guarantees
 

@@ -2213,3 +2213,48 @@ def test_heavies_fall_with_bodyweight():
     assert his["light"] > his["middle"] > his["heavy"]
     assert means["light"] - means["heavy"] <= 3.0, means
     assert his["light"] - his["heavy"] <= 0.06, his
+
+
+def test_press_follows_legs_in_session():
+    # Presses train mid/end of workout, never before squats or pulls
+    # (Roman p70): the DAY slot order already guarantees it; sessions
+    # missing legs compress the render order, which this test sees
+    # through by comparing positions only where both are present.
+    LEGS = ("Squat", "SnPull", "ClPull")
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        ir = to_ir(ir_with_slots(build_plan(cls)))
+        for s in ir["sessions"]:
+            movs = [sl["movement"] for sl in s["slots"]]
+            if "Press" in movs and any(m in movs for m in LEGS):
+                last_leg = max(i for i, m in enumerate(movs) if m in LEGS)
+                assert movs.index("Press") > last_leg, (cls, movs)
+
+
+def test_final_week_keeps_roman_remnants():
+    # The last week runs 11-14% of the meso volume (Roman p105) with
+    # about 6-10% of its heavies left in (I/CMS: 2@90+ classics,
+    # ~4 squats@100%+; clean-pull maxima move to week 3, p137-150).
+    # Our taper keeps zero classic 90+ (stricter) and lets pulls and
+    # squats hold the remnants.
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        from wlconfig import BIN_GROUP, BIN_ZONES
+
+        plan = build_plan(cls)
+        meso = plan["mesos"][-1]
+        vols = [w["vol"] for w in meso["weeks"]]
+        assert 0.11 <= vols[-1] / sum(vols) <= 0.14, (cls, vols)
+        his = []
+        for w in meso["weeks"]:
+            hi = sum(
+                x
+                for g, vec in w["bins"].items()
+                for z, x in zip(BIN_ZONES[BIN_GROUP[g]], vec)
+                if z >= 90
+            )
+            his.append(hi)
+        assert his[-1] <= 0.10 * sum(his), (cls, his)
+        last = meso["weeks"][-1]
+        for g in ("Snatch", "Clean", "Jerk"):
+            vec = last["bins"][g]
+            zones = BIN_ZONES[BIN_GROUP[g]]
+            assert sum(x for z, x in zip(zones, vec) if z >= 90) == 0, (cls, g)

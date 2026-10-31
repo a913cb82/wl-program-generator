@@ -397,3 +397,19 @@ One entry per round. Never edit an old entry.
   Roman-scale. Weight-differentiated selection (Table 11 columns) and
   the 110kg+ special rules stay deferred (need ratio tables per weight).
 - next: item 7 (session frequency/composition + calendar rules)
+
+## 27f — Roman catch-up, item 7: session rules + calendar (2026-10-31)
+- verdict: pins, not machinery (composition already book-shaped)
+- what measured: presses never render before legs (0/26); final week =
+  13% of meso with 6.5% heavies left and zero classic 90+ (Roman: 11-14%,
+  ~6-10%, 2@90+ classics + 4 squats); squat doses mean 23-38, max 78
+  (Roman ~20-30, to ~60); movements/session 1-4 all classes (low end
+  matches beginner range). New tests pin press order and the final-week
+  shape. Left to template discipline or future meso-memory work:
+  submax/max lags, cross-day 90% spacing, shock weekday, two-a-day,
+  post-comp rest (fixed 20-week calendar by design).
+- housekeeping: README annuals + zone-mix source + bw field/rule + gaps
+  line; outputs/*.html+json rebuilt for review; 203 green, lint/mypy at
+  HEAD baseline (5 ruff + 6 mypy pre-existing, zero new).
+- research loop CLOSED: all 7 items landed as commits d3707c0 (1-2),
+  58ed4f7 (3), 3adc3c3 (4), 3207c7 (5), 8d33762 (6), plus this one (7).
