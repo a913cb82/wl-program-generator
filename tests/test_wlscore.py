@@ -180,9 +180,12 @@ def test_shipped_scores_clean():
         # walled shift (2026-10-31): heat pools at 90, pricing a few more
         # low-class 90-openers the books prescribe; dead-pair removal
         # (2026-10-31): variant-fusion soft openers gone (I/CMS/MS down)
+        # flatten-80 (2026-10-31): squat 80s spread over prep days, so
+        # fewer soft shape violations pool on the big day (II 23 -> 7,
+        # CMS 17 -> 5, III 2 -> 1, MS 24 -> 21); quotas exact (ob/iv 0.0).
         assert (
             raw["soft"]
-            == {"III": 2.0, "II": 23.0, "I": 18.0, "CMS": 17.0, "MS": 24.0}[cls]
+            == {"III": 1.0, "II": 7.0, "I": 18.0, "CMS": 5.0, "MS": 21.0}[cls]
         ), cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
@@ -205,11 +208,19 @@ def test_book_numbers_match_research():
     # movements matrix is untouched); instructions fall (each half
     # compresses cleanly); slots rise (one cell, two slots); longest
     # falls 33->24 (residual: a 24-set tech pair, pairs never split).
-    assert round(book["excess"], 1) == 190.3
+    # Flatten-80 (2026-10-31): squat prep peak 2.0 -> -1.0 counter-spread.
+    # Each prep week's 80s deal back toward even across hosting days instead
+    # of piling onto the biggest day (Takano spreads 80s evenly at 0.98,
+    # max 10/11/16 per session vs our 23/34/50; Prilepin cap 20; Roman p68
+    # ~20-30 squats/workout). Excess falls with month/zone totals
+    # bit-identical (fit margins exact: ob/iv stay 0.0); each hosting day
+    # renders its own 80 ladder at ladder-max sizes, so instructions rise
+    # (more days carry 80s) while modes and longest are untouched.
+    assert round(book["excess"], 1) == 187.8
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9409
-    assert book["slots"] == 1537
+    assert book["instructions"] == 9519
+    assert book["slots"] == 1550
     assert book["longest"] == 24
 
 

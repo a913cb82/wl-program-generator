@@ -823,10 +823,25 @@ def spread_extra(vecs, zones, extra):
 # both: positive gathers, negative spreads against day size.
 PHASE_PEAK = {"prep": 2.0, "comp": -0.3}
 
+# Squat exception: its weekly 80-share (.32-.37) lets the prep peak dump
+# 20-50 lifts at 80 onto the biggest day (Prilepin cap 20; Takano maxes at
+# 10/11/16 per session and spreads 80s evenly at 0.98). A mild
+# counter-spread prep prior for Squat deals 80s back toward even, so the
+# big day stays nearer cap; the flat base + fit still give each day its
+# warmup ramp, and big days still carry more total volume through the
+# column totals. Roman (p68): ~20-30 squats/workout, up to ~60 in two
+# series. Comp keeps the global -0.3 (Takano-fitted precomp spread).
+SQUAT_PREP_PEAK = -1.0
 
-def phase_peak(cls, mi):
-    """Zone-alloc peak for one meso: concentration in prep, flat in comp."""
-    return PHASE_PEAK[CLASSES[cls]["macro"][mi][1]]
+
+def phase_peak(cls, mi, group=None):
+    """Zone-alloc peak for one meso: concentration in prep, flat in comp.
+    Squat takes a counter-spread prep prior (see SQUAT_PREP_PEAK); pairs
+    keep the global peak since they never carry solo squat dose."""
+    peak = PHASE_PEAK[CLASSES[cls]["macro"][mi][1]]
+    if group == "Squat" and peak > 0:
+        return SQUAT_PREP_PEAK
+    return peak
 
 
 def zone_alloc(counts, lifts, peak=0.0):
@@ -1866,7 +1881,7 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
         if active:
             counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active), bw)
             zones = zone_alloc(
-                counts, [moved[i][j] for j in active], peak=phase_peak(cls, mi)
+                counts, [moved[i][j] for j in active], peak=phase_peak(cls, mi, g)
             )
             extra_u = unpaired_extra.get(g, topup.get(g, 0) if topup else 0)
             if extra_u and zones:

@@ -1731,6 +1731,28 @@ def test_phase_peak_mapping():
         assert phase_peak("III", mi) < 0
 
 
+def test_squat_prep_peak_counterspread():
+    # Flatten-80: squat prep spreads 80s back toward even across hosting
+    # days (Takano 0.98 even-spread; Prilepin cap 20) while every other
+    # group keeps the concentrating prep peak and comp keeps -0.3.
+    from wlgen import SQUAT_PREP_PEAK, phase_peak, zone_alloc
+
+    for mi in (0, 1, 2):
+        assert phase_peak("III", mi, "Squat") == SQUAT_PREP_PEAK < 0
+        assert phase_peak("III", mi, "Snatch") == phase_peak("III", mi) > 0
+    for mi in (3, 4):
+        assert phase_peak("III", mi, "Squat") == phase_peak("III", mi) < 0
+    # Pile-like margins: two hosting days, a 77-lift 80-row. The global
+    # peak stacks 50 onto the big day; the squat prep peak deals back
+    # toward even (floor 31 = row total minus the small day's column).
+    counts, lifts = [1, 18, 22, 77, 2], [46, 74]
+    assert [r[3] for r in zone_alloc(counts, lifts, peak=2.0)] == [27, 50]
+    spread = zone_alloc(counts, lifts, peak=phase_peak("MS", 1, "Squat"))
+    assert [r[3] for r in spread] == [31, 46]
+    assert [sum(row) for row in spread] == lifts
+    assert [sum(row[z] for row in spread) for z in range(5)] == counts
+
+
 def _week_concentration(week):
     """Heaviest session's share of the week's top-zone lifts over its
     volume share, per group; medians judge the week's character."""
