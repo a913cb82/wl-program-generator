@@ -470,17 +470,105 @@ def test_split_marathon_balances_and_guards_min_dose():
 
 
 def test_scheme_entries_splits_marathon_singles():
-    # A 33-set monster overflows into two same-day slots with the dose
-    # exact and neither half keeping marathon shape.
+    # A 33-set monster overflows into same-day slots until every chunk
+    # renders clean, with the dose exact across the partition.
     s = {"movements": {"Squat": [1, 15, 18, 34, 10]}}
     entries = scheme_entries(s)
-    assert [m for m, _ in entries] == ["Squat", "Squat"]
+    assert [m for m, _ in entries] == ["Squat", "Squat", "Squat"]
     seqs = [seq for _, seq in entries]
     assert sum(sum(v for _, v in seq) for seq in seqs) == 1 + 15 + 18 + 34 + 10
-    assert all(len(seq) < 33 for seq in seqs)
+    assert all(len(seq) < wlgen.MARATHON_SETS for seq in seqs)
     # Narrow cells never split.
     s = {"movements": {"Squat": [5, 10, 10, 10, 0]}}
     assert [m for m, _ in scheme_entries(s)] == ["Squat"]
+
+
+def test_halve_counts_deals_exact_and_guards_floor_and_span():
+    # Even dealing sums back exactly; odd lifts go to the lighter half.
+    assert wlgen.halve_counts((0, 0, 20, 20, 0)) == (
+        (0, 0, 10, 10, 0),
+        (0, 0, 10, 10, 0),
+    )
+    assert wlgen.halve_counts((0, 0, 9, 5, 0)) == (
+        (0, 0, 4, 2, 0),
+        (0, 0, 5, 3, 0),
+    )
+    # Halves under the dose floor stay whole, as do wide chunks: their
+    # width needs hosting redesign, not render halving.
+    assert wlgen.halve_counts((0, 0, 5, 5, 0)) is None
+    assert wlgen.halve_counts((1, 8, 13, 11, 0)) is None
+
+
+def test_strip_feelers_folds_same_zone_and_keeps_volume():
+    # A warmed-up later chunk renders without entry singles: the feeler
+    # folds into same-zone work, volumes exact, ladder caps respected.
+    capped = lambda zlo, v: v <= 5
+    assert wlgen.strip_feelers(
+        ((70, 1), (80, 1), (70, 3), (80, 3)), capped
+    ) == ((70, 1), (70, 3), (80, 4))
+    # No same-zone work, no fold: the single stays, volume untouched.
+    assert wlgen.strip_feelers(((80, 1), (90, 3)), capped) == (
+        (80, 1),
+        (90, 3),
+    )
+    # The fold never builds past the cap, nor the opener past 1-5.
+    assert wlgen.strip_feelers(((60, 1), (60, 5)), capped) == (
+        (60, 1),
+        (60, 5),
+    )
+
+
+def test_strip_feelers_handles_pair_complexes():
+    seq = ((60, (1, 1)), (70, (2, 2)), (60, (2, 2)))
+    ok = lambda zlo, v: v[0] <= 4 and v[1] <= 4
+    folded = wlgen.strip_feelers(seq, ok)
+    assert folded == ((70, (2, 2)), (60, (3, 3)))
+    assert sum(a + b for _, (a, b) in folded) == sum(
+        a + b for _, (a, b) in seq
+    )
+
+
+def test_split_chunks_recurses_until_clean():
+    # The 33-set monster splits until every chunk renders clean.
+    chunks = wlgen.split_chunks((1, 15, 18, 34, 10), "Squat")
+    assert len(chunks) > 2
+    assert sum(map(sum, chunks)) == 78
+    for chunk in chunks:
+        assert len(wlgen.best_scheme(chunk, "Squat")[0]) < wlgen.MARATHON_SETS
+    # Wide chunks with no legal boundary come back whole (residue for
+    # hosting redesign, still rendered as one slot).
+    wide = (0, 2, 3, 22, 4, 0, 0)
+    assert wlgen.split_chunks(wide, wlgen.BIN_GROUP["Fundamental"]) == [wide]
+
+
+def test_split_pair_chunks_keeps_heavy_openers_whole():
+    # Halving by set list is exact, but halves that would open past 1-5
+    # stay whole instead: Takano opens light in every slot.
+    va = vb = (9, 13, 12, 0, 0)
+    chunks = wlgen.split_pair_chunks(va, vb, "SnPull", "Other Snatch", "Clean")
+    assert chunks == [(tuple(va), tuple(vb))]
+    # Real plan pairs do split: every created piece renders clean with a
+    # light opener, and the halves sum back to the plan exactly.
+    seen = 0
+    for cls in ("I", "CMS", "MS"):
+        plan = build_plan(cls)
+        for m in plan["mesos"]:
+            for w in m["weeks"]:
+                for s in w["sessions"]:
+                    for (a, b), (ref, pa, pb) in s.get("pairs", {}).items():
+                        seq = wlgen.best_pair_scheme(tuple(pa), tuple(pb), a, b, ref)[0]
+                        if len(seq) < wlgen.MARATHON_SETS:
+                            continue
+                        parts = wlgen.split_pair_chunks(tuple(pa), tuple(pb), a, b, ref)
+                        if len(parts) < 2:
+                            continue
+                        seen += 1
+                        assert sum(sum(v) for part in parts for v in part) == sum(pa) + sum(pb)
+                        for xa, xb in parts:
+                            q = wlgen.best_pair_scheme(xa, xb, a, b, ref)[0]
+                            assert len(q) < wlgen.MARATHON_SETS
+                            assert wlgen.atom_total(q[0][1]) <= 5
+    assert seen, "no real plan pair splits"
 
 
 def test_prune_doses_keeps_sessions_matchable():
@@ -2157,9 +2245,11 @@ def test_rendered_set_sizes_match_takano_centers():
     # (his CMS ClPull runs [100,2]x3) against Roman's pull singles.
     # Solo ClPull renders 80x3 after the dead-pair removal (ClPull dose
     # goes solo): Roman allows pulls 2-6 at 80-99%, Takano does 3s/4s.
-    # Squat 70 renders 2s after the marathon split (Takano's mode is 3:
-    # the old 1-mode was ramp-feeler noise, the new 2 sits one rep under
-    # his center). Squat 80 renders 4s: the old 2-mode was carried by
+    # Squat 70 renders 2s again on the flatten-80 spread: split-deep
+    # removed the joint-render 2s (three 14-20-set renders past both
+    # books' slot max), but distributed 70-ladders across more squat
+    # days restore them (Takano aggregate mode is 2, his class modes
+    # 2-4). The count sits at his mode with no slot past 13 sets. Squat 80 renders 4s: the old 2-mode was carried by
     # seventeen-identical-double marathons, and the same dose now fills
     # at ladder-max inside two thin slots. ClPull 80 renders 1s: its old
     # 3-mode lived inside 15-17-set marathons (past Takano's max-10

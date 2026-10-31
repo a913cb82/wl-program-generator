@@ -216,12 +216,18 @@ def test_book_numbers_match_research():
     # bit-identical (fit margins exact: ob/iv stay 0.0); each hosting day
     # renders its own 80 ladder at ladder-max sizes, so instructions rise
     # (more days carry 80s) while modes and longest are untouched.
+    # Split deep (2026-10-31): recursion to clean chunks, set-halving for
+    # zone-narrow leftovers, pair set-halving, feeler folding. Excess,
+    # shortfall, rhythm, and soft exact vs flatten-80; longest falls
+    # further (residue: wide no-boundary solos plus opener-guarded pairs;
+    # width needs hosting redesign); instructions/slots rise with the
+    # extra same-day slots.
     assert round(book["excess"], 1) == 187.8
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9519
-    assert book["slots"] == 1550
-    assert book["longest"] == 24
+    assert book["instructions"] == 9585
+    assert book["slots"] == 1587
+    assert book["longest"] == 17
 
 
 def test_score_detects_gap():

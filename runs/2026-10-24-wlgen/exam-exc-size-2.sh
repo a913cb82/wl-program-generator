@@ -40,4 +40,4 @@ for cls in ('III','II','I','CMS','MS'):
             if len(slot['seq']) > 13: mar += 1
     print('%s share %.1f%% pullfuse %d mar %d longest %d solo %d/%d' % (cls, 100*cx/tot, pullfuse, mar, longest, solo_hi, solo_tot))
 PY
-echo "=== baseline 8940c00: exc 9.0/10.0/35.4/42.6/93.3 book 190.3; longest 24/26/33/26/28; mar 22/11/23/30/44; instr 9421; rhythm 5.22; soft 84; solo 34/34 I/CMS; fusion 897/895/1666; share 35.2/35.2/45.0; CPU 2.95; suite 211 ==="
+echo "=== baseline 851fbd9: exc 9.0/10.0/35.4/42.6/93.3 book 190.3; longest 20/17/17/18/24; mar 2/1/10/11/20; instr 9409; slots 1537; rhythm 5.22; soft 84; solo 34/34 I/CMS; fusion 897/895/1666; share 35.2/35.2/45.4; CPU ~2.6; suite 213 ==="

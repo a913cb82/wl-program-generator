@@ -30,3 +30,10 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 - [dropped] A-unpair-heavy: exc -9.1 (MS-only) but ob_micro 0->16 + soft +4; every class score flat-or-worse, book 2.520->2.629. Fails exam gate (drift regressed). Corollary: paired-dose removal IS the exc win; bands price it. No revision (zero-sum without eviction).
 - [done] B-thin-slots: KEPT. Render-only marathon split (same-day second slot, exact volumes). longest 33->24, marathons 130->44, exc exact 190.3, rhythm identical, CPU flat/down, suite 213 green. Follow-ups: strip second-half re-ramp feelers (ClPull-80 mode 3->1 vs Takano 4); recursive split for residual 40-lift upper chunks (MS 20); zone-width cap needs allocator (out of scope).
 - [idea] D-flatten-80: below-MS excess P2 (solo Squat-80 piles via PHASE_PEAK prep 2.0). Untried lever after A/C ruled out.
+
+## Round exc-size-3 (goal: exc within 10% of Takano ~129; longest ~Takano x1.1; marathons ~0; base 851fbd9: exc 190.3, longest 20/17/17/18/24, mar 2/1/10/11/20, instr 9409, slots 1537, rhythm 5.22, soft 84, CPU ~2.6, suite 213)
+- [trying] D-flatten-80: flatten prep peak concentrating Squat-80 (P2) on biggest day. Owner: /tmp/wd.
+- [trying] E-quarantine-90: diagnose I/CMS/MS 90+ exc cells, quarantine to heavy day (post-alloc only). Owner: /tmp/we.
+- [trying] B2-split-deep: recursive split + set-split + pair-split + feeler-strip (residual longest/modes). Owner: /tmp/wb2.
+- [dropped] E-quarantine-90: NEGATIVE. Perfect quarantine RAISES exc +7.3 (convex per-session penalty); perfect spreading saves -1.4. 90+ mass is quota-forced. Pin kept (convexity test), zero src diff.
+- [done] D-flatten-80: KEPT. SQUAT_PREP_PEAK=-1.0 (squat-only prep counter-spread). exc -2.5 broad, soft 84->52 (fewer heavy openers), ob/iv 0, rhythm flat, CPU flat, modes/longest/fusion/share identical, 215 green.

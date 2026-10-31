@@ -2957,14 +2957,162 @@ def split_marathon(counts):
     )
 
 
+def halve_counts(counts):
+    """Even lift-halving for a marathon chunk with no legal zone boundary.
+
+    Single-zone re-marathons (upper chunks near 40 lifts rendering uniform
+    triples) and deep two-zone cells cannot split at a boundary, so each
+    zone's lifts are dealt in half with odd lifts going to the lighter
+    side. Halves sum back exactly. Wider chunks without a legal boundary
+    stay whole: their width needs hosting redesign, and halving them
+    across four-plus zones invents packings the book never renders.
+    None when a half would drop below MIN_DOSE."""
+    counts = tuple(counts)
+    if sum(1 for n in counts if n) > 2:
+        return None
+    if sum(counts) < 2 * MIN_DOSE:
+        return None
+    lo, hi = [0] * len(counts), [0] * len(counts)
+    slo = shi = 0
+    for z, n in enumerate(counts):
+        a, b = n // 2, n - n // 2
+        if n % 2 and slo > shi:
+            a, b = b, a
+        lo[z], hi[z] = a, b
+        slo, shi = slo + a, shi + b
+    if slo < MIN_DOSE or shi < MIN_DOSE:
+        return None
+    return (tuple(lo), tuple(hi))
+
+
+def _top_reps(value):
+    return value if isinstance(value, int) else max(value)
+
+
+def _add_reps(single, work):
+    if isinstance(work, int):
+        return work + single
+    return (work[0] + single[0], work[1] + single[1])
+
+
+def strip_feelers(seq, cap):
+    """Fold leading sub-2 entry singles of a non-first chunk into later
+    work sets at the same zone. The day's first chunk keeps the warm-up
+    ramp; every later chunk is the same movement on the same day, already
+    warm, so its entry feelers are stray singles the scorer prices as free.
+    Folding (not dropping) keeps every slot's volume exact, so each slot
+    still matches its cell; a single that would grow its target past the
+    ladder cap, or has no same-zone work set, stays put."""
+    seq = list(seq)
+    lead = 0
+    while lead < len(seq) and _top_reps(seq[lead][1]) < 2:
+        lead += 1
+    if not lead or lead >= len(seq):
+        return tuple(seq)
+    target = {}
+    for j in range(lead, len(seq)):
+        zlo, value = seq[j]
+        if _top_reps(value) >= 2 and zlo not in target:
+            target[zlo] = j
+    for j in range(lead):
+        if seq[j] is None:
+            continue
+        zlo, value = seq[j]
+        t = target.get(zlo)
+        if t is None:
+            continue
+        # Fold only under a surviving opener: some set before the target
+        # that this and later folds cannot consume (a work set, or an
+        # earlier single already kept). Otherwise the grown set could
+        # become the opener above Takano's 1-5 (soft). When in doubt the
+        # single stays: volumes are exact either way.
+        anchored = any(
+            seq[i] is not None and (i < j or _top_reps(seq[i][1]) >= 2)
+            for i in range(t)
+        )
+        if not anchored:
+            continue
+        tz, tv = seq[t]
+        grown = _add_reps(value, tv)
+        if cap(tz, grown):
+            seq[t] = (tz, grown)
+            seq[j] = None
+    return tuple(s for s in seq if s is not None)
+
+
+def split_chunks(counts, family):
+    """Recursively split a marathon count vector into render chunks.
+
+    Zone-boundary splits first (contiguous bands from their own bases, so
+    the warm-up ramp survives in the day's first chunk); chunks with no
+    legal boundary halve their lifts evenly. Every chunk sums back
+    exactly. Each split strictly shrinks both halves' lifts with the
+    MIN_DOSE floor, so the loop terminates."""
+    chunks = [tuple(counts)]
+    splitting = True
+    while splitting:
+        splitting = False
+        rest = []
+        for chunk in chunks:
+            if len(best_scheme(chunk, family)[0]) >= MARATHON_SETS:
+                parts = split_marathon(chunk) or halve_counts(chunk)
+                if parts is not None:
+                    rest.extend(parts)
+                    splitting = True
+                    continue
+            rest.append(chunk)
+        chunks = rest
+    return chunks
+
+
+def split_pair_chunks(va, vb, a_group, b_group, ref_group):
+    """Recursively halve a marathon pair render into exact lift vectors.
+
+    The rendered set list is dealt in half: every complex touches both
+    sides, so no one-sided zone can arise (the pair_fill crash that
+    halving lifts directly would risk). Each half re-renders from its
+    exact lift vectors, which sum back to the plan by construction.
+    Halves below MIN_DOSE stay whole; shrinking vectors guarantee
+    termination."""
+    seq = best_pair_scheme(tuple(va), tuple(vb), a_group, b_group, ref_group)[0]
+    if len(seq) < MARATHON_SETS:
+        return [(tuple(va), tuple(vb))]
+    lo = list(BIN_ZONES[BIN_GROUP[ref_group]])
+    halves = []
+    mid = len(seq) // 2
+    for half in (seq[:mid], seq[mid:]):
+        xa, xb = [0] * len(va), [0] * len(vb)
+        for zone, (ra, rb) in half:
+            i = lo.index(zone)
+            xa[i] += ra
+            xb[i] += rb
+        halves.append((tuple(xa), tuple(xb)))
+    if any(sum(xa) + sum(xb) < MIN_DOSE for xa, xb in halves):
+        return [(tuple(va), tuple(vb))]
+    # Every slot this split creates re-renders its lifts afresh and can
+    # open heavier than the parent's own opener, so every created piece
+    # must still open Takano-style (1-5). When one would not, keep the
+    # pair whole (as before this change).
+    for xa, xb in halves:
+        opener = best_pair_scheme(xa, xb, a_group, b_group, ref_group)[0][0][1]
+        if atom_total(opener) > 5:
+            return [(tuple(va), tuple(vb))]
+    out = []
+    for xa, xb in halves:
+        out.extend(split_pair_chunks(xa, xb, a_group, b_group, ref_group))
+    return out
+
+
 def scheme_entries(s):
     """One (movement, atom seq) per slot, DAY-slot ordered.
 
     Stored pairs (from planning) render jointly from their reference-zone
     vectors; sessions built by hand fall back to auto-detecting same-zone
-    pairs with aligned support. A single that renders a marathon overflows
-    into a second slot the same day: same movement, contiguous zone bands,
-    exact volumes."""
+    pairs with aligned support. A single or pair that renders a marathon
+    overflows into same-day slots until every chunk renders clean: same
+    movement, contiguous zone bands from their own bases, exact volumes.
+    Non-first chunks render without entry feelers (same movement, same day
+    is already warm)."""
     stored = dict(s.get("pairs", {}))
     used: set = {g for p in stored for g in p}
     detected: dict = {}
@@ -2998,19 +3146,48 @@ def scheme_entries(s):
             slots = COMPLEX_SLOTS.get(frozenset((a, b)), ())
             seq = best_pair_scheme(tuple(va), tuple(vb), a, b, ref)[0]
             text = f"{a}+{b}"
+            if len(seq) < MARATHON_SETS:
+                entries.append(
+                    (sorted(slots)[0] if slots else len(DAY), order, text, seq)
+                )
+                continue
+            key = sorted(slots)[0] if slots else len(DAY)
+            ca = REPS.get(BIN_GROUP[a], {})
+            cb = REPS.get(BIN_GROUP[b], {})
+
+            def _pair_ok(zlo, v, _a=ca, _b=cb):
+                la = max(_a[zlo]) if zlo in _a else v[0]
+                lb = max(_b[zlo]) if zlo in _b else v[1]
+                return v[0] <= la and v[1] <= lb
+
+            for k, (xa, xb) in enumerate(
+                split_pair_chunks(tuple(va), tuple(vb), a, b, ref)
+            ):
+                pseq = best_pair_scheme(xa, xb, a, b, ref)[0]
+                if k:
+                    pseq = strip_feelers(pseq, _pair_ok)
+                entries.append((key, order, text, pseq))
+            continue
         else:
             slots = SINGLE_SLOTS.get(g, ())
             text = g
             seq = best_scheme(tuple(counts), BIN_GROUP[g])[0]
-            parts = split_marathon(counts) if len(seq) >= MARATHON_SETS else None
-            if parts is not None:
-                key = sorted(slots)[0] if slots else len(DAY)
-                for part in parts:
-                    entries.append(
-                        (key, order, text, best_scheme(part, BIN_GROUP[g])[0])
-                    )
+            if len(seq) < MARATHON_SETS:
+                entries.append(
+                    (sorted(slots)[0] if slots else len(DAY), order, text, seq)
+                )
                 continue
-        entries.append((sorted(slots)[0] if slots else len(DAY), order, text, seq))
+            key = sorted(slots)[0] if slots else len(DAY)
+            fam = BIN_GROUP[g]
+            fcaps = REPS.get(fam, {})
+            for k, part in enumerate(split_chunks(tuple(counts), fam)):
+                cseq = best_scheme(part, fam)[0]
+                if k:
+                    cseq = strip_feelers(
+                        cseq, lambda zlo, v, _c=fcaps: v <= max(_c.get(zlo, (v,)))
+                    )
+                entries.append((key, order, text, cseq))
+            continue
     entries.sort(key=lambda entry: (entry[0], entry[1]))
     return [(text, seq) for _, _, text, seq in entries]
 
