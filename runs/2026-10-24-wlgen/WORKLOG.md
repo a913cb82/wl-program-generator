@@ -458,3 +458,19 @@ One entry per round. Never edit an old entry.
   ratio cells are book-conflicts; ceilings strand fitted 90-pull-mass
   with no solo host; set caps need L-day spill slots. The 5 exact
   cell changes are banked as tops-first calibration data.
+
+## 30 — complexes step 1: dead pairs removed (2026-10-31)
+- removed Clean+Other Jerk and ClPull+Other Clean (PAIRS, PAIR_REF,
+  DAY slot 1); neither book programs them. TDD: new test pins
+  absence from PAIRS and from all rendered plans.
+- mass re-hosts solo/paired with zero infeasible weeks; 5 day-pattern
+  flips in tight I/CMS Prep 2-4 weeks (1 healed to canonical, 4 new
+  dose-forced, 0 CAP-bound, all 0-violation). I m3w1d2 gains a solo
+  Clean slot (3->4 slots) while its squat slot grows 30->33 sets
+  (marathon class pre-exists; noted in pin comment).
+- complex share flat (I 36.7->37.1, MS 45.4->45.0): the removed pairs
+  were rare in output; share battle is step 2 (H-quarantine).
+- book 2.81->2.67: soft 115->97 (variant-fusion soft openers gone),
+  excess steady; Takano clash pins +1/+2 (their co-hostings predate
+  our template); solo ClPull now renders 80x3 (both books allow).
+  208 green, lint at HEAD baseline. Outputs regenerated.
