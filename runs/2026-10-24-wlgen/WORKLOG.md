@@ -514,3 +514,12 @@ One entry per round. Never edit an old entry.
   his blocks top ladders). No code change; new strict-singles test
   + block floors {I:3, CMS:4, MS:6}. Density is tops-first's dose
   question, not a rendering one.
+
+## 35 — complexes step 6 VERIFIED (no recalibration needed)
+- Annuals intact: 4986/4986/6712/6712/8438 -> 13k/13k/17.5k/17.5k/22k.
+  Table-11 classic shares within 1pt of synthesis baseline on every
+  cell (III 50/43/68, I 44/40/57, MS 40/37/42 vs Roman 50/44/68,
+  45/40/58, 40/38/46; MS-Jerk outlier pre-exists). Shipped changes
+  conserve group totals by construction, so selection needs no
+  retune. Pins current, outputs regenerated. Complexes track done
+  pending tops-first (solo heavies, share, marathons, density).
