@@ -441,3 +441,20 @@ One entry per round. Never edit an old entry.
   starvation, L-day counts, wave steepening, most close_* repairs.
   Near-term: graded comp cut, III/II annual split, Other-Squat dose,
   low-class prep 90s.
+
+## 29 — complexes fleet: 5 reviewers, no code change (2026-10-31)
+- fleet: inventory (ours vs Takano JSONs), Roman doctrine, Takano
+  practice, code-path lifecycle, ratio audit. Findings in
+  research/reviews/complexes-*.md + complexes-SYNTHESIS.md.
+- verdict: complexes are our volume engine (MS 45%, [2,3] triples,
+  7-18 sets, open sessions) vs Takano's competition test ([2,1]→[1,1],
+  5-7 sets, mid-session) with variant quarantine at 60-70; Roman
+  stricter still (full C&J 7-10d, pulls never fused, combos ≤80%).
+- worst agreed violations: variant complexes at 90+ (MS 79+55 sets),
+  inverted pull ratios ([2,3] vs fixed [3,1]), missing OthSn+OthSq /
+  OthSn+Press staples, no flat-90 peak blocks.
+- DELIBERATELY UNCHANGED: ratios couple to totals (member lifts =
+  ratio x ref-units; a ratio patch uncalibrates annuals); 4 of 5
+  ratio cells are book-conflicts; ceilings strand fitted 90-pull-mass
+  with no solo host; set caps need L-day spill slots. The 5 exact
+  cell changes are banked as tops-first calibration data.
