@@ -64,3 +64,22 @@ the default for big doses, not the fallback).
    symmetry over-programs assistance at the top).
 4. Keep every pin green: contiguity, quarantine, (1,1)-cap, dose
    gate, flat singles, Table-11 within 1pt.
+
+## Tops-first slice 1 (uniform refit + slot 5): tried, reverted 2026-11-01
+
+- Uniform refit (paired cells frozen, every other cell moves) IS
+  feasible: as-fit hosting seeds the support search (without it the
+  flow cannot route around frozen cells); margin-exactness needs the
+  absorber back (rows fixed at work sums, ballast steps the drift;
+  negatives vanish by construction). The need_slots blocker needed
+  a self-exclusion (it was written ballast-only). BALLAST stays:
+  the margin math needs a designated absorber.
+- Slot 5 builds with the uniform refit (deadlock solved) but is
+  net-negative: fusion +184/+206 at I/CMS, solo SnPull 34->0,
+  share +6pp; marathons halve (26->11, 36->9, 43->20). Mechanism:
+  capacity feeds co-hosting feeds pairing (cover prefers pairs).
+  Solo needs SEPARATION, not capacity.
+- Sharpened handoff: tops-first must decide HOSTING (who trains
+  which day) before volumes pack; the dose gate then unpairs big
+  doses into the separated room. Separation + gate is the room
+  formula. Reverted both; dose-gate baseline (2.49) intact.

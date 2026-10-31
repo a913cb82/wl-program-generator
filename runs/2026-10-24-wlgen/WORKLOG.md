@@ -548,3 +548,14 @@ One entry per round. Never edit an old entry.
 - Remaining violations all reduce to room: MS fusion, MS marathons,
   block density need solo/L-day capacity (tops-first). Nothing left
   that a small config change can fix. Capacity track done.
+
+## 38 — tops-first slice 1 tried and reverted (uniform refit + slot 5)
+- Uniform refit feasible via as-fit seeding + work-sum fixed rows +
+  restored ballast absorber (margin-exact; self-exclusion fix for
+  need_slots; BALLAST stays, margin math needs it). Alone: book
+  2.49->2.50, room flat (freedom without slots just reshuffles).
+- Slot 5 (+ uniform refit) builds MS (deadlock solved) but loses:
+  fusion +184/+206, solo 34->0, share +6pp; marathons halve.
+  Capacity feeds pairing. Solo needs separation, not capacity.
+- Handoff sharpened: hosting (separation) first, gate second.
+  Reverted both; baseline intact, 211 green, outputs byte-identical.
