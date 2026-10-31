@@ -237,3 +237,22 @@ One entry per round. Never edit an old entry.
   mid-audit fixture churn is survivable when agents capture evidence early
 - next: upstream source recovery (dropped MS W7, mis-attached W9, 52 max
   lines); Narrow Squat openers; fill 2 I meso holes
+
+## 24 — Upstream source recovery: all five loss classes fixed (2026-10-30)
+- verdict: keep (183 green; 6 fixtures reconverted; tally audit clean)
+- what changed: rewrote the PDF-dump parser (runs/2026-10-24-wlgen/takano_parse.py):
+  tolerant week/day headers (parens, reps, missing dashes, bare rest days
+  with continuity + lookahead guards against volume-table prose), week-9
+  split for Class II, wrap-continuation joining, slashless max lines kept,
+  Sunday/rest empties skipped; converter: max-attempt reading, triple map
+  entries, unclosed-paren + max03 handling
+- what learned: max-N are attempt labels not counts, proved by tallies
+  (Snatch 15 = 6 work-up + 9, C&J 30 = 12 + 18; work-up singles unknowable,
+  counted 0); recovered MS W7 is tally-exact (ours == tally sums, day plans
+  stale: 380 vs 395); full tally audit over 1530 lines: 10 overs all
+  source-side (7 tally typos on unambiguous text, 1 Good-Morning tally
+  convention, 2 repeat-count disagreements, text followed throughout);
+  recovered-week B/C chains hold except source typos; triples fully counted
+  (pair legs + single, pair stays outside our pair table by design);
+  CJ/Snatch grids are deliberately coarse 10-point bins (85 floors to 80)
+- next: Narrow Squat openers; fill 2 I meso holes; table-driven volume work

@@ -72,11 +72,19 @@ EXERCISE_MAP = {
         "triple",
         ("Other Clean", "Other Squat", "Jerk"),
     ),
+    "Power Clean & Front Squat & Power Jerk": (
+        "triple",
+        ("Other Clean", "Other Squat", "Other Jerk"),
+    ),
     "Power Clean & Jerk": ("pair", ("Other Clean", "Jerk")),
     "Power Clean & Power Jerk": ("pair", ("Other Clean", "Other Jerk")),
     "Power Jerk": ("single", ("Other Jerk",)),
     "Power Snatch": ("single", ("Other Snatch",)),
     "Power Snatch & Behind the Neck Push Press": ("pair", ("Other Snatch", "Press")),
+    "Power Snatch & Behind the Neck Push Press & Overhead Squat": (
+        "triple",
+        ("Other Snatch", "Press", "Other Squat"),
+    ),
     "Power Snatch & Overhead Squat": ("pair", ("Other Snatch", "Other Squat")),
     "Press": ("single", ("Press",)),
     "Push Press": ("single", ("Press",)),
@@ -210,12 +218,17 @@ def parse_scheme(body, complex) -> list[tuple[object, object]]:
     unbalanced parens from the PDF parse repair by balancing; max work
     becomes singles at 90."""
     sets: list[tuple[object, object]] = []
-    for m in re.finditer(r"\bmax-(\d+)\b", body):
-        sets.extend([(90, 1)] * int(m.group(1)))
     bare_max = bool(re.search(r"(?<!-)max(?![-\w])", body))
     text = re.sub(r"\bsingles to max\.?", "", body)
-    text = re.sub(r"(?<!-)max(?![-\w])", "", text)
-    text = re.sub(r"\bmax-\d+\b", "", text)
+    saved: list[str] = []
+
+    def _save(m: re.Match) -> str:
+        saved.append(m.group(0))
+        return "\x00%d\x00" % (len(saved) - 1)
+
+    tmp = re.sub(r"\([^()]*\)?", _save, text)
+    tmp = re.sub(r"\bmax-?\d+\b", "max", tmp)
+    text = re.sub(r"\x00(\d+)\x00", lambda m: saved[int(m.group(1))], tmp)
     text = _TALLY_RE.sub("", text)
     text, n1 = re.subn(r"(\d+)%(\d+)", r"\1%/\2", text)
     text, n2 = re.subn(r"(\d+)%/,(\d+)", r"\1%/\2", text)
@@ -231,6 +244,9 @@ def parse_scheme(body, complex) -> list[tuple[object, object]]:
     for chunk in chunks:
         chunk = chunk.strip()
         if not chunk:
+            continue
+        if chunk == "max":
+            sets.append((90, 1))
             continue
         if _depth(chunk) > 0:
             LOG.append(f"unbalanced parens stripped: {chunk!r} in {body!r}")
@@ -411,6 +427,8 @@ def build_program(weeks):
     for wk, w in enumerate(weeks):
         used = set()
         for day in w["days"]:
+            if not day["ex"]:
+                continue
             d = WEEKDAYS.get(day.get("weekday"), None)
             if d is None or d in used:
                 free = [i for i in range(6) if i not in used]
