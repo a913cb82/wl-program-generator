@@ -334,3 +334,22 @@ One entry per round. Never edit an old entry.
 - soft redistribution (total 177->116): CMS/MS down a lot, II/I up;
   thin low-class bases narrow openers. Minor drift term, accepted.
 - next: item 3 (Roman Table 1 as rep law)
+
+## 27b — Roman catch-up, item 3: Table 1 rep caps (2026-10-31)
+- verdict: Table 1 NOT adopted as generator law (evidence-backed refusal)
+- what measured: Takano violates Table 1 at every level (70/3-4: 46-52% of
+  classic sets; 80/2-4: 55-89%; squat 80/3-4 routine; pull 90/5s, 100/4s),
+  and Roman's own text is looser than his table (pulls 2-6, squats 2-6).
+  Table 1 is technique guidance (singles for precision at 85-95%, p40),
+  not volume law. Our ladders sit between Table 1 and Takano (midpoint):
+  caps flag only his tails (correct per our law), rendering centers on
+  his modes (classics within 1 rep everywhere).
+- new test pins rendered set-size modes per family/zone (solo slots) plus
+  the Takano cross-check; complexes excluded (pair sides follow ratios).
+- observations banked, not chased: light-zone feeler singles (221 at
+  squat-70; size term prices them); Fund-80 renders 2s vs books' 3+
+  (thin per-session doses from flat zone spread -> item 4/5 concentration
+  work, not ladder work); Press/Fundamental ladder split needed for full
+  bend-over fidelity (rejected: ~15 lines across the beam path + cache keys
+  for audit cosmetics and zero shipped-score change; on IDEAS list).
+- next: item 4 (S/M/L + Table 13 week vocabulary)

@@ -41,6 +41,7 @@ from wlgen import (
     fit,
     fit_session,
     ipf,
+    ir_with_slots,
     ladder,
     macro_days,
     map_zone_index,
@@ -70,6 +71,7 @@ from wlgen import (
     write_outputs,
     zone_alloc,
 )
+from wlir import to_ir
 
 ANNUALS = {"III": 13000, "II": 13000, "I": 17500, "CMS": 17500, "MS": 22000}
 
@@ -2044,3 +2046,80 @@ def test_intensity_grades_with_level_like_takano():
         assert his[lo] < his[hi], (lo, hi, his)
     assert means["MS"] - means["III"] >= 5, means  # Takano spread is 6.3
     assert his["MS"] - his["III"] >= 0.12, his  # Takano spread is 19pp
+
+
+def _rendered_modes():
+    # Work-set size mode per family and zone over all built plans (solo
+    # slots only; complexes pair sides by ratio, not by set-size habit).
+    from collections import Counter
+
+    from wlconfig import BIN_GROUP
+
+    counts: dict = {}
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        ir = to_ir(ir_with_slots(build_plan(cls)))
+        for s in ir["sessions"]:
+            for slot in s["slots"]:
+                g = slot["movement"]
+                if "+" in g:
+                    continue
+                for z, r in slot["seq"]:
+                    counts.setdefault((BIN_GROUP[g], z), Counter())[r] += 1
+    modes = {}
+    for (fam, z), c in counts.items():
+        modes[(fam, z)] = max(c, key=lambda r: (c[r], -r))
+    return modes
+
+
+def test_rendered_set_sizes_match_takano_centers():
+    # Roman Table 1 (1-2 reps at 70-79.9%, singles at 80%+ for classics)
+    # is technique guidance, not volume law: Takano programs 70/3-4 and
+    # 80/2-4 at every level, and Roman's own text allows 2-6 (pulls) and
+    # 2-6 (squats 45-85%). Our ladders sit between the two, and rendering
+    # centers on Takano's modes (within one rep) for the classic lifts.
+    modes = _rendered_modes()
+    takano_modes = {
+        ("Snatch", 60): 2,
+        ("Snatch", 70): 2,
+        ("Snatch", 80): 2,
+        ("Snatch", 90): 1,
+        ("CJ", 60): 3,
+        ("CJ", 70): 3,
+        ("CJ", 80): 3,
+        ("CJ", 90): 1,
+    }
+    for key, tm in takano_modes.items():
+        assert abs(modes[key] - tm) <= 1, (key, modes[key], tm)
+    # Pinned rendering profile: light-zone singles are feelers before work
+    # sets (the size term prices them); Fund-80 renders 2s from thin
+    # per-session doses, against both books' 3+ (concentration work, not
+    # ladder work, moves this). Changes here must move the pins deliberately.
+    assert modes == {
+        ("Snatch", 60): 3,
+        ("Snatch", 70): 2,
+        ("Snatch", 80): 2,
+        ("Snatch", 90): 1,
+        ("Snatch", 100): 1,
+        ("CJ", 60): 3,
+        ("CJ", 70): 3,
+        ("CJ", 80): 2,
+        ("CJ", 90): 1,
+        ("CJ", 100): 1,
+        ("Squat", 50): 1,
+        ("Squat", 60): 1,
+        ("Squat", 70): 1,
+        ("Squat", 80): 2,
+        ("Squat", 90): 2,
+        ("ClPull", 70): 1,
+        ("ClPull", 80): 3,
+        ("ClPull", 90): 2,
+        ("ClPull", 100): 1,
+        ("ClPull", 110): 1,
+        ("Fund", 50): 1,
+        ("Fund", 60): 1,
+        ("Fund", 70): 1,
+        ("Fund", 80): 2,
+        ("Fund", 90): 1,
+        ("Fund", 100): 1,
+        ("Fund", 110): 1,
+    }, {k: v for k, v in modes.items() if v != 1 or k[1] >= 90}
