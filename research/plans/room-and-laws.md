@@ -83,3 +83,17 @@ the default for big doses, not the fallback).
   which day) before volumes pack; the dose gate then unpairs big
   doses into the separated room. Separation + gate is the room
   formula. Reverted both; dose-gate baseline (2.49) intact.
+
+## Tops-first slice 2 (feedback ban): tried, reverted 2026-11-01
+- Pass-2 bans heavy paired tech from co-hosting and refits once
+  (exact feedback doses, evict to roomy days, fallback-safe).
+  Fires only where fallbacks exist (never III/II); wins 18/23.
+- Room effect large: I fusion 897->638, solo SnPull 34->147 lifts
+  incl 90s; CMS 895->741, 34->89; MS 1666->1472. Separation works.
+- Reverted: set-size modes drift off Takano centers (fidelity, not
+  staleness), rhythm +0.17, instr +72, +11% CPU for +0.027 book.
+  Quality net-zero; pace tips it. The book cannot price room (no
+  fusion/share/solo terms, weights frozen), so room patches always
+  look neutral-negative: room belongs in tops-first proper, where
+  separation is structural (day counts, zone-aware splits) and set
+  sizes are designed, not evicted.

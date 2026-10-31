@@ -559,3 +559,12 @@ One entry per round. Never edit an old entry.
   Capacity feeds pairing. Solo needs separation, not capacity.
 - Handoff sharpened: hosting (separation) first, gate second.
   Reverted both; baseline intact, 211 green, outputs byte-identical.
+
+## 39 — tops-first slice 2 tried and reverted (feedback ban)
+- Banned-support threading + one feedback refit per fallback week:
+  18/23 wins, never fires III/II. I/CMS/MS fusion -259/-154/-194,
+  solo SnPull 4x/2.6x with 90s. Separation confirmed as the room
+  formula (evict to roomy days beats adding slots).
+- Reverted: modes off Takano centers, rhythm +0.17, +11% CPU,
+  book +0.027. Quality-neutral, pace-negative; unpriced objective
+  cannot pass a priced gate — tops-first must be structural.
