@@ -568,3 +568,12 @@ One entry per round. Never edit an old entry.
 - Reverted: modes off Takano centers, rhythm +0.17, +11% CPU,
   book +0.027. Quality-neutral, pace-negative; unpriced objective
   cannot pass a priced gate — tops-first must be structural.
+
+## 40 — tops-first slice 3 no-op and reverted (quota day-dose)
+- separate_big_days quota post-pass: unit green, 212 green, book
+  and room identical to baseline. Proportional estimates cannot
+  see concentration. Reverted.
+- Three slices close patches (capacity feeds pairing; feedback
+  costs a pass + fidelity; prediction is information-starved).
+  Spec banked in research/plans/tops-first-allocator.md: decide
+  hosting dose-aware in one pass, then fit volumes to the decision.

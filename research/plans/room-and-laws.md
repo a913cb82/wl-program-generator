@@ -97,3 +97,14 @@ the default for big doses, not the fallback).
   look neutral-negative: room belongs in tops-first proper, where
   separation is structural (day counts, zone-aware splits) and set
   sizes are designed, not evicted.
+
+## Tops-first slice 3 (quota day-dose separation): no-op, reverted 2026-11-01
+- Quota post-pass drops big-estimate days from the smaller member.
+  Unit-pinned, 212 green, book +0.007, room byte-identical.
+- Proportional day-dose dilutes (spreads weekly over all days);
+  bigs come from concentration (whole weekly on 1-2 days). Fires
+  only at MS extremes. Pre-fit prediction is information-starved:
+  weeklies, overlap, and proportional estimates all fail (252-case
+  analysis). Reverted as churn.
+- Closes patches: stop predicting concentration, DECIDE hosting.
+  See research/plans/tops-first-allocator.md.
