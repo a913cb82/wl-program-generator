@@ -39,6 +39,7 @@ from wlconfig import (
     MACRO,
     MIN_DOSE,
     PAIR_BY_SET,
+    PAIR_DOSE_CAP,
     PAIR_REF,
     PAIR_ROLE,
     PAIR_SET,
@@ -1251,14 +1252,11 @@ def cover_session(hosted):
     Listed pairs share their complex slot (preferred, so complexes render),
     the rest take distinct single slots. Groups volume-first, pairs before
     singles, both in sorted order: deterministic."""
-    hosted = sorted(hosted, key=lambda g: (-hosted[g], g))
-    names = list(hosted)
+    vols = hosted
+    names = sorted(vols, key=lambda g: (-vols[g], g))
 
-    def rec(names, used, pairs):
-        if not names:
-            return list(pairs)
-        g = names[0]
-        rest = names[1:]
+    def pair_opts(g, rest, used):
+        out = []
         for k, h in enumerate(rest):
             key = frozenset((g, h))
             if key not in PAIR_SET:
@@ -1266,9 +1264,35 @@ def cover_session(hosted):
             for si in sorted(COMPLEX_SLOTS.get(key, ())):
                 if si not in used:
                     a, b = PAIR_BY_SET[key]
-                    out = rec(rest[:k] + rest[k + 1 :], used | {si}, pairs + [(a, b)])
+                    out.append((k, h, si, a, b))
+        return out
+
+    def rec(names, used, pairs):
+        if not names:
+            return list(pairs)
+        g = names[0]
+        rest = names[1:]
+        opts = pair_opts(g, rest, used)
+        # Heavy tech pairs train solo when they can (both books keep
+        # heavy complexes small): try the single slots first, pairing
+        # only as fallback. Test pairs and small doses pair as before.
+        # Reordering attempts never strands a session: every solo-first
+        # failure falls through to the same pairing search as before.
+        big = any(
+            vols[g] + vols[h] > PAIR_DOSE_CAP
+            and PAIR_ROLE.get((a, b), PAIR_ROLE.get((b, a))) == "tech"
+            for _, h, _, a, b in opts
+        )
+        if big:
+            for si in sorted(SINGLE_SLOTS.get(g, ())):
+                if si not in used:
+                    out = rec(rest, used | {si}, pairs)
                     if out is not None:
                         return out
+        for k, h, si, a, b in opts:
+            out = rec(rest[:k] + rest[k + 1 :], used | {si}, pairs + [(a, b)])
+            if out is not None:
+                return out
         for si in sorted(SINGLE_SLOTS.get(g, ())):
             if si not in used:
                 out = rec(rest, used | {si}, pairs)

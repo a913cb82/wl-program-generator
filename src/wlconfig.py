@@ -264,6 +264,11 @@ def slot_singles(slot):
 # not): variant-variant pairs stay out until hosting is redesigned.
 # Tests pin the disjointness invariant.
 BALLAST = ("Squat", "Other Squat", "Press", "Fundamental")
+# Heavy tech pairs train solo when they can (both books keep heavy
+# complexes small; Takano's complex slots top out near 40 lifts): above
+# this combined dose a tech pair tries single slots first, pairing only
+# as fallback. Test pairs (the C+J backbone) always pair.
+PAIR_DOSE_CAP = 40
 # allowed A+X complexes: session volumes of both members must keep a legal
 # ratio (RATIOS) at every shared zone, widening only as weight drops.
 # Canonical display order is pull/classic first ("SnPull+Snatch").

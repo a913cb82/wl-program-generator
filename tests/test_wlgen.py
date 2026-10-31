@@ -1488,7 +1488,9 @@ def test_day_patterns_keep_canonical_first():
         ("II", "Comp 2", 3): "LML",
         ("I", "Prep 4-2", 0): "LMLM",
         ("I", "Prep 2-4", 0): "LMLM",
-        ("I", "Prep 2-4", 1): "MSLSMS",
+        ("I", "Prep 2-4", 1): "SMSMSM",  # dose gate: three medium days
+        # split big tech pairs better than one L-day hogging the dose;
+        # peak-less alternation is a legit rhythm (contrast without peak)
         ("I", "Prep 2-4", 2): "LMLM",
         ("I", "Prep 3-1", 1): "LMLM",
         ("I", "Comp 1", 2): "LMLM",
@@ -1497,7 +1499,7 @@ def test_day_patterns_keep_canonical_first():
         ("I", "Comp 2", 2): "LMLM",
         ("CMS", "Prep 4-2", 0): "LMLM",
         ("CMS", "Prep 2-4", 0): "LMLM",
-        ("CMS", "Prep 2-4", 1): "MSLSMS",
+        ("CMS", "Prep 2-4", 1): "SMSMSM",  # same: splittable mediums
         ("CMS", "Prep 2-4", 2): "LMLM",
         ("CMS", "Prep 3-1", 1): "LMLM",
         ("CMS", "Comp 1", 2): "LMLM",
@@ -2124,6 +2126,12 @@ def test_rendered_set_sizes_match_takano_centers():
         ("ClPull", 80): 3,
         ("ClPull", 90): 2,
         ("ClPull", 100): 2,
+        # Solo SnPull renders table-max after the dose gate splits big
+        # pairs (Roman allows pulls 2-6 at 80-99%, Takano does 90x3 and
+        # 100x2-3 staples).
+        ("SnPull", 80): 4,
+        ("SnPull", 90): 4,
+        ("SnPull", 100): 3,
         ("Fund", 50): 1,
         ("Fund", 60): 1,
         ("Fund", 70): 1,
@@ -2384,3 +2392,24 @@ def test_peak_blocks_are_flat_singles():
                 if dose >= 6:
                     blocks += 1
         assert blocks >= floors[cls], (cls, blocks)
+
+
+def test_big_tech_pairs_try_solo_first():
+    # Both books keep heavy complexes small: a tech pair whose combined
+    # dose tops Takano's max complex slot trains its sides solo when the
+    # slots allow it, pairing only as fallback. Test pairs (the C+J
+    # backbone) always pair; small tech pairs keep pairing.
+    from wlgen import cover_session
+
+    assert cover_session({"SnPull": 25, "Snatch": 25, "Fundamental": 20}) == []
+    assert cover_session({"SnPull": 10, "Snatch": 10, "Fundamental": 20}) == [
+        ("SnPull", "Snatch")
+    ]
+    # No room (Squat holds slot 2): fallback pairs, never stranded.
+    assert cover_session(
+        {"SnPull": 25, "Snatch": 25, "Squat": 40, "Fundamental": 20}
+    ) == [("SnPull", "Snatch")]
+    # Test backbone unaffected by dose.
+    assert ("Clean", "Jerk") in cover_session(
+        {"Clean": 30, "Jerk": 30, "Squat": 40, "Fundamental": 20}
+    )

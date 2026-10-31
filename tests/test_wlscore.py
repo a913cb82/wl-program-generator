@@ -182,7 +182,7 @@ def test_shipped_scores_clean():
         # (2026-10-31): variant-fusion soft openers gone (I/CMS/MS down)
         assert (
             raw["soft"]
-            == {"III": 2.0, "II": 23.0, "I": 22.0, "CMS": 14.0, "MS": 24.0}[cls]
+            == {"III": 2.0, "II": 23.0, "I": 18.0, "CMS": 17.0, "MS": 24.0}[cls]
         ), cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
@@ -200,11 +200,11 @@ def test_book_numbers_match_research():
     # Dead pairs (2026-10-31): fusion gone, mass re-hosts solo/paired;
     # soft falls (fewer variant soft openers), one squat slot grows
     # 30->33 sets (marathon class pre-exists; pairing reshape lands here).
-    assert round(book["excess"], 1) == 188.6
+    assert round(book["excess"], 1) == 190.3
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9337
-    assert book["slots"] == 1428
+    assert book["instructions"] == 9421
+    assert book["slots"] == 1440
     assert book["longest"] == 33
 
 
