@@ -496,3 +496,13 @@ One entry per round. Never edit an old entry.
   option order. Clean-heavy L needs per-pair schedules (banked) or
   breaking selection shares. Cost > value on a contested cell;
   status quo [2,3] is Roman-compatible. Takano dissent stands.
+
+## 33 — complexes step 4 REVERTED (layering verdict)
+- Added OthSn+OthSq/OthSn+Press (tech, slot 0): rendered III/II-only
+  (22+6 slots, zero at I+ where selection gives them no dose) as
+  8-9-set [2,3] pistons, not Takano's few-big-sets. Worse: pairing
+  absorbers breaks snap/refit disjointness -> infeasible weeks at
+  III/II. BALLAST shrink restores feasibility but book 2.64->2.76.
+- Verdict: absorbers must not pair (invariant test stays); variant-
+  variant pairs need the tops-first hosting redesign. Reverted both
+  changes; suite 209 green, book back to 2.67, outputs regenerated.

@@ -5,6 +5,7 @@ import pytest
 
 import wlgen
 from wlconfig import (
+    BALLAST,
     BIN_CLASS,
     BIN_GROUP,
     BIN_ZONES,
@@ -156,6 +157,8 @@ def test_day_template():
         lo == MIN_DOSE and hi is None and optional for _, lo, hi, optional in DAY
     )
     assert len(expand(DAY)) == 5 * 9 * 4 * 3 * 2
+    # Absorbers never pair: a paired row is frozen, a refit row must move.
+    assert not (set(BALLAST) & PAIRED_GROUPS)
 
 
 def test_week_quota_respects_slot_and_cap():

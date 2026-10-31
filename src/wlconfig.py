@@ -259,6 +259,10 @@ def slot_singles(slot):
 
 
 # groups never in a complex (the refit only ever moves these)
+# Rows the pair refit may move to absorb snap drift. Absorbers must
+# never pair (a paired row is frozen when paired, fit normally when
+# not): variant-variant pairs stay out until hosting is redesigned.
+# Tests pin the disjointness invariant.
 BALLAST = ("Squat", "Other Squat", "Press", "Fundamental")
 # allowed A+X complexes: session volumes of both members must keep a legal
 # ratio (RATIOS) at every shared zone, widening only as weight drops.
