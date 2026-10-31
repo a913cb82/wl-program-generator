@@ -2123,3 +2123,26 @@ def test_rendered_set_sizes_match_takano_centers():
         ("Fund", 100): 1,
         ("Fund", 110): 1,
     }, {k: v for k, v in modes.items() if v != 1 or k[1] >= 90}
+
+
+def test_low_class_weeks_carry_at_most_two_large_days():
+    # Roman caps low-class lifters at two large (>100 lifts) workouts a
+    # week (p121); shock days drive the gain, the rest restore.
+    for cls in ("III", "II"):
+        for m in build_plan(cls)["mesos"]:
+            for w in m["weeks"]:
+                big = sum(
+                    1
+                    for s in w["sessions"]
+                    if sum(sum(v) for v in s["movements"].values()) > 100
+                )
+                assert big <= 2, (cls, m["name"], big)
+
+
+def test_meso_weeks_wave_like_table_13():
+    # Every mesocycle waves its weekly volume: Table 13's mildest variant
+    # still spans 1.8x peak to trough, so a flat meso is a planning miss.
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        for m in build_plan(cls)["mesos"]:
+            vols = [w["vol"] for w in m["weeks"]]
+            assert max(vols) / min(vols) >= 1.5, (cls, m["name"], vols)

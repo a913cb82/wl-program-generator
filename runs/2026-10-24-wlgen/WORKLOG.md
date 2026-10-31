@@ -353,3 +353,18 @@ One entry per round. Never edit an old entry.
   bend-over fidelity (rejected: ~15 lines across the beam path + cache keys
   for audit cosmetics and zero shipped-score change; on IDEAS list).
 - next: item 4 (S/M/L + Table 13 week vocabulary)
+
+## 27c — Roman catch-up, item 4: S/M/L week vocabulary (2026-10-31)
+- verdict: mostly already compliant -> pins, not machinery
+- what measured: S/M/L letters already distribute Roman-plausibly (low
+  classes ~1 L + S/M mix over 3.5 days/wk = Roman's 3-4 WL days; MS 5/wk);
+  low-class L-cap holds (0 weeks with 2+ L-days; Roman allows 2); meso
+  volume waves 2.0-2.5x peak-to-trough (Table 13 mildest is 1.8x); macro
+  names already encode concur/contrast (Prep 4-2: vol peaks w4, int w2).
+  New tests pin the L-cap (III/II) and the meso wave floor (1.5x).
+- quota experiment (WLGEN_QUOTA=0.75): hosting barely moves (Fund I
+  3.3->3.4 d/wk) because dose caps bind before the budget does; real
+  concentration needs per-group host-dose norms (new subsystem).
+- deferred with evidence: accessory dose concentration (Fund-80 renders
+  2s vs books' 3+; 548 sets). On IDEAS list: host-dose norms per group.
+- next: item 5 (meso high-intensity quotas)
