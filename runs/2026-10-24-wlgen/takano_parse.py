@@ -100,7 +100,7 @@ for i, l in enumerate(text):
                     continue
                 nxt = a
                 break
-            if nxt.lower() not in ('rest', 'competition') and not is_exercise(
+            if nxt.lower() not in ('rest', 'competition', 'day off') and not is_exercise(
                 nxt, True
             ):
                 LOG.append(f'bare day rejected (next is {nxt[:40]!r}): {l!r}')
