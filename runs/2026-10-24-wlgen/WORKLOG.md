@@ -577,3 +577,10 @@ One entry per round. Never edit an old entry.
   costs a pass + fidelity; prediction is information-starved).
   Spec banked in research/plans/tops-first-allocator.md: decide
   hosting dose-aware in one pass, then fit volumes to the decision.
+
+## 41 — day-share cap tried and reverted (value surgery)
+- `_split_dumps` exact cap-and-swap in fit_session: dirty exc -17.5
+  but +17% CPU + 6 pins + fusion; partial-clean exc -7.7, rhythm
+  -0.42, CPU +6%, 3 pins. Post-hoc surgery churns placements for
+  modest wins. Reverted; 211 green.
+- 4th negative banked: caps must be pre-fit allocator decisions.

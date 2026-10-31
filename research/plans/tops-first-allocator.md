@@ -37,3 +37,15 @@ fit volumes to the decided hosting (IPF on fixed support, as the
 refit already does with frozen cells). Quotas become the decision,
 not the suggestion. Open: exact cap-share rule, day-count control,
 fidelity guard for set sizes.
+
+## 4th negative: post-hoc value surgery (2026-11-01)
+- `_split_dumps` (cap-and-swap, exact margins, slot-checked, stall-gated):
+  exc -9% dirty / -4% partial-clean, rhythm -8%, solo retained, CPU
+  +17% dirty / +6% partial. Reverted.
+- Why: surgery churns placements (day-count flips, fusion +164 via
+  new co-location, 6 pins) for modest wins; strict-clean loses the
+  wins. Caps work, but must be DECIDED pre-fit, not repaired post-hoc.
+- Spec sharpened: the allocator emits capped day-doses (share <= 0.6,
+  Takano max 0.57) BEFORE fit; fit never creates a dump. Gentle
+  versions preserve fidelity (back-to-back/gradient held) — prefer
+  many-small-decisions over few-big-surgeries.
