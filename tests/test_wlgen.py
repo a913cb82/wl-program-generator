@@ -1620,6 +1620,15 @@ def _untapered_90(cls, mi, wi, g, total):
     return sum(n for n, z in zip(counts, zones) if z >= 90)
 
 
+def _meso_80(meso, g):
+    from wlconfig import BIN_GROUP, BIN_ZONES
+
+    zones = BIN_ZONES[BIN_GROUP[g]]
+    return sum(
+        sum(n for n, z in zip(w["bins"][g], zones) if z >= 80) for w in meso["weeks"]
+    )
+
+
 def _meso_90(meso, g):
     from wlconfig import BIN_GROUP, BIN_ZONES
 
@@ -1661,14 +1670,17 @@ def test_comp2_keeps_taper_slack():
         slack = sum(sum(d.values()) for d in taper_topup(cls, 4, week_groups))
         assert slack > 0
         tapered = _tapered_groups()
-        real = sum(_meso_90(meso, g) for g in tapered)
+        # Conservation is measured at 80+: tech pairs quarantine returns
+        # at 80 (their ceiling), test pairs and solos at 90. Placement
+        # is pinned separately (tech 90-absence, CJ 90-modes).
+        real = sum(_meso_80(meso, g) for g in tapered)
         orig = wlgen.taper_topup
         try:
             wlgen.taper_topup = lambda *a: [{g: 0 for g in GROUPS} for _ in range(4)]
             base = fresh(cls)["mesos"][-1]
         finally:
             wlgen.taper_topup = orig
-        plain = sum(_meso_90(base, g) for g in tapered)
+        plain = sum(_meso_80(base, g) for g in tapered)
         assert real - plain >= slack - 3
         for g in ("Snatch", "Clean"):
             final = meso["weeks"][3]["bins"][g]
@@ -2031,7 +2043,11 @@ def test_intensity_grades_with_level_like_takano():
         assert means[lo] < means[hi], (lo, hi, means)
         assert his[lo] < his[hi], (lo, hi, his)
     assert means["MS"] - means["III"] >= 5, means  # Takano spread is 6.3
-    assert his["MS"] - his["III"] >= 0.12, his  # Takano spread is 19pp
+    # Floor, not goal: Takano's true 90+ spread is 19pp, driven by solo
+    # heavy pulls + precomp density we have not built yet (tech quarantine
+    # removed MS's book-violating variant 90s; solo pull heavies are the
+    # ticketed next piece). The slope (monotone, 11pp+) is what ships.
+    assert his["MS"] - his["III"] >= 0.11, his
 
 
 def _rendered_modes():
@@ -2318,3 +2334,24 @@ def test_dead_pairs_never_render():
         for s in ir["sessions"]:
             for slot in s["slots"]:
                 assert slot["movement"] not in dead, (cls, s["meso"])
+
+
+def test_tech_complexes_never_train_heavy():
+    # Both books quarantine assistance complexes: Takano keeps variant
+    # and pull complexes at 80 and below (his 90+ blocks are Clean+Jerk
+    # [1,1]s); Roman caps all combos at 80% (p60-61). Only test pairs
+    # (Clean+Jerk, Other Clean+Jerk) may hold 90+.
+    from wlconfig import PAIR_ROLE
+
+    tech = {a + "+" + b for (a, b), r in PAIR_ROLE.items() if r == "tech"}
+    assert tech
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        ir = to_ir(ir_with_slots(build_plan(cls)))
+        for s in ir["sessions"]:
+            for slot in s["slots"]:
+                if slot["movement"] in tech:
+                    assert all(z < 90 for z, _ in slot["seq"]), (
+                        cls,
+                        s["meso"],
+                        slot["movement"],
+                    )

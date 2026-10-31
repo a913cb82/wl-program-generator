@@ -281,6 +281,19 @@ PAIR_REF = {
     ("Other Clean", "Jerk"): "Jerk",
     ("ClPull", "Clean"): "Clean",
 }
+# Complex roles: test pairs peak through 90+ tops; every other pair is
+# technique work capped at 80% (Takano quarantines variant and pull
+# complexes to 80 and below, peaking only through Clean+Jerk [1,1]
+# blocks; Roman caps all combos at 80%, p60-61). One CMS exception
+# (a dozen OthCl+OthJ 90-singles) is noise against both rules.
+PAIR_ROLE = {
+    ("SnPull", "Snatch"): "tech",
+    ("SnPull", "Other Snatch"): "tech",
+    ("Clean", "Jerk"): "test",
+    ("Other Clean", "Other Jerk"): "tech",
+    ("Other Clean", "Jerk"): "test",
+    ("ClPull", "Clean"): "tech",
+}
 PAIRED_GROUPS = {g for p in PAIRS for g in p}
 # allowed clean:jerk ratios when both are trained in one session
 RATIOS = ((1, 1), (2, 1), (3, 1), (3, 2), (1, 2), (1, 3), (2, 3))

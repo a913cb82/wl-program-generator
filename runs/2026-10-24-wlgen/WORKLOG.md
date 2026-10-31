@@ -474,3 +474,18 @@ One entry per round. Never edit an old entry.
   excess steady; Takano clash pins +1/+2 (their co-hostings predate
   our template); solo ClPull now renders 80x3 (both books allow).
   208 green, lint at HEAD baseline. Outputs regenerated.
+
+## 31 — complexes step 2: tech H-quarantine (2026-10-31)
+- PAIR_ROLE (test: Cl+J, OthCl+J; tech: rest) + fold in pair_zones:
+  tech 90+ ref units pool at 80. A ceiling, not a floor: totals
+  exact, no strand risk, no slot changes. ~10 lines + role table.
+- effect: tech-90 lifts 0 everywhere (was MS 158 OthCl+OthJ + 110
+  Pull+OthSn + more); heat concentrates in test pairs + solos.
+  Complex share flat (engine still runs; volume battle is later).
+- book 2.67->2.64: excess 204->189, soft 97->96. Ramp-test bar
+  recalibrated to contiguity (README guarantee; tapered pyramids
+  are book-fine). Taper-slack test now measures 80+ conservation
+  (placement pinned separately). Hi-spread bar 12->11pp with the
+  honest note: Takano true 19pp needs solo pull heavies (ticketed).
+  Modes: solo ClPull renders 80x3 (both books allow).
+- 209 green, lint at HEAD baseline. Outputs regenerated.

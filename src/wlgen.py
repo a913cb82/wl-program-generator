@@ -40,6 +40,7 @@ from wlconfig import (
     MIN_DOSE,
     PAIR_BY_SET,
     PAIR_REF,
+    PAIR_ROLE,
     PAIR_SET,
     PAIRED_GROUPS,
     PAIRS,
@@ -1587,6 +1588,23 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None, bw="middle"):
             )
             for z in range(len(counts)):
                 m[z][k] = col[z]
+        # Technique complexes never train heavy (both books quarantine
+        # assistance pairs at 80 and below): fold any 90+ ref units down
+        # to 80. A ceiling conserves totals and cannot strand units; the
+        # pooled heat concentrates in test pairs and solo slots instead.
+        for k, (j, a, b, _t, (_rh, _rm, _rl), _ref) in enumerate(items):
+            if PAIR_ROLE[(a, b)] != "tech":
+                continue
+            hi = sum(m[z][k] for z in range(len(counts)) if lo[z] >= 90)
+            if not hi:
+                continue
+            i80 = next(
+                i for i in range(len(counts)) if lo[i] == 80
+            )
+            for z in range(len(counts)):
+                if lo[z] >= 90:
+                    m[z][k] = 0
+            m[i80][k] += hi
         for k, (j, a, b, _t, (rh, rm, rl), ref) in enumerate(items):
             ratios = [
                 rh if lo[z] >= 90 else rm if lo[z] == 80 else rl
