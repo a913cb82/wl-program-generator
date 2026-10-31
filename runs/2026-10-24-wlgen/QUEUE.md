@@ -22,3 +22,11 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 | dropped | lean-3 (exc +10.6, pace worsened; small-base thesis wrong) |
 | dropped | lean-2 (exc +10.5, pace worsened; symmetric) |
 | trying | shapediff (recon: diff demand vs template winner shapes) |
+
+## Round exc-size-2 (2026-11-01, loop research/exc-size-2, base 8940c00)
+- [trying] A-unpair-heavy: thin/unpair heavy co-hosted tech (P1 57% exc) in cover/pair_fit, no eviction. Owner: /tmp/wt-a.
+- [trying] B-thin-slots: cap zones/slot + split deep doses in zone_alloc/render/quotas (105 WIDE + 25 DEEP). Owner: /tmp/wt-b.
+- [trying] C-unsmear-taper: heavy-favoring taper rehome or delete taper chain (P3 18% + -110 lines). Owner: /tmp/wt-c.
+- [dropped] A-unpair-heavy: exc -9.1 (MS-only) but ob_micro 0->16 + soft +4; every class score flat-or-worse, book 2.520->2.629. Fails exam gate (drift regressed). Corollary: paired-dose removal IS the exc win; bands price it. No revision (zero-sum without eviction).
+- [done] B-thin-slots: KEPT. Render-only marathon split (same-day second slot, exact volumes). longest 33->24, marathons 130->44, exc exact 190.3, rhythm identical, CPU flat/down, suite 213 green. Follow-ups: strip second-half re-ramp feelers (ClPull-80 mode 3->1 vs Takano 4); recursive split for residual 40-lift upper chunks (MS 20); zone-width cap needs allocator (out of scope).
+- [idea] D-flatten-80: below-MS excess P2 (solo Squat-80 piles via PHASE_PEAK prep 2.0). Untried lever after A/C ruled out.

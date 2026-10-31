@@ -584,3 +584,16 @@ One entry per round. Never edit an old entry.
   -0.42, CPU +6%, 3 pins. Post-hoc surgery churns placements for
   modest wins. Reverted; 211 green.
 - 4th negative banked: caps must be pre-fit allocator decisions.
+
+## 42 — exc-size-2 round: B kept (thin slots), A dropped, C negative
+- 3 parallel tracks, detached worktrees, 45-min budgets. A (unpair-heavy):
+  exc -9.1 MS-only but ob_micro 0->16 + soft +4, every class score
+  flat-or-worse. Dropped (drift regressed; zero-sum without eviction).
+- B (thin-slots): render-only marathon split, longest 33->24,
+  marathons 130->44, exc/rhythm/soft/fusion/solo bit-identical, CPU
+  flat/down, 213 green. Kept on loop branch. ClPull-80 mode 3->1 vs
+  Takano 4 (second-half re-ramp feelers multiply; follow-up ticketed).
+- C (unsmear-taper): P3 falsified, reverted zero-diff, notes banked.
+- Ops lesson: scratch scripts must never contain git commands (a
+  heredoc `git stash -q` stashed the loop tree mid-exam; recovered via
+  `git stash pop`, verified via gate).

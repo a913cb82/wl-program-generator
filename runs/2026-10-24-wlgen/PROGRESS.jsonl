@@ -7,3 +7,4 @@
 {"date": "2026-10-26", "id": "main@wavescore", "score": 5.37, "exc": 153.4, "champion": "main@wavescore", "budget": "audit+pytest147+wavescore", "verdict": "keep", "note": "intensity wave floor, scorer only"}
 {"date": "2026-10-26", "id": "main@eventweeks", "score": 5.58, "exc": 153.4, "champion": "main@eventweeks", "budget": "audit+pytest152+eventweeks", "verdict": "keep", "note": "rest as gaps; per-session floor; rest-before-heavy median"}
 {"date": "2026-10-26", "id": "main@taperhome", "score": 5.58, "exc": 160.9, "champion": "main@taperhome", "budget": "audit+pytest157+taperhome", "verdict": "keep", "note": "taper slack in-meso; peak 0.8"}
+{"date":"2026-11-01","id":"src/thin-slots-513e88c","score":2.439,"budget":"pytest+audit","champion":"src/thin-slots-513e88c","note":"exc exact 190.3; longest 33->24; mar 130->44; rhythm identical; CPU flat; suite 213"}
