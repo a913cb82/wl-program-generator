@@ -446,13 +446,41 @@ def test_scheme_entries_example():
         },
     }
     entries = scheme_entries(s)
+    # The Snatch cell renders 15 sets, past the marathon line, so it
+    # overflows into a second slot the same day (Takano tops out at 10).
     assert [m for m, _ in entries] == [
+        "Snatch",
         "Snatch",
         "Other Clean+Other Jerk",
         "Squat",
         "Other Squat",
     ]
     assert all(seq for _, seq in entries)
+
+
+def test_split_marathon_balances_and_guards_min_dose():
+    # Most balanced legal boundary wins; chunks stay contiguous bands.
+    lo, hi = wlgen.split_marathon((1, 15, 18, 34, 10))
+    assert lo == (1, 15, 18, 0, 0)
+    assert hi == (0, 0, 0, 34, 10)
+    # No boundary keeps both chunks legal: ramp dribs cannot split off.
+    assert wlgen.split_marathon((1, 1, 1, 30, 0)) is None
+    # Two zones never split, however deep.
+    assert wlgen.split_marathon((0, 0, 20, 20, 0)) is None
+
+
+def test_scheme_entries_splits_marathon_singles():
+    # A 33-set monster overflows into two same-day slots with the dose
+    # exact and neither half keeping marathon shape.
+    s = {"movements": {"Squat": [1, 15, 18, 34, 10]}}
+    entries = scheme_entries(s)
+    assert [m for m, _ in entries] == ["Squat", "Squat"]
+    seqs = [seq for _, seq in entries]
+    assert sum(sum(v for _, v in seq) for seq in seqs) == 1 + 15 + 18 + 34 + 10
+    assert all(len(seq) < 33 for seq in seqs)
+    # Narrow cells never split.
+    s = {"movements": {"Squat": [5, 10, 10, 10, 0]}}
+    assert [m for m, _ in scheme_entries(s)] == ["Squat"]
 
 
 def test_prune_doses_keeps_sessions_matchable():
@@ -2107,6 +2135,14 @@ def test_rendered_set_sizes_match_takano_centers():
     # (his CMS ClPull runs [100,2]x3) against Roman's pull singles.
     # Solo ClPull renders 80x3 after the dead-pair removal (ClPull dose
     # goes solo): Roman allows pulls 2-6 at 80-99%, Takano does 3s/4s.
+    # Squat 70 renders 2s after the marathon split (Takano's mode is 3:
+    # the old 1-mode was ramp-feeler noise, the new 2 sits one rep under
+    # his center). Squat 80 renders 4s: the old 2-mode was carried by
+    # seventeen-identical-double marathons, and the same dose now fills
+    # at ladder-max inside two thin slots. ClPull 80 renders 1s: its old
+    # 3-mode lived inside 15-17-set marathons (past Takano's max-10
+    # shape), and the remainder is feeler-singles noise across many thin
+    # slots while the bulk still goes in 3s/4s.
     # Changes here must move the pins deliberately.
     assert modes == {
         ("Snatch", 60): 3,
@@ -2119,11 +2155,11 @@ def test_rendered_set_sizes_match_takano_centers():
         ("CJ", 90): 1,
         ("Squat", 50): 1,
         ("Squat", 60): 1,
-        ("Squat", 70): 1,
-        ("Squat", 80): 2,
+        ("Squat", 70): 2,
+        ("Squat", 80): 4,
         ("Squat", 90): 2,
         ("ClPull", 70): 1,
-        ("ClPull", 80): 3,
+        ("ClPull", 80): 1,
         ("ClPull", 90): 2,
         ("ClPull", 100): 2,
         # Solo SnPull renders table-max after the dose gate splits big

@@ -2908,12 +2908,48 @@ def best_pair_scheme(
     return order, compact_text(order)
 
 
+# A slot that renders this many sets or more is a marathon: it overflows
+# into a second slot the same day. Takano's slots top out at 10 sets
+# (med 4-5); 14 is the book's own marathon line, so anything past it is
+# past both books and is split where it is built.
+MARATHON_SETS = 14
+
+
+def split_marathon(counts):
+    """Zone boundary splitting a marathon count vector into two legal
+    chunks. The most balanced boundary whose chunks both hold >= MIN_DOSE
+    wins, so neither half keeps marathon shape; chunks are contiguous
+    bands and sum back to the vector exactly. None when the vector spans
+    fewer than three zones or no boundary keeps both chunks legal."""
+    counts = tuple(counts)
+    zones = [z for z, n in enumerate(counts) if n]
+    if len(zones) < 3:
+        return None
+    pick = None
+    for i in range(zones[0], zones[-1]):
+        lo = sum(counts[: i + 1])
+        hi = sum(counts[i + 1 :])
+        if lo < MIN_DOSE or hi < MIN_DOSE:
+            continue
+        if pick is None or abs(lo - hi) < abs(pick[0] - pick[1]):
+            pick = (lo, hi, i)
+    if pick is None:
+        return None
+    _, _, i = pick
+    return (
+        counts[: i + 1] + (0,) * (len(counts) - i - 1),
+        (0,) * (i + 1) + counts[i + 1 :],
+    )
+
+
 def scheme_entries(s):
     """One (movement, atom seq) per slot, DAY-slot ordered.
 
     Stored pairs (from planning) render jointly from their reference-zone
     vectors; sessions built by hand fall back to auto-detecting same-zone
-    pairs with aligned support."""
+    pairs with aligned support. A single that renders a marathon overflows
+    into a second slot the same day: same movement, contiguous zone bands,
+    exact volumes."""
     stored = dict(s.get("pairs", {}))
     used: set = {g for p in stored for g in p}
     detected: dict = {}
@@ -2949,8 +2985,16 @@ def scheme_entries(s):
             text = f"{a}+{b}"
         else:
             slots = SINGLE_SLOTS.get(g, ())
-            seq = best_scheme(tuple(counts), BIN_GROUP[g])[0]
             text = g
+            seq = best_scheme(tuple(counts), BIN_GROUP[g])[0]
+            parts = split_marathon(counts) if len(seq) >= MARATHON_SETS else None
+            if parts is not None:
+                key = sorted(slots)[0] if slots else len(DAY)
+                for part in parts:
+                    entries.append(
+                        (key, order, text, best_scheme(part, BIN_GROUP[g])[0])
+                    )
+                continue
         entries.append((sorted(slots)[0] if slots else len(DAY), order, text, seq))
     entries.sort(key=lambda entry: (entry[0], entry[1]))
     return [(text, seq) for _, _, text, seq in entries]

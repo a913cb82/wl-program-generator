@@ -200,12 +200,17 @@ def test_book_numbers_match_research():
     # Dead pairs (2026-10-31): fusion gone, mass re-hosts solo/paired;
     # soft falls (fewer variant soft openers), one squat slot grows
     # 30->33 sets (marathon class pre-exists; pairing reshape lands here).
+    # Thin slots (2026-10-31): marathon singles overflow into a second
+    # slot the same day, where slots are built. Excess is exact (the
+    # movements matrix is untouched); instructions fall (each half
+    # compresses cleanly); slots rise (one cell, two slots); longest
+    # falls 33->24 (residual: a 24-set tech pair, pairs never split).
     assert round(book["excess"], 1) == 190.3
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9421
-    assert book["slots"] == 1440
-    assert book["longest"] == 33
+    assert book["instructions"] == 9409
+    assert book["slots"] == 1537
+    assert book["longest"] == 24
 
 
 def test_score_detects_gap():
