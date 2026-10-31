@@ -2123,6 +2123,13 @@ def pair_fill(a, b, zlo, a_group="Clean", b_group="Jerk"):
     cap_a = max(REPS[BIN_GROUP[a_group]][za])
     cap_b = max(REPS[BIN_GROUP[b_group]][zb])
     kmax = max(1, min(cap_a // p, cap_b // q))
+    role = PAIR_ROLE.get((a_group, b_group), PAIR_ROLE.get((b_group, a_group)))
+    if (p, q) == (1, 1) and role == "test":
+        # Symmetric triples are variant work (Takano programs them only
+        # in assistance pairs; Roman caps every combo at 1-2 per side):
+        # test pairs render (1,1) no bigger than doubles. [3,1]/[2,1]
+        # are untouched (their ratio already caps k at 1).
+        kmax = min(kmax, 2)
     return [(k * p, k * q) for k in fill(m, tuple(range(kmax, 0, -1)))]
 
 

@@ -384,8 +384,10 @@ def test_pair_fill_caps_complex_size():
     assert pair_fill(15, 5, 70) == [(3, 1)] * 5
     assert pair_fill(10, 5, 80) == [(2, 1)] * 5
     assert pair_fill(2, 2, 90) == [(1, 1)] * 2
-    assert pair_fill(12, 12, 70) == [(3, 3)] * 4
-    assert pair_fill(5, 5, 70) == [(3, 3), (2, 2)]
+    # Test pairs render (1,1) no bigger than doubles (both books cap
+    # combos at 1-2 per side); variant and pull pairs keep full size.
+    assert pair_fill(12, 12, 70) == [(2, 2)] * 6
+    assert pair_fill(5, 5, 70) == [(2, 2), (2, 2), (1, 1)]
     assert pair_fill(5, 5, 80) == [(2, 2), (2, 2), (1, 1)]
     # mixed pair: each side capped by its own table at its mapped zone.
     # 70% classic maps below the pull range, so the pull uses its 80% cap.
