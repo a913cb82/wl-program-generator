@@ -489,3 +489,10 @@ One entry per round. Never edit an old entry.
   honest note: Takano true 19pp needs solo pull heavies (ticketed).
   Modes: solo ClPull renders 80x3 (both books allow).
 - 209 green, lint at HEAD baseline. Outputs regenerated.
+
+## 32 — complexes step 3: L preference DROPPED after investigation
+- pair_options sorts by fit-distance to hosted (c,h) member totals;
+  the L schedule follows the data (jerk-heavy Table-11 shares), not
+  option order. Clean-heavy L needs per-pair schedules (banked) or
+  breaking selection shares. Cost > value on a contested cell;
+  status quo [2,3] is Roman-compatible. Takano dissent stands.
