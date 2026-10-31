@@ -597,3 +597,18 @@ One entry per round. Never edit an old entry.
 - Ops lesson: scratch scripts must never contain git commands (a
   heredoc `git stash -q` stashed the loop tree mid-exam; recovered via
   `git stash pop`, verified via gate).
+
+## 43 — exc-size-3 round (D kept, E negative, B2 kept, R4a kept)
+- D-flatten-80: SQUAT_PREP_PEAK=-1.0, exc -2.5 broad, soft 84->52
+  (fewer heavy openers), ob/iv 0, modes/fusion/share exact. Kept.
+- E-quarantine-90: NEGATIVE. Perfect quarantine RAISES exc +7.3
+  (convex per-session penalty prices concentration); the 90+ smear is
+  load-balancing the ruler rewards. Pin kept, zero src diff.
+- B2-split-deep: recursion + set/pair splits + feeler folding;
+  longest 24->17, marathons 44->5, everything exact. Kept (with D
+  healing its Squat-70 2->1 back to Takano 2).
+- R4a-wide-split: peel-largest-cell fallback; marathons 5->0,
+  longest uniform 13, everything exact. Kept.
+- Size round closed: marathons 130->0, longest 33->13/13/13/13/13,
+  instr 9421->9599, slots 1440->1592. Exc 190.3->187.8 (-1.4%).
+  Remainder (exc -59 to Takano x1.1, II/CMS/III longest): allocator.

@@ -38,3 +38,4 @@ Live subset of IDEAS.md. Statuses: open, trying, done, dropped, parked.
 - [dropped] E-quarantine-90: NEGATIVE. Perfect quarantine RAISES exc +7.3 (convex per-session penalty); perfect spreading saves -1.4. 90+ mass is quota-forced. Pin kept (convexity test), zero src diff.
 - [done] D-flatten-80: KEPT. SQUAT_PREP_PEAK=-1.0 (squat-only prep counter-spread). exc -2.5 broad, soft 84->52 (fewer heavy openers), ob/iv 0, rhythm flat, CPU flat, modes/longest/fusion/share identical, 215 green.
 - [done] B2-split-deep: KEPT (with D interaction healing Squat-70 2->1 back to 2=Takano). longest 24->17, marathons 44->5, exc/rhythm/soft/fusion/share exact, CPU flat, 220 green. Residue: 5 wide no-boundary marathons + ClPull-80 mode 1 (structural, quotas) + zone width (allocator).
+- [done] R4a-wide-split: KEPT. Peel-largest-cell fallback kills all 5 residual marathons (marathons 5->0, longest 17/16/14->13 uniform). exc/rhythm/soft/fusion/share/modes exact, CPU flat, 221 green.
