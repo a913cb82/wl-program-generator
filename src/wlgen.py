@@ -2964,8 +2964,9 @@ def halve_counts(counts):
     triples) and deep two-zone cells cannot split at a boundary, so each
     zone's lifts are dealt in half with odd lifts going to the lighter
     side. Halves sum back exactly. Wider chunks without a legal boundary
-    stay whole: their width needs hosting redesign, and halving them
-    across four-plus zones invents packings the book never renders.
+    stay whole here: they peel half their largest zone-cell instead
+    (halve_largest_cell), which keeps every half's packing one the book
+    already renders.
     None when a half would drop below MIN_DOSE."""
     counts = tuple(counts)
     if sum(1 for n in counts if n) > 2:
@@ -2982,6 +2983,37 @@ def halve_counts(counts):
         slo, shi = slo + a, shi + b
     if slo < MIN_DOSE or shi < MIN_DOSE:
         return None
+    return (tuple(lo), tuple(hi))
+
+
+def halve_largest_cell(counts):
+    """Peel half the largest zone-cell of a wide chunk into its own slot.
+
+    Wide chunks (>2 zones) with no legal boundary cannot halve evenly:
+    dealing every zone invents packings the book never renders. Peeling
+    only the largest cell keeps both halves book-shaped: the remainder
+    keeps every zone (a contiguous band from its own base, so the
+    warm-up ramp survives) and the peeled half is a single-zone chunk.
+    Both halves hold >= MIN_DOSE lifts; odd cells deal the parity to
+    the legal side. Halves sum back exactly. None for narrow cells
+    (halve_counts owns them) or when no halve keeps both halves legal."""
+    counts = tuple(counts)
+    if sum(1 for n in counts if n) <= 2:
+        return None
+    if sum(counts) < 2 * MIN_DOSE:
+        return None
+    z = max(range(len(counts)), key=lambda i: counts[i])
+    n, total = counts[z], sum(counts)
+    pick = None
+    for b in {n // 2, n - n // 2}:
+        if b < MIN_DOSE or total - b < MIN_DOSE:
+            continue
+        if pick is None or abs(total - 2 * b) < abs(total - 2 * pick):
+            pick = b
+    if pick is None:
+        return None
+    lo, hi = list(counts), [0] * len(counts)
+    lo[z], hi[z] = n - pick, pick
     return (tuple(lo), tuple(hi))
 
 
@@ -3045,8 +3077,9 @@ def split_chunks(counts, family):
 
     Zone-boundary splits first (contiguous bands from their own bases, so
     the warm-up ramp survives in the day's first chunk); chunks with no
-    legal boundary halve their lifts evenly. Every chunk sums back
-    exactly. Each split strictly shrinks both halves' lifts with the
+    legal boundary halve their lifts evenly, and wide chunks with no
+    legal boundary peel half their largest zone-cell. Every chunk sums
+    back exactly. Each split strictly shrinks both halves' lifts with the
     MIN_DOSE floor, so the loop terminates."""
     chunks = [tuple(counts)]
     splitting = True
@@ -3055,7 +3088,11 @@ def split_chunks(counts, family):
         rest = []
         for chunk in chunks:
             if len(best_scheme(chunk, family)[0]) >= MARATHON_SETS:
-                parts = split_marathon(chunk) or halve_counts(chunk)
+                parts = (
+                    split_marathon(chunk)
+                    or halve_counts(chunk)
+                    or halve_largest_cell(chunk)
+                )
                 if parts is not None:
                     rest.extend(parts)
                     splitting = True

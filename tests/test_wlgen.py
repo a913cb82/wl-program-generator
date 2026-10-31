@@ -499,6 +499,34 @@ def test_halve_counts_deals_exact_and_guards_floor_and_span():
     assert wlgen.halve_counts((1, 8, 13, 11, 0)) is None
 
 
+def test_halve_largest_cell_peels_exact_and_guards_floor():
+    # Wide chunks with no legal boundary peel half the largest zone-cell
+    # into its own same-day slot; the remainder keeps every other zone.
+    # Halves sum back exactly and both hold at least MIN_DOSE lifts.
+    assert wlgen.halve_largest_cell((0, 2, 2, 28, 2, 0, 0)) == (
+        (0, 2, 2, 14, 2, 0, 0),
+        (0, 0, 0, 14, 0, 0, 0),
+    )
+    assert wlgen.halve_largest_cell((0, 2, 3, 22, 4, 0, 0)) == (
+        (0, 2, 3, 11, 4, 0, 0),
+        (0, 0, 0, 11, 0, 0, 0),
+    )
+    # Odd largest cells deal the parity to the legal side: 11 lifts peel
+    # 6 (both chunk-halves stay at/above the floor), volumes exact.
+    assert wlgen.halve_largest_cell((0, 1, 2, 11, 0)) == (
+        (0, 1, 2, 5, 0),
+        (0, 0, 0, 6, 0),
+    )
+    # Narrow cells still halve evenly (halve_counts owns them).
+    assert wlgen.halve_largest_cell((0, 0, 20, 20, 0)) is None
+    assert wlgen.halve_largest_cell((0, 0, 9, 5, 0)) is None
+    # Halves under the dose floor stay whole: peeling 5 of 9 strands
+    # sub-minimum lifts on one side, and a 10-lift cell cannot deal two
+    # legal halves at all.
+    assert wlgen.halve_largest_cell((0, 1, 2, 9, 0)) is None
+    assert wlgen.halve_largest_cell((0, 1, 2, 5, 2, 0, 0)) is None
+
+
 def test_strip_feelers_folds_same_zone_and_keeps_volume():
     # A warmed-up later chunk renders without entry singles: the feeler
     # folds into same-zone work, volumes exact, ladder caps respected.
@@ -535,10 +563,17 @@ def test_split_chunks_recurses_until_clean():
     assert sum(map(sum, chunks)) == 78
     for chunk in chunks:
         assert len(wlgen.best_scheme(chunk, "Squat")[0]) < wlgen.MARATHON_SETS
-    # Wide chunks with no legal boundary come back whole (residue for
-    # hosting redesign, still rendered as one slot).
+    # Wide chunks with no legal boundary peel half their largest zone-cell
+    # into a second same-day slot until every chunk renders clean, the
+    # dose exact across the partition (II Press 17, the CMS Fundamental
+    # 16/15/14s, and the MS Squat 14 all die this way; the book has no
+    # slot past 13 sets now).
     wide = (0, 2, 3, 22, 4, 0, 0)
-    assert wlgen.split_chunks(wide, wlgen.BIN_GROUP["Fundamental"]) == [wide]
+    chunks = wlgen.split_chunks(wide, wlgen.BIN_GROUP["Fundamental"])
+    assert len(chunks) == 2
+    assert sum(map(sum, chunks)) == sum(wide)
+    for chunk in chunks:
+        assert len(wlgen.best_scheme(chunk, "Fund")[0]) < wlgen.MARATHON_SETS
 
 
 def test_split_pair_chunks_keeps_heavy_openers_whole():

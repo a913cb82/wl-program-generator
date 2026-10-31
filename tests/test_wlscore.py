@@ -222,12 +222,19 @@ def test_book_numbers_match_research():
     # further (residue: wide no-boundary solos plus opener-guarded pairs;
     # width needs hosting redesign); instructions/slots rise with the
     # extra same-day slots.
+    # Wide-split (2026-10-31): the last 5 wide no-boundary marathons
+    # (II Press 17, CMS Fundamental 16/15/14, MS Squat 14) peel half
+    # their largest zone-cell into a second same-day slot. Excess,
+    # shortfall, rhythm, and soft exact (movements matrix untouched);
+    # longest falls 17->13 (no slot past 13 sets anywhere; Takano tops
+    # at 10, his medians at 4-5); instructions/slots rise with the 5
+    # extra same-day slots.
     assert round(book["excess"], 1) == 187.8
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9585
-    assert book["slots"] == 1587
-    assert book["longest"] == 17
+    assert book["instructions"] == 9599
+    assert book["slots"] == 1592
+    assert book["longest"] == 13
 
 
 def test_score_detects_gap():
