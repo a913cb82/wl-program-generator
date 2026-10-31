@@ -4,6 +4,7 @@ the mapping review is pinned here."""
 
 from takano import (
     EXERCISE_MAP,
+    build_session,
     floor_zone,
     infer_x_zone,
     parse_scheme,
@@ -144,8 +145,6 @@ def test_split_complex_prefers_known_pair():
 
 
 def test_build_session_produces_schema_json(tmp_path):
-    from takano import build_session
-
     session = build_session(
         [
             "1) Snatch: 50%/3, 60%/3, (70%/2)2   13:13:13",
@@ -195,8 +194,8 @@ def test_fixtures_render_and_score():
     # movement rules; clash/idle are grid artifacts (his weeks beyond our
     # 20-week grid stand empty, his day mixes predate our templates)
     pins = {
-        "III": {"illegal": 6, "clash": 11, "idle": 119, "gaps": 0, "soft": 8.0},
-        "II": {"illegal": 15, "clash": 11, "idle": 112, "gaps": 0, "soft": 6.0},
+        "III": {"illegal": 6, "clash": 10, "idle": 119, "gaps": 0, "soft": 8.0},
+        "II": {"illegal": 14, "clash": 11, "idle": 112, "gaps": 0, "soft": 6.0},
         "I": {"illegal": 103, "clash": 31, "idle": 14, "gaps": 1, "soft": 23.0},
     }
     for cls, pin in pins.items():
@@ -206,3 +205,43 @@ def test_fixtures_render_and_score():
         raw = _score_items([(cls, plan)])
         for key, value in pin.items():
             assert raw[key] == value, (cls, key)
+
+
+def test_adjacent_paren_groups_are_not_one_wave():
+    # III w1 Tue: "(70%/4)2 (75%/4)2" is two waves, not one wave x2
+    assert parse_scheme("(70%/4)2 (75%/4)2", False) == [(70, 4)] * 2 + [(75, 4)] * 2
+    assert parse_scheme("60%/4, (70%/4)2 (75%/4)3", False) == [(60, 4)] + [
+        (70, 4)
+    ] * 2 + [(75, 4)] * 3
+
+
+def test_absurd_reps_drop_loudly():
+    # II w4 Mon: "(70%/302" is a corrupted paren, not a 302-rep set
+    assert parse_scheme("60%/3, 65%/3, (70%/302", False) == [(60, 3), (65, 3)]
+
+
+def test_stray_trailing_token_keeps_valid_group():
+    # I w26 Fri: "(X/5)4 2" keeps its 4 sets, drops the stray
+    assert parse_scheme("(X/5)4 2", False) == [(80, 5)] * 4
+
+
+def test_transposed_comma_repairs():
+    # I w33 Thu: "60%/,2" is OCR for "60%/2", backed by its tally
+    assert parse_scheme("60%/,2 65%/2", False) == [(60, 2), (65, 2)]
+
+
+def test_spurious_colon_in_name_still_maps():
+    # III w7 Thu: "Snatch: Extension:" is the Snatch Extension exercise
+    session = build_session(["3) Snatch: Extension: (80%/2)4"], 3)
+    assert session["movements"].get("SnPull") == [8, 0, 0, 0]
+    assert "Snatch" not in session["movements"]
+
+
+def test_unbalanced_open_repeat_applies_to_whole_chunk():
+    # I w57 Tue: "(60%/1+1, 70%/1+1, (75%/1+1)3" repeats all three groups
+    assert parse_scheme("(60%/1+1, 70%/1+1, (75%/1+1)3", True) == [
+        (60, [1, 1]),
+        (70, [1, 1]),
+        (75, [1, 1]),
+    ] * 3
+    assert parse_scheme("(60%/1+1", True) == [(60, [1, 1])]

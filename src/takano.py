@@ -140,6 +140,43 @@ _NOSLASH_RE = re.compile(r"^\(?\s*(\d+)%\s*(\d+)\s*\)?\s*(\d*)\s*$")
 _SPLIT_RE = re.compile(r"\s+(?=\(?\s*(?:X|\d+)%?\s*/)")
 
 
+def _space_split(text):
+    """Split on spaces that start a new group, but never inside an
+    unclosed paren: shredding "(A, B, (C)N" loses B to the comma."""
+    parts, depth, cur = [], 0, ""
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+            cur += ch
+        elif ch == ")":
+            depth = max(0, depth - 1)
+            cur += ch
+        elif ch.isspace() and depth == 0 and _SPLIT_RE.match(text, i):
+            parts.append(cur)
+            cur = ""
+            while i < len(text) and text[i].isspace():
+                i += 1
+            continue
+        else:
+            cur += ch
+        i += 1
+    parts.append(cur)
+    return parts
+
+
+def _depth(text):
+    """Unclamped paren depth: positive means unclosed opens."""
+    depth = 0
+    for ch in text:
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+    return depth
+
+
 def _paren_split(text):
     """Split on commas outside parens; a parenthesised comma group
     "(A, B)N" is one wave chunk parsed inner-first below."""
@@ -180,26 +217,48 @@ def parse_scheme(body, complex) -> list[tuple[object, object]]:
     text = re.sub(r"(?<!-)max(?![-\w])", "", text)
     text = re.sub(r"\bmax-\d+\b", "", text)
     text = _TALLY_RE.sub("", text)
-    text = re.sub(r"(\d+)%(\d+)", r"\1%/\2", text)
+    text, n1 = re.subn(r"(\d+)%(\d+)", r"\1%/\2", text)
+    text, n2 = re.subn(r"(\d+)%/,(\d+)", r"\1%/\2", text)
+    if n1 + n2:
+        LOG.append(f"slash repaired x{n1 + n2}: {body!r}")
     chunks = []
     for comma_part in _paren_split(text):
         comma_part = comma_part.strip()
-        if re.match(r"^\(.*\)\s*\d+\s*$", comma_part):
+        if re.match(r"^\([^()]*\)\s*\d+\s*$", comma_part):
             chunks.append(comma_part)
         else:
-            chunks.extend(_SPLIT_RE.split(comma_part))
+            chunks.extend(_space_split(comma_part))
     for chunk in chunks:
         chunk = chunk.strip()
         if not chunk:
             continue
+        if _depth(chunk) > 0:
+            LOG.append(f"unbalanced parens stripped: {chunk!r} in {body!r}")
+            wm = re.match(r"^(.*)\)\s*(\d+)\s*$", chunk)
+            if wm is not None:
+                core, rep = wm.group(1), int(wm.group(2))
+            else:
+                core, rep = chunk, 1
+            core = core.replace("(", "").replace(")", "")
+            for _ in range(rep):
+                for part in _paren_split(core):
+                    for bit in _SPLIT_RE.split(part):
+                        sets.extend(parse_scheme(bit.strip(), complex))
+            continue
         gm = _GROUP_RE.match(chunk)
+        if gm is None:
+            tail = re.match(r"^(.*\S)\s+\d+\s*$", chunk)
+            if tail is not None:
+                gm = _GROUP_RE.match(tail.group(1))
+                if gm is not None:
+                    LOG.append(f"stray tail dropped: {chunk!r} in {body!r}")
         nm = None if gm is not None else _NOSLASH_RE.match(chunk)
         if gm is None:
             if nm is not None:
                 LOG.append(f"slash restored: {chunk!r} in {body!r}")
                 zraw, rraw, nraw = nm.groups()
             else:
-                w = re.match(r"^\((.*)\)\s*(\d+)\s*$", chunk)
+                w = re.match(r"^\(([^()]*)\)\s*(\d+)\s*$", chunk)
                 if w is not None:
                     for _ in range(int(w.group(2))):
                         for inner in _paren_split(w.group(1)):
@@ -221,6 +280,10 @@ def parse_scheme(body, complex) -> list[tuple[object, object]]:
                 continue
             if side == "X" or not side.isdigit():
                 LOG.append(f"bad reps, dropped: {chunk!r} in {body!r}")
+                sides = []
+                break
+            if int(side) > 10:
+                LOG.append(f"absurd reps, dropped: {chunk!r} in {body!r}")
                 sides = []
                 break
             sides.append(int(side))
@@ -285,9 +348,10 @@ def build_session(ex_list, day):
 
     for ex in ex_list:
         text = re.sub(r"^\d+\)\s*", "", ex).strip()
+        text = text.replace(": ", " ")
         name = None
         for key in sorted(EXERCISE_MAP, key=len, reverse=True):
-            if text == key or text.startswith(key + ":"):
+            if text == key or text.startswith(key + " ") or text.startswith(key + ":"):
                 name = key
                 break
         if name is None:

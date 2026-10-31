@@ -206,3 +206,22 @@ One entry per round. Never edit an old entry.
   oversize assistance sets, 19 wide C&J ratios in I); clash/idle on his
   files are grid artifacts, illegal/gaps/soft are signal
 - next: Narrow Squat openers (soft driver); fill 2 I meso holes
+
+## 22 — Reviewer-found converter bugs fixed (2026-10-30)
+- verdict: keep (4 agents: III/II/I/source; converter now matches
+  independent reimplementation on all 1177 I exercises, 0 mismatches)
+- what changed: wave regex no longer spans missing-comma gaps
+  ([^()]*); absurd reps >10 drop loudly (kills the 302-phantom);
+  trailing stray tokens strip instead of wiping the group; %/, and
+  missing-% repair with log; ": " removed before name match
+  ("Snatch: Extension:" -> SnPull, backed by 13 identical shapes);
+  unbalanced-open chunks repeat the whole chunk (tally-arbitrated
+  9 sets, not 5); space-split respects paren depth
+- what learned: tallies arbitrate ambiguous parses (first number =
+  exercise lifts: 18 confirmed the wave-x3 reading); reviewers'
+  stale expectations need re-reading after a fix (their 302-accept
+  and literal-Snatch both differ by design now); source dump itself
+  is incomplete (~150 lines + 70 tails missing upstream of the
+  converter: dropped MS W7, mis-attached II W9, 52 max lines)
+- next: upstream source recovery (PDF-parse gaps); Narrow Squat
+  openers; fill 2 I meso holes
