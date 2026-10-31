@@ -2146,3 +2146,47 @@ def test_meso_weeks_wave_like_table_13():
         for m in build_plan(cls)["mesos"]:
             vols = [w["vol"] for w in m["weeks"]]
             assert max(vols) / min(vols) >= 1.5, (cls, m["name"], vols)
+
+
+def _meso_heavies(cls, phase):
+    # Snatch+C&J lifts at 70%+ per meso week, the high-intensity quota unit
+    # both books prescribe by month (Roman p107/p130-150, Takano programs).
+    from wlconfig import BIN_GROUP, BIN_ZONES
+
+    FAM = ("Snatch", "Other Snatch", "Clean", "Other Clean", "Jerk", "Other Jerk")
+    out = []
+    for m in build_plan(cls)["mesos"]:
+        if m["phase"] != phase:
+            continue
+        hi = 0
+        for w in m["weeks"]:
+            for g, vec in w["bins"].items():
+                if g not in FAM:
+                    continue
+                for z, x in zip(BIN_ZONES[BIN_GROUP[g]], vec):
+                    if z >= 70:
+                        hi += x
+        out.append(hi / 4)
+    return out
+
+
+def test_comp_phase_cuts_heavies_like_roman():
+    # Comp-phase weekly heavies run 60-80% of the prep rate: Roman cuts the
+    # comp month 20-40% against the preceding prep month (p93), deeper for
+    # heavier lifters. Our cut is level-flat (one shared macro); grading it
+    # by class waits for the bodyweight axis.
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        prep = _meso_heavies(cls, "prep")
+        comp = _meso_heavies(cls, "comp")
+        cut = sum(comp) / len(comp) / (sum(prep) / len(prep))
+        assert 0.60 <= cut <= 0.80, (cls, cut)
+
+
+def test_prep_heavies_rise_with_class():
+    # Both books raise monthly high-intensity counts with level (Roman
+    # p107/p146-150, Takano mesos); our meso quotas reproduce the order.
+    rates = []
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        rates.append(sum(_meso_heavies(cls, "prep")) / 3)
+    for lo, hi in zip(rates, rates[1:]):
+        assert lo < hi, rates

@@ -368,3 +368,14 @@ One entry per round. Never edit an old entry.
 - deferred with evidence: accessory dose concentration (Fund-80 renders
   2s vs books' 3+; 548 sets). On IDEAS list: host-dose norms per group.
 - next: item 5 (meso high-intensity quotas)
+
+## 27d — Roman catch-up, item 5: meso high-intensity quotas (2026-10-31)
+- verdict: verification, not new machinery (quotas already hit where books agree)
+- what measured: our meso S+CJ-70+ vs Takano meso quotas (per-4w): upper
+  prep matches (I 88-110%, CMS 77-97%, MS 100-121%); two systematic
+  deviations, both explained: (1) III runs ~2x Takano (his III does 16%
+  pulls, Roman-forbidden; we redistribute into squats+S+CJ); (2) Comp 1
+  runs 125-145% (shock + double-taper structure; phase-level comp cut is
+  23%, inside Roman's 20-40%). New tests pin the Roman comp cut (60-80%)
+  and monotone prep heavies across classes (both books agree).
+- next: item 6 (bodyweight axis)
