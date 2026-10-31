@@ -2449,3 +2449,31 @@ def test_big_tech_pairs_try_solo_first():
     assert ("Clean", "Jerk") in cover_session(
         {"Clean": 30, "Jerk": 30, "Squat": 40, "Fundamental": 20}
     )
+
+
+def test_spreading_90_never_raises_session_penalty():
+    # quarantine-90 NEGATIVE (2026-10-31): a black-box ruler check moved
+    # every within-week 90+ lift onto the week's heaviest session (week
+    # bins and session vols kept exact, gaps/soft unchanged) and book exc
+    # ROSE +7.3 (I +0.3 / CMS +1.9 / MS +5.1); perfect pro-rata spreading
+    # saved only -1.4. The per-session dose penalty is convex, so the
+    # "90+ smear onto light days" is load-balancing the ruler rewards,
+    # not a defect to quarantine. Pin the convexity so no future track
+    # re-tries concentration.
+    from wlgen import prilepin_excess, prilepin_score
+
+    def cost(reps):
+        return prilepin_excess(prilepin_score({90: reps}), "Squat")
+
+    assert 2 * cost(6) <= cost(12)
+    assert 2 * cost(12) <= cost(24)
+    assert cost(6) + cost(18) <= cost(24)
+    # mixed ramp dose splits the same way
+    ramp = {60: 5, 70: 8, 80: 6, 90: 12}
+    half = {z: n // 2 for z, n in ramp.items()}
+    rest = {z: n - half[z] for z, n in ramp.items()}
+    one = prilepin_excess(prilepin_score(ramp), "Squat")
+    two = prilepin_excess(prilepin_score(half), "Squat") + prilepin_excess(
+        prilepin_score(rest), "Squat"
+    )
+    assert two <= one
