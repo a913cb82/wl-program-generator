@@ -256,3 +256,29 @@ One entry per round. Never edit an old entry.
   (pair legs + single, pair stays outside our pair table by design);
   CJ/Snatch grids are deliberately coarse 10-point bins (85 floors to 80)
 - next: Narrow Squat openers; fill 2 I meso holes; table-driven volume work
+
+## 25 — Visual audits found 3 dropped-line classes; all fixed (2026-10-31)
+- verdict: keep (186 green; 7 fixtures reconverted; tally audit clean)
+- what changed: four visual agents audited every txt line vs fixture rows
+  vs renders (III PASS 107/107, II found Day 40 missing, I found D10/wraps,
+  CMS-MS found 6 semicolon lines + colon-less line, MSIC FAIL only on 1
+  scheme question + 5 stale headers from mid-audit churn). Three new
+  separator classes fixed in the PDF-dump parser (runs/.../takano_parse.py):
+  no space after "N)" (Day 40, C1 W1 D4, 7 MSIC lines, CMS D81), semicolon
+  separators (III D39, 5 CMS lines), colon-less known-name lines (MS W2
+  D13 halting deadlift); APPENDIX gate stops the 444-line author log from
+  matching the loosened pattern. Converter fix in src/takano.py: semicolon
+  normalizes to colon before name matching. 10 recovered lines land in 10
+  sessions (II +1 session Day 40); each verified by exact slot-seq match
+  against its txt scheme
+- what learned: each pin move traces to a real source line, never to
+  converter drift (I clash +1: C1 W1 D4 Push Press completes a 7-movement
+  day no template covers; CMS illegal +1: Good Morning (X/5)4 exceeds our
+  Fundamental cap; MS clash +1: halting deadlift adds ClPull; CMS gaps
+  3->2 and idle 86->84: added lifts fill holes; III idle 114->113 likewise).
+  MSIC Day 3 #6 (75%/4)5 -> 80 is correct: SnPull ladder starts at 80,
+  "below-grid folds to base" (agent assumed a 70 rung that does not exist).
+  Fresh screenshots are viewport-capped at 12000px but every page is
+  shorter, so all weeks are visible; screenshot bytes are deterministic per
+  HTML. Pre-existing lint debt unchanged (5 ruff + 4 mypy on HEAD)
+- next: Narrow Squat openers; fill 2 I meso holes; table-driven volume work

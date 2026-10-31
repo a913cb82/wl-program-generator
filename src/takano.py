@@ -364,6 +364,9 @@ def build_session(ex_list, day):
 
     for ex in ex_list:
         text = re.sub(r"^\d+\)\s*", "", ex).strip()
+        semi = re.match(r"^([^:;]+?)\s*;\s*(\S.*)$", text)
+        if semi:
+            text = semi.group(1).strip() + ": " + semi.group(2)
         text = text.replace(": ", " ")
         name = None
         for key in sorted(EXERCISE_MAP, key=len, reverse=True):

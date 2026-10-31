@@ -184,7 +184,7 @@ def _load_fixture(cls):
 
 def test_fixtures_load_all_sessions():
     # the I key lumps four book programs; each loads fully into our grid
-    counts = {"III": 26, "II": 28, "I": 50, "CMS": 55, "MS": 83, "MSIC": 95}
+    counts = {"III": 26, "II": 29, "I": 50, "CMS": 55, "MS": 83, "MSIC": 95}
     for cls, want in counts.items():
         got = sum(
             len(w["sessions"]) for m in _load_fixture(cls)["mesos"] for w in m["weeks"]
@@ -200,14 +200,14 @@ def test_fixtures_render_and_score():
     # movement rules; clash/idle are grid artifacts (empty weeks past his
     # shorter programs, his day mixes predate our templates)
     pins = {
-        "III": {"illegal": 6, "clash": 10, "idle": 114, "gaps": 0, "soft": 9.0},
+        "III": {"illegal": 6, "clash": 10, "idle": 113, "gaps": 0, "soft": 9.0},
         "II": {"illegal": 14, "clash": 13, "idle": 104, "gaps": 0, "soft": 6.0},
-        "I": {"illegal": 47, "clash": 22, "idle": 87, "gaps": 0, "soft": 13.0},
-        "CMS": {"illegal": 70, "clash": 21, "idle": 86, "gaps": 3, "soft": 15.0},
-        "MS": {"illegal": 109, "clash": 36, "idle": 39, "gaps": 5, "soft": 36.0},
+        "I": {"illegal": 47, "clash": 23, "idle": 87, "gaps": 0, "soft": 13.0},
+        "CMS": {"illegal": 71, "clash": 21, "idle": 84, "gaps": 2, "soft": 15.0},
+        "MS": {"illegal": 109, "clash": 37, "idle": 39, "gaps": 5, "soft": 36.0},
         "MSIC": {
-            "illegal": 124,
-            "clash": 50,
+            "illegal": 126,
+            "clash": 51,
             "idle": 40,
             "gaps": 4,
             "soft": 45.0,
@@ -250,6 +250,30 @@ def test_spurious_colon_in_name_still_maps():
     session = build_session(["3) Snatch: Extension: (80%/2)4"], 3)
     assert session["movements"].get("SnPull") == [8, 0, 0, 0]
     assert "Snatch" not in session["movements"]
+
+
+def test_semicolon_separator_maps_like_colon():
+    # CMS w17 Thu: "3) Press; (X/3)4" uses a semicolon, backed by its tally
+    session = build_session(["3) Press; (X/3)4"], 3)
+    assert session["slots"] == [
+        {"movement": "Press", "seq": [[80, 3]] * 4}
+    ]
+
+
+def test_unspaced_number_and_colon_still_map():
+    # II w34 Fri: "1)Power Snatch: 60%/3, ..." skips every space
+    session = build_session(["1)Power Snatch:60%/2, 70%/2"], 4)
+    assert session["slots"][0]["movement"] == "Other Snatch"
+    assert session["slots"][0]["seq"] == [[60, 2], [70, 2]]
+
+
+def test_colon_less_line_with_known_name_maps():
+    # MS w8 Sat: halting deadlift line carries no colon at all
+    session = build_session(
+        ["4) Halting Clean Deadlift with 2 halts (80%/3)5"], 5
+    )
+    assert session["slots"][0]["movement"] == "ClPull"
+    assert session["slots"][0]["seq"] == [[80, 3]] * 5
 
 
 def test_unbalanced_open_repeat_applies_to_whole_chunk():

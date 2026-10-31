@@ -16,7 +16,9 @@ day_pat = re.compile(
     r'\(?\s*(\d+)?\s*\)?\s*([Rr]epetitions|[Rr]eps?)?([^A-Za-z(]*)$'
 )
 wd_pat = re.compile(r'^Day\s*\d+\s*[—\-:]+\s*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)')
-ex_pat = re.compile(r'^\d+\)\s+(.+?):(\s+\S.*)?$')
+ex_pat = re.compile(r'^\d+\)\s*(.+?)[;:]\s*(\S.*)?$')
+app_pat = re.compile(r'^APPENDIX')
+colonless_pat = re.compile(r'^(\d+\)\s*)(.+)$')
 LOG = []
 
 
@@ -27,11 +29,17 @@ def known_name(name):
     return False
 
 
+def split_name_body(line):
+    m = re.match(r'^\d+\)\s*(.+?)[;:]\s*(\S.*)?$', line)
+    if not m:
+        return None, None
+    return m.group(1).strip(), (m.group(2) or '').strip()
+
+
 def is_exercise(line, day_open):
-    m = ex_pat.match(line)
-    if not m or not day_open:
+    if not ex_pat.match(line) or not day_open:
         return False
-    name, body = m.group(1).strip(), (m.group(2) or '').strip()
+    name, body = split_name_body(line)
     if '/' in line:
         return True
     if body == '':
@@ -62,8 +70,27 @@ def cls_name(c):
     return {'3': 'III', '2': 'II', '1': 'I'}.get(c, c)
 
 
+done = False
 for i, l in enumerate(text):
     l = l.strip()
+    if done:
+        continue
+    if app_pat.match(l):
+        done = True
+        cls = week = day = None
+        flush_pending()
+        continue
+    cm = colonless_pat.match(l)
+    if cm and ':' not in cm.group(2) and ';' not in cm.group(2):
+        for key in sorted(EXERCISE_MAP, key=len, reverse=True):
+            rest = cm.group(2)
+            if rest == key or rest.startswith(key + ' ') or rest.startswith(
+                key + '('
+            ):
+                tail = rest[len(key):].strip()
+                if '/' in tail or 'X/' in tail or 'max' in tail.lower():
+                    l = cm.group(1).rstrip() + ' ' + key + ': ' + tail
+                break
     m = cls_pat.match(l)
     if m:
         cls = cls_name(m.group(1)); week = day = None
@@ -116,8 +143,7 @@ for i, l in enumerate(text):
         flush_pending()
         continue
     if is_exercise(l, day is not None):
-        m = ex_pat.match(l)
-        name, body = m.group(1).strip(), (m.group(2) or '').strip()
+        name, body = split_name_body(l)
         if body == '':
             day['ex'].append(f'1) {name}:')
             pending = f'1) {name}:'
