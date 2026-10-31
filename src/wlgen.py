@@ -16,6 +16,7 @@ from wlconfig import (
     BIN_ZONES,
     BINS,
     BOUNDARY,
+    BW_TILT,
     CAP,
     CAP_DEV,
     CLASSES,
@@ -169,14 +170,16 @@ def _canon(cls):
     return (BIN_CLASS[cls], GAP[cls], cls in FAN)
 
 
-def _shifted_fracs(binkey, gap, fan, meso, week, group, taper_week):
+def _shifted_fracs(binkey, gap, fan, meso, week, group, taper_week, bw="middle"):
     """Yearly bins shifted for one microcycle. The final week keeps the
     raw bins when the taper is on (the taper deletes from there); with
     the taper off it shifts like a base comp week, the baseline the
-    taper deletes from."""
+    taper deletes from. The bodyweight tilt rides on every path, so
+    heavier lifters train the same shape lighter."""
     bt = BIN_GROUP[group]
     zones = BIN_ZONES[bt]
     bins = BINS[binkey][bt]
+    tilt = BW_TILT[bw]
     wp = sum(m[3] for m in MACRO if m[1] == "prep")
     wc = sum(m[3] for m in MACRO if m[1] == "comp")
     n_prep = sum(1 for m in MACRO if m[1] == "prep")
@@ -187,23 +190,23 @@ def _shifted_fracs(binkey, gap, fan, meso, week, group, taper_week):
         delta = wp * gap
     else:
         if week == 3 and taper_week:
-            return bt, list(bins)
+            return bt, shift(list(bins), zones, ari(bins, zones) + tilt)
         delta = wp * gap + (gap if week == 2 else 0)
-    return bt, shift(bins, zones, ari(bins, zones) + delta)
+    return bt, shift(bins, zones, ari(bins, zones) + delta + tilt)
 
 
 @cache
-def _week_bins_keyed(binkey, gap, fan, meso, week, group):
-    bt, out = _shifted_fracs(binkey, gap, fan, meso, week, group, True)
+def _week_bins_keyed(binkey, gap, fan, meso, week, group, bw="middle"):
+    bt, out = _shifted_fracs(binkey, gap, fan, meso, week, group, True, bw)
     if meso == len(MACRO) - 1 and week == 3:
         return taper(out, bt)
     return out
 
 
-def untapered_week_bins(cls, meso, week, group):
+def untapered_week_bins(cls, meso, week, group, bw="middle"):
     """Zone fractions with the final-week taper switched off: the baseline
     the taper deletes from, so the meso can take the slack back up."""
-    return list(_shifted_fracs(*_canon(cls), meso, week, group, False)[1])
+    return list(_shifted_fracs(*_canon(cls), meso, week, group, False, bw)[1])
 
 
 def take_up_slack(counts, zones, extra):
@@ -235,14 +238,14 @@ def take_up_slack(counts, zones, extra):
     return out
 
 
-def week_bins(cls, meso, week, group):
+def week_bins(cls, meso, week, group, bw="middle"):
     """Zone fractions for one microcycle (0-based meso and week index).
 
     The yearly bins are the anchor: prep sits below them, comp above, and the
     volume-weighted mixture over the 5 mesos reproduces the yearly bins. A
     single class gap applies to every group. Only the last meso tapers.
     """
-    return _week_bins_keyed(*_canon(cls), meso, week, group)
+    return _week_bins_keyed(*_canon(cls), meso, week, group, bw)
 
 
 def close_bins(counts):
@@ -261,17 +264,17 @@ def close_bins(counts):
 
 
 @cache
-def _week_bin_lifts_keyed(binkey, gap, fan, meso, week, group, lifts):
+def _week_bin_lifts_keyed(binkey, gap, fan, meso, week, group, lifts, bw="middle"):
     return tuple(
         close_bins(
-            allocate(lifts, _week_bins_keyed(binkey, gap, fan, meso, week, group))
+            allocate(lifts, _week_bins_keyed(binkey, gap, fan, meso, week, group, bw))
         )
     )
 
 
-def week_bin_lifts(cls, meso, week, group, lifts):
+def week_bin_lifts(cls, meso, week, group, lifts, bw="middle"):
     """Split a group's weekly lifts across its zones (largest remainder)."""
-    return list(_week_bin_lifts_keyed(*_canon(cls), meso, week, group, lifts))
+    return list(_week_bin_lifts_keyed(*_canon(cls), meso, week, group, lifts, bw))
 
 
 def ipf(prior, rows, cols, iters=1000):
@@ -982,7 +985,7 @@ def day_split(vol, pattern):
     return vols, [{"size": s, "vol": v} for s, v in zip(pattern, cap(vols, weights))]
 
 
-def week_demand(targets, cls, mi, wi):
+def week_demand(targets, cls, mi, wi, bw="middle"):
     """Weekly Prilepin score per group: the dose each movement must place."""
     out = {}
     for g in GROUPS:
@@ -990,7 +993,7 @@ def week_demand(targets, cls, mi, wi):
         if not n:
             continue
         lo = BIN_ZONES[BIN_GROUP[g]]
-        counts = week_bin_lifts(cls, mi, wi, g, n)
+        counts = week_bin_lifts(cls, mi, wi, g, n, bw)
         out[g] = prilepin_score({lo[z]: c for z, c in enumerate(counts) if c})
     return out
 
@@ -1138,7 +1141,7 @@ def _assign_weekdays(planned):
         s["day"] = day
 
 
-def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None, topup=None):
+def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None, topup=None, bw="middle"):
     """First session-size variant the week can host: the cap-driven day count
     first, source variants in table order, canonical (first) pattern preferred.
 
@@ -1148,7 +1151,7 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None, topup=None):
     best = None
     best_key = None
     if DAY_RULE == "demand":
-        demand = week_demand(targets, cls, mi, wi)
+        demand = week_demand(targets, cls, mi, wi, bw)
         variants = [(n, rhythm(n, demand)) for n in range(demand_days(demand, vol), 7)]
     else:
         demand = None
@@ -1167,7 +1170,7 @@ def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None, topup=None):
         attempt = dict(targets)
         try:
             planned = plan_sessions(
-                session_list, attempt, nom, cls, mi, wi, prev_last, topup
+                session_list, attempt, nom, cls, mi, wi, prev_last, topup, bw
             )
         except ValueError:
             continue
@@ -1493,7 +1496,7 @@ def pair_fit(moved, vols, targets, nom, prior, cls, mi, wi):
     return None, None
 
 
-def pair_zones(cls, mi, wi, pairs, pair_topup=None):
+def pair_zones(cls, mi, wi, pairs, pair_topup=None, bw="middle"):
     """One zone list per movement from the pair's shared unit blocks.
 
     Units of one reference-zone family split across that family's paired
@@ -1513,7 +1516,7 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None):
     for bt, items in by_bin.items():
         ref0 = items[0][5]
         units = [it[3] for it in items]
-        counts = week_bin_lifts(cls, mi, wi, ref0, sum(units))
+        counts = week_bin_lifts(cls, mi, wi, ref0, sum(units), bw)
         top = max((z for z, c in enumerate(counts) if c), default=0)
         counts = counts[: top + 1]
         nS = len(items)
@@ -1656,7 +1659,7 @@ def consolidate_doses(moved, pairs):
     return False
 
 
-def taper_topup(cls, mi, week_groups):
+def taper_topup(cls, mi, week_groups, bw="middle"):
     """Extra 90%+ lifts owed to weeks 1-3 of the taper meso: the untapered
     final week would have placed them, the taper deletes them, and the
     block takes them back up in proportion to week volume. Totals stay
@@ -1671,7 +1674,7 @@ def taper_topup(cls, mi, week_groups):
             continue
         zones = BIN_ZONES[bt]
         zones_by_group[g] = zones
-        u4 = close_bins(allocate(week_groups[3][g], untapered_week_bins(cls, mi, 3, g)))
+        u4 = close_bins(allocate(week_groups[3][g], untapered_week_bins(cls, mi, 3, g, bw)))
         slack = sum(n for n, z in zip(u4, zones) if z >= 90)
         vols = [week_groups[w][g] for w in range(3)]
         if slack <= 0 or sum(vols) == 0:
@@ -1681,7 +1684,7 @@ def taper_topup(cls, mi, week_groups):
     return out
 
 
-def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup=None):
+def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup=None, bw="middle"):
     """Fill each day with the day template and exact group x zone lifts."""
     vols = [s["vol"] for s in session_list]
     rows = [targets[g] for g in GROUPS]
@@ -1716,7 +1719,7 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
             unpaired_extra[g] = extra_u
             pair_topup[BIN_GROUP[g]] = pair_topup.get(BIN_GROUP[g], 0) + t - extra_u
     paired, actual, refdata = (
-        pair_zones(cls, mi, wi, pairs, pair_topup) if pairs else ({}, {}, {})
+        pair_zones(cls, mi, wi, pairs, pair_topup, bw) if pairs else ({}, {}, {})
     )
     idx = {g: i for i, g in enumerate(GROUPS)}
     for j, plist in pairs.items():
@@ -1732,7 +1735,7 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
                 # session's own units instead. Totals match the snap exactly
                 # by construction, and big-t sessions keep a broad ramp.
                 lo = BIN_ZONES[BIN_GROUP[ref]]
-                wbl = week_bin_lifts(cls, mi, wi, ref, t)
+                wbl = week_bin_lifts(cls, mi, wi, ref, t, bw)
                 ratios = [
                     rh if lo[z] >= 90 else rm if lo[z] == 80 else rl
                     for z in range(len(lo))
@@ -1800,7 +1803,7 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
         nz = len(BIN_ZONES[BIN_GROUP[g]])
         active = [j for j in range(len(vols)) if moved[i][j] and (j, g) not in paired]
         if active:
-            counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active))
+            counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active), bw)
             zones = zone_alloc(
                 counts, [moved[i][j] for j in active], peak=phase_peak(cls, mi)
             )
@@ -1900,7 +1903,7 @@ def session_bins(sessions):
 
 # plans are deterministic; cache so repeated builds (e.g. tests) are cheap
 @cache
-def build_plan(cls):
+def build_plan(cls, bw="middle"):
     annual = CLASSES[cls]["annual"]
     macro, ratios = CLASSES[cls]["macro"], CLASSES[cls]["ratios"]
     macro_vol = round(annual * macro_days(macro) / 365)
@@ -1940,12 +1943,12 @@ def build_plan(cls):
             for g in GROUPS:
                 planned[g] += week_groups[-1][g]
         repair_week_doses(week_groups, nominal)
-        meso_topup = taper_topup(cls, mi, week_groups)
+        meso_topup = taper_topup(cls, mi, week_groups, bw)
         weeks = []
         for wi, (wv, nom) in enumerate(zip(week_vols, nominal)):
             groups = week_groups[wi]
             topup = meso_topup[wi] if meso_topup else None
-            sessions = week_sessions(wv, groups, nom, cls, mi, wi, prev_last, topup)
+            sessions = week_sessions(wv, groups, nom, cls, mi, wi, prev_last, topup, bw)
             prev_last = set(sessions[-1]["movements"]) if sessions else None
             weeks.append(
                 {
@@ -1969,6 +1972,7 @@ def build_plan(cls):
     return {
         "macro": f"Soviet year ({cls})",
         "class": cls,
+        "bw": bw,
         "annual": annual,
         "mesos": mesos,
         "groups": {g: sum(m["groups"][g] for m in mesos) for g in GROUPS},

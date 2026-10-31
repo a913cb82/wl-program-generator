@@ -2190,3 +2190,26 @@ def test_prep_heavies_rise_with_class():
         rates.append(sum(_meso_heavies(cls, "prep")) / 3)
     for lo, hi in zip(rates, rates[1:]):
         assert lo < hi, rates
+
+
+def test_bodyweight_default_is_middle():
+    # The bodyweight axis defaults to middleweight: every existing caller
+    # and fixture stays byte-identical without passing anything.
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        assert build_plan(cls) == build_plan(cls, "middle")
+
+
+def test_heavies_fall_with_bodyweight():
+    # Roman: heavier classes train lighter for the same effect, with fewer
+    # 70%+/90%+ lifts (p47, p54-55); lighter classes tolerate more. The
+    # tilt is small (corrections are a few lifts a zone, p45-46/p136).
+    means = {}
+    his = {}
+    for bw in ("light", "middle", "heavy"):
+        mean, hi = _plan_intensity(build_plan("MS", bw))
+        means[bw] = mean
+        his[bw] = hi
+    assert means["light"] > means["middle"] > means["heavy"]
+    assert his["light"] > his["middle"] > his["heavy"]
+    assert means["light"] - means["heavy"] <= 3.0, means
+    assert his["light"] - his["heavy"] <= 0.06, his

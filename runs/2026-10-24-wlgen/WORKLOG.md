@@ -379,3 +379,21 @@ One entry per round. Never edit an old entry.
   23%, inside Roman's 20-40%). New tests pin the Roman comp cut (60-80%)
   and monotone prep heavies across classes (both books agree).
 - next: item 6 (bodyweight axis)
+
+## 27e — Roman catch-up, item 6: bodyweight axis (2026-10-31)
+- verdict: keep (201 green; axis plumbed end to end, one tilt rule live)
+- design: weight is a bodyweight input (light/middle/heavy), not 25
+  tables: BINS stay class-keyed, BW_TILT (+0.5/0/-0.5 ARI, uniform across
+  groups per Roman p47/55/63/67) rides _shifted_fracs on every path.
+  Threaded build_plan -> week_sessions/week_demand/plan_sessions/
+  pair_zones/taper_topup -> week_bins/week_bin_lifts/untapered, all
+  defaulting "middle". Default path byte-identical (full suite untouched).
+  IR carries "bw" only when non-middle (minimal contract holds; Takano
+  fixtures default middle); scorer needs no change (drift prices group
+  volumes vs level ratios, never zone splits vs nominals).
+- calibration: +/-1.0 moved hi90 +/-3-5pp, far past Roman's "slightly"
+  (+/-2-5 lifts a zone); +/-0.5 gives mean spread ~0.9, hi ~4pp. MS
+  light 77.2/20.5% -> middle 76.1/14.9% -> heavy 75.3/11.9%: monotone,
+  Roman-scale. Weight-differentiated selection (Table 11 columns) and
+  the 110kg+ special rules stay deferred (need ratio tables per weight).
+- next: item 7 (session frequency/composition + calendar rules)

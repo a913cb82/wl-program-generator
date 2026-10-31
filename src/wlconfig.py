@@ -212,6 +212,12 @@ BIN_GROUP = {
 }
 # prep -> comp ARI gap (Takano table 8.1, classic lifts); one gap for all groups
 GAP = {"III": 0.5, "II": 0.5, "I": 1.0, "CMS": 1.5, "MS": 1.9}
+# bodyweight tilt in ARI points, uniform across groups: heavier classes
+# train lighter for the same effect, with fewer 70%+ lifts (Roman p47,
+# p54-55; pulls p63, squats p67 agree in direction). Corrections in the
+# book are a few lifts a zone, so the tilt stays small; middle is the
+# zero point, and the default everywhere, keeping old callers identical.
+BW_TILT = {"light": 0.5, "middle": 0.0, "heavy": -0.5}
 # classes whose sample programs ramp intensity across the prep mesocycles
 FAN = {"I", "CMS", "MS"}
 

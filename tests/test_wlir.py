@@ -9,6 +9,7 @@ import sys
 
 sys.path.insert(0, "src")
 
+from wlgen import build_plan, ir_with_slots
 from wlir import from_ir, to_ir
 
 
@@ -109,3 +110,14 @@ def test_to_ir_stays_minimal():
     back = from_ir(ir)
     assert [len(m["weeks"]) for m in back["mesos"]] == [4, 4, 4, 4, 4]
     assert back["macro"] == "Soviet year (III)"
+
+
+def test_ir_carries_non_middle_bodyweight():
+    plan = ir_with_slots(build_plan("MS", "heavy"))
+    ir = to_ir(plan)
+    assert ir["bw"] == "heavy"
+    assert from_ir(ir)["bw"] == "heavy"
+    assert from_ir(ir) == {**plan, "mesos": from_ir(ir)["mesos"]}
+    middle = to_ir(ir_with_slots(build_plan("MS")))
+    assert "bw" not in middle
+    assert from_ir(middle)["bw"] == "middle"

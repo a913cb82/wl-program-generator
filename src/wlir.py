@@ -170,7 +170,10 @@ def to_ir(plan):
                         ],
                     }
                 )
-    return {"class": plan["class"], "sessions": sessions}
+    ir = {"class": plan["class"], "sessions": sessions}
+    if plan.get("bw", "middle") != "middle":
+        ir["bw"] = plan["bw"]
+    return ir
 
 
 def _restore_sessions(stored, movements_list, vols):
@@ -243,8 +246,11 @@ def from_ir(ir):
         by_week[key].append(s)
     meta = ir.get("mesos")
     if meta is not None:
-        return _from_ir_stored(cls, ir.get("title"), meta, by_week, order)
-    return _from_ir_macro(cls, by_week)
+        plan = _from_ir_stored(cls, ir.get("title"), meta, by_week, order)
+    else:
+        plan = _from_ir_macro(cls, by_week)
+    plan["bw"] = ir.get("bw", "middle")
+    return plan
 
 
 def _from_ir_stored(cls, title, meta, by_week, order):
