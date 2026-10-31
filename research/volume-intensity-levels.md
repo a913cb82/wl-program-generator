@@ -73,11 +73,16 @@ p102/p45/p53 vs our built plans):
 | --- | --- | --- |
 | Snatch | 50 / 45 / 40% | 50 / 45–44 / 39% |
 | Clean | 44 / 40 / 38% | 44 / 41 / 38% |
-| Jerk | 68 / 58 / 46% | 67 / 57–56 / 45% |
+| Jerk | 68 / 58 / 46% | 67 / 57–58 / 43% |
 | Front+back squat share of month | 27 / 23 / 20% | 27 / 23 / 19% |
 
 Nearly exact — the DAY template already encodes Roman's selection
-gradient. Gaps: other squats vanish in our I+ plans (Roman keeps
+gradient. Correction (2026-10-31 adversarial review): the MS jerk cell
+was overstated at 45% (actual prep 42.6%, whole-program 42.9%); two
+small same-direction absolute-cell errors amplify in the ratio, and the
+table above mixed whole-program and prep denominators across rows.
+Gradient direction still holds (68→58→46 vs ours 68→57–58→43) with
+the last step overshooting ~3pp. Gaps: other squats vanish in our I+ plans (Roman keeps
 ~6% prep at I/CMS, large heavyweight volumes at MS); presses vanish
 above III (Roman keeps press/bendover/other work at ~15–18%, folded
 into our Fundamental bucket at 15–18% — roughly consistent in total,

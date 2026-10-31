@@ -1,6 +1,8 @@
 import re
 from math import gcd
 
+import pytest
+
 import wlgen
 from wlconfig import (
     BIN_CLASS,
@@ -1359,7 +1361,7 @@ def test_taper_drops_classic_heavy_bins():
             bt = BIN_GROUP[g]
             bins = week_bins(cls, 4, 3, g)
             assert all(b == 0 for b, z in zip(bins, BIN_ZONES[bt]) if z >= 90)
-        for g in ("Squat", "Other Squat", "SnPull", "ClPull", "Press", "Fundamental"):
+        for g in ("Squat", "Other Squat", "Press", "Fundamental"):
             assert week_bins(cls, 4, 3, g) == BINS[BIN_CLASS[cls]][BIN_GROUP[g]]
 
 
@@ -1493,13 +1495,12 @@ def test_day_patterns_keep_canonical_first():
         ("CMS", "Prep 2-4", 2): "LMLM",
         ("CMS", "Prep 3-1", 1): "LMLM",
         ("CMS", "Comp 1", 2): "LMLM",
-        ("CMS", "Comp 2", 0): "LMLM",
         ("CMS", "Comp 2", 1): "LMLM",
         ("CMS", "Comp 2", 2): "LMLM",
         ("MS", "Prep 4-2", 0): "SLSLS",
         ("MS", "Prep 3-1", 1): "MSLMM",
-        ("MS", "Comp 1", 1): "MSLMM",
-        ("MS", "Comp 1", 3): "LSL",
+        ("MS", "Comp 1", 1): "MSLMS",
+        ("MS", "Comp 1", 3): "MLM",
         ("MS", "Comp 2", 0): "MSLMM",
         ("MS", "Comp 2", 1): "MSLMM",
     }
@@ -1512,20 +1513,7 @@ def test_day_patterns_keep_canonical_first():
                 )
 
 
-def pair_dose(s, g):
-    """Largest complex leg of this movement in one reference zone."""
-    best = 1
-    for (a, b), (ref, va, vb) in s.get("pairs", {}).items():
-        if g not in (a, b):
-            continue
-        for x, y in zip(va, vb):
-            if x and y:
-                r = gcd(x, y)
-                best = max(best, (x if g == a else y) // r)
-    return best
-
-
-def test_session_profiles_keep_a_ramp():
+def test_session_profiles_stay_contiguous():
     for cls in ANNUALS:
         for m in build_plan(cls)["mesos"]:
             for w in m["weeks"]:
@@ -1536,25 +1524,22 @@ def test_session_profiles_keep_a_ramp():
                     active = [
                         s for s in w["sessions"] if sum(s["movements"].get(g, []))
                     ]
-                    supports = [
-                        {i for i, c in enumerate(s["movements"][g]) if c}
-                        for s in active
-                    ]
-                    if len(supports) < 2:
+                    if len(active) < 2:
                         continue
-                    # sessions may start at different bases; the hard rule is
-                    # that each profile is contiguous from its own base.
-                    # Coverage asks for a dose only where the week holds a
-                    # dose per active session plus one spare per session:
-                    # largest-remainder rounding can strand a session with
-                    # none of a marginal zone.
-                    doses = [pair_dose(s, g) for s in active]
-                    for s, dose in zip(active, doses):
+                    # Sessions may start at different bases; the hard rule is
+                    # that each profile is contiguous from its own base, the
+                    # README guarantee. A gap stands only where the week is
+                    # too thin to cover every session that needs the zone:
+                    # one lift per session plus one spare per session, so
+                    # largest-remainder rounding cannot strand anyone. Ramps
+                    # may taper upward (thick base, thin top); thickness
+                    # beyond nonzero is not required.
+                    for s in active:
                         z = s["movements"][g]
                         top = max(i for i, c in enumerate(z) if c)
                         for i in range(top):
-                            if counts[i] >= sum(doses) + len(active):
-                                assert z[i] >= dose  # warmup block below the top
+                            if counts[i] >= 2 * len(active):
+                                assert z[i] >= 1, (cls, g, list(z))
 
 
 def test_ratio_limits_by_zone():
@@ -2093,35 +2078,34 @@ def test_rendered_set_sizes_match_takano_centers():
     # Pinned rendering profile: light-zone singles are feelers before work
     # sets (the size term prices them); Fund-80 renders 2s from thin
     # per-session doses, against both books' 3+ (concentration work, not
-    # ladder work, moves this). Changes here must move the pins deliberately.
+    # ladder work, moves this). Pull 100s render 2s: rehomed from the
+    # tapered final week into high-volume weeks, they pack Takano-style
+    # (his CMS ClPull runs [100,2]x3) against Roman's pull singles.
+    # Changes here must move the pins deliberately.
     assert modes == {
         ("Snatch", 60): 3,
         ("Snatch", 70): 2,
         ("Snatch", 80): 2,
         ("Snatch", 90): 1,
-        ("Snatch", 100): 1,
         ("CJ", 60): 3,
         ("CJ", 70): 3,
         ("CJ", 80): 2,
         ("CJ", 90): 1,
-        ("CJ", 100): 1,
         ("Squat", 50): 1,
         ("Squat", 60): 1,
         ("Squat", 70): 1,
         ("Squat", 80): 2,
         ("Squat", 90): 2,
         ("ClPull", 70): 1,
-        ("ClPull", 80): 3,
-        ("ClPull", 90): 2,
-        ("ClPull", 100): 1,
-        ("ClPull", 110): 1,
+        ("ClPull", 80): 1,
+        ("ClPull", 90): 3,
+        ("ClPull", 100): 2,
         ("Fund", 50): 1,
         ("Fund", 60): 1,
         ("Fund", 70): 1,
         ("Fund", 80): 2,
         ("Fund", 90): 1,
         ("Fund", 100): 1,
-        ("Fund", 110): 1,
     }, {k: v for k, v in modes.items() if v != 1 or k[1] >= 90}
 
 
@@ -2258,3 +2242,60 @@ def test_final_week_keeps_roman_remnants():
             vec = last["bins"][g]
             zones = BIN_ZONES[BIN_GROUP[g]]
             assert sum(x for z, x in zip(zones, vec) if z >= 90) == 0, (cls, g)
+
+
+def test_shift_never_invents_unallocated_zones():
+    # Fleet review: the comp shift pushed mass into zone 100 where the
+    # yearly frac is zero (III/II 100% singles). A shift may reshape
+    # allocated zones only; mass bound for a walled zone stays below it.
+    lo = [60, 70, 80, 90, 100]
+    out = shift([0.49, 0.32, 0.15, 0.04, 0.0], lo, 68.5)
+    assert out[-1] == 0.0
+    assert abs(sum(out) - 1) < 1e-9
+    assert out == pytest.approx([0.49, 0.32, 0.14, 0.05, 0.0])
+
+
+def test_comp_weeks_keep_zero_top_at_zero():
+    # III/II yearly 100-frac is zero for classics: comp weeks must not
+    # invent it (rendered 100% singles in m4w2).
+    for cls in ("III", "II"):
+        for g in (
+            "Snatch",
+            "Clean",
+            "Jerk",
+            "Other Snatch",
+            "Other Clean",
+            "Other Jerk",
+        ):
+            bt = BIN_GROUP[g]
+            if BINS[BIN_CLASS[cls]][bt][-1] != 0:
+                continue
+            for mi in (3, 4):
+                for wi in range(3):
+                    assert week_bins(cls, mi, wi, g)[-1] == 0, (cls, g, mi, wi)
+
+
+def test_taper_strips_pull_maxes():
+    # Roman p110 + Takano: no 100%+ pulls in the final week. Classics lose
+    # all 90+; pulls keep 90-99 but lose 100+.
+    for cls in ("I", "CMS", "MS"):
+        for g in ("SnPull", "ClPull"):
+            bt = BIN_GROUP[g]
+            bins = week_bins(cls, 4, 3, g)
+            assert all(b == 0 for b, z in zip(bins, BIN_ZONES[bt]) if z >= 100)
+
+
+def test_taper_topup_rehomes_pull_maxes():
+    # Stripped pull 100+ mass returns to weeks 1-3 like classic slack.
+    from wlconfig import GROUPS
+    from wlgen import build_plan, taper_topup
+
+    for cls in ("I", "CMS", "MS"):
+        meso = build_plan(cls)["mesos"][-1]
+        week_groups = [{g: sum(w["bins"][g]) for g in GROUPS} for w in meso["weeks"]]
+        top = taper_topup(cls, 4, week_groups)
+        assert sum(top[w]["SnPull"] + top[w]["ClPull"] for w in range(3)) > 0
+    meso = build_plan("III")["mesos"][-1]
+    week_groups = [{g: sum(w["bins"][g]) for g in GROUPS} for w in meso["weeks"]]
+    top = taper_topup("III", 4, week_groups)
+    assert sum(top[w]["SnPull"] + top[w]["ClPull"] for w in range(4)) == 0

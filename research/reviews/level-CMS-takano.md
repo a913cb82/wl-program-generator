@@ -1,0 +1,15 @@
+# Level CMS: OURS vs TAKANO (adversarial)
+
+Scope: `outputs/CMS.json` (89 sess, 20 wk-keys) vs `tests/fixtures/takano-CMS.json` (55 sess, 12 wk). Same slot format `[pct, reps|[r1,r2]]`.
+
+## Severity-ranked findings
+
+**S1 — OURS has zero Press; Takano has 362 Press reps (8.5%) in 29 slots.** Takano day-0 opener is Squat/Snatch/C+J/Jerk/ClPull/SnPull/**Press** (e.g. m0w0d0: 7 mov, 130 reps, `Press [[80,4]x4]`). No OURS slot contains Press. Biggest structural gap.
+**S2 — OURS pull volume is 4.3% vs Takano 15.4%, and OURS pulls live at low % while Takano pulls at 90–100%.** OURS pull 289 reps @ pct {60:325,70:490,80:386,90:136,100:38,110:18} (note: pair-embedded reps counted in snatch/C&J groups dilute this further); Takano pull 657 reps @ {80:168,90:296,100:217}, incl `SnPull [[100,4]x4]` and `ClPull [[80,4]x5]`. OURS heaviest pull set is `ClPull [[110,1]x3]` singles.
+**S3 — 90%+ share is ~half Takano's: OURS 652/6712 (9.7%) vs Takano 824/4274 (19.3%).** OURS piles into 70s (32.1% vs 24.9%); both ~38% in 80s. Per-family: OURS Fundamental spreads <70–90+ (109/164/772/141) while Takano Fundamental is *only* 80s/90+ (232/81) — OURS uses Fundamental as filler at 60–70%.
+**S4 — Reps/set habit: OURS is singles/doubles-heavy, Takano centers on 3s–4s.** OURS dist {1:491,2:1015,3:599,4:278,5:201} sets, 22.3% single-rep sets; Takano {1:107,2:307,3:352,4:404,5:97,6:66}, 13.7% singles. OURS max session m3w0d2 (145 reps) is 16×`SnPull+Other Snatch` + 14×`Other Clean+Other Jerk` mostly [2,1]/[1,1] structures; Takano max m0w5d0 (134 reps) is 6 movements of straight 4s/8s (`Squat x8, Snatch x8, Clean x8, SnPull x5, ClPull x4, Fundamental x4`).
+**S5 — Session shape: same mean size (~75 vs ~78) but OURS runs fewer, longer movements (3.3 mov/sess; 6 single-movement sessions) vs Takano 4.5 mov/sess, never fewer than 2 except once.** OURS single-movement outliers: `Squat [[60,7],[70,4],[80,4]...]` 42–48 reps (m0w1d1, m1w3d1, m2w3d1, m3w0d1) and two `Other Clean+Jerk [[60,[3,3]]...]` 46–48 reps. Median OURS (m4w2d0, 79 reps) = 4 slots incl `ClPull [[80,4],[80,3],[90,3],[90,2],[100,1],[110,1]x3]`; median Takano (m0w8d5, 70 reps) = 4 slots of uniform doubles (`Other Snatch+Other Squat [[60,[2,2]]...]`, `ClPull [[80,2],[90,2],[100,2]x3]`).
+**S6 — Group shares (reps): OURS overweights squat/snatch volume, underweights C&J vs Takano.** OURS snatch 26.9% / C&J 28.7% / pull 4.3% / squat 22.5% / other 17.7%; Takano snatch 20.8% / C&J 32.2% / pull 15.4% / squat 15.9% / other 15.8%. Absolute weekly: OURS 335.6 reps/wk over 20 wks vs Takano 356.2/wk over 12 wks — near parity per week, OURS program is just 1.67× longer (totals 6712 vs 4274).
+**S7 — Only-on-one-side patterns.** OURS-only complexes: `ClPull+Other Clean`, `Clean+Other Jerk`, `SnPull+Other Snatch`. Takano-only: `Press` family (29 slots), `Other Snatch+Other Squat`, `Other Snatch+Press`, `Other Squat`, standalone `SnPull` (OURS SnPull exists only glued inside `SnPull+Snatch` pairs: 983 reps).
+
+Verdict: closest match is weekly rate (~336 vs ~356) and 80s share (~37–38%); deepest misses are Press absence, pull volume/intensity, 90%+ dose, and singles-vs-4s texture.

@@ -176,10 +176,12 @@ def test_shipped_scores_clean():
         assert raw["illegal"] == 0, cls
         assert raw["clash"] == 0, cls
         assert raw["gaps"] == {"III": 0, "II": 0, "I": 0, "CMS": 0, "MS": 0}[cls], cls
-        # taper slack plus phase peak (2026-10-26): fewer soft openers
+        # taper slack plus phase peak (2026-10-26): fewer soft openers;
+        # walled shift (2026-10-31): heat pools at 90, pricing a few more
+        # low-class 90-openers the books prescribe
         assert (
             raw["soft"]
-            == {"III": 4.0, "II": 26.0, "I": 40.0, "CMS": 21.0, "MS": 25.0}[cls]
+            == {"III": 6.0, "II": 26.0, "I": 38.0, "CMS": 23.0, "MS": 22.0}[cls]
         ), cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
@@ -191,14 +193,15 @@ def test_shipped_scores_clean():
 
 def test_book_numbers_match_research():
     book = score_book()
-    # Takano-fitted bins (2026-10-31): nominals match measured profiles,
-    # so band divergence collapses; higher annuals add honest volume.
-    assert round(book["excess"], 1) == 219.7
+    # Walled shift (2026-10-31): no invented 100s, heat pools at 90.
+    # Excess falls (less over-capacity stacking); instructions fall with
+    # fewer top fragments; soft redistributes toward prescribed 90s.
+    assert round(book["excess"], 1) == 204.3
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9641
-    assert book["slots"] == 1434
-    assert book["longest"] == 31
+    assert book["instructions"] == 9505
+    assert book["slots"] == 1431
+    assert book["longest"] == 30
 
 
 def test_score_detects_gap():

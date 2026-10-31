@@ -133,12 +133,20 @@ def ari(bins, zones):
 
 
 def shift(bins, zones, target):
-    """Move bin mass between adjacent zones to hit a target average intensity."""
+    """Move bin mass between adjacent zones to hit a target average intensity.
+
+    Zones with zero base mass are walls: the shift reshapes allocated
+    zones only and never invents a zone the fit left empty (no 100% work
+    where the year plans none). A move into a walled zone is skipped
+    without spending its delta, so the heat pools at the highest
+    allocated zone instead."""
     out = list(bins)
     delta = target - ari(out, zones)
     step = zones[1] - zones[0]
     if delta > 0:
         for i in range(len(out) - 2, -1, -1):
+            if bins[i + 1] <= 0:
+                continue
             x = min(out[i], delta / step)
             out[i] -= x
             out[i + 1] += x
@@ -147,6 +155,8 @@ def shift(bins, zones, target):
                 break
     elif delta < 0:
         for i in range(len(out) - 1, 0, -1):
+            if bins[i - 1] <= 0:
+                continue
             x = min(out[i], -delta / step)
             out[i] -= x
             out[i - 1] += x
@@ -157,10 +167,15 @@ def shift(bins, zones, target):
 
 
 def taper(bins, bt):
-    """Competition taper: snatch/C&J lose all zones at 90% and above."""
-    if bt not in ("Snatch", "CJ"):
+    """Competition taper: snatch/C&J lose all zones at 90% and above,
+    pulls lose 100% and above (Roman p110, Takano: no pull maxima in
+    the final week)."""
+    if bt in ("Snatch", "CJ"):
+        out = [0.0 if z >= 90 else b for b, z in zip(bins, BIN_ZONES[bt])]
+    elif bt in ("SnPull", "ClPull"):
+        out = [0.0 if z >= 100 else b for b, z in zip(bins, BIN_ZONES[bt])]
+    else:
         return list(bins)
-    out = [0.0 if z >= 90 else b for b, z in zip(bins, BIN_ZONES[bt])]
     total = sum(out)
     return [b / total for b in out]
 
@@ -1670,12 +1685,16 @@ def taper_topup(cls, mi, week_groups, bw="middle"):
     zones_by_group = {}
     for g in GROUPS:
         bt = BIN_GROUP[g]
-        if bt not in ("Snatch", "CJ"):
+        if bt in ("Snatch", "CJ"):
+            thresh = 90
+        elif bt in ("SnPull", "ClPull"):
+            thresh = 100
+        else:
             continue
         zones = BIN_ZONES[bt]
         zones_by_group[g] = zones
         u4 = close_bins(allocate(week_groups[3][g], untapered_week_bins(cls, mi, 3, g, bw)))
-        slack = sum(n for n, z in zip(u4, zones) if z >= 90)
+        slack = sum(n for n, z in zip(u4, zones) if z >= thresh)
         vols = [week_groups[w][g] for w in range(3)]
         if slack <= 0 or sum(vols) == 0:
             continue

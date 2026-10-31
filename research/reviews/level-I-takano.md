@@ -1,0 +1,14 @@
+# Level I — OURS vs TAKANO (adversarial, read-only)
+
+Verdict: closest class on volume, weakest on pulls + press/fundamental split + set structure.
+Totals: OURS 6712 reps / 89 sess / 20 wk = 335.6/wk, 4.45 sess/wk; TAKANO 3664 / 50 / 12 wk = 305.3/wk, 4.17 sess/wk. OURS +30.3/wk (+9.9%).
+
+S1 (critical) Pull intensity collapses: OURS Pull mean 76.5, 90%+ 22.8%, modal 80 (144/448) vs TAK 87.1, 90%+ 60.9%, modal 90 (85/192). OURS Pull reps/set 1:216, 2:142, 3:72 (mean 1.76); TAK 3:86, 4:65, 2:41 (mean 3.12). OURS trains pulls light and single-y; TAK hammers 90×3 / 80×4.
+S2 (critical) Press deleted, Fundamental 7.3× inflated: TAK Press 340 reps / 103 sets (modal 80×3, mean 71.6, 0% 90+) + Fun 160 reps (80×4, mean 80.0, 4.71/set) vs OURS Press 0, Fun 1169 (modal 80, mean 76.0, 2.70/set). E.g. TAK m0w0d0: `Press [[60,3]×4,[70,2]×2]`, `Fundamental [[70,7]×4]`; OURS has no equivalent slot anywhere.
+S3 (major) Set habit is doubles/singles, not triples: overall reps/set OURS 2:1215, 1:847, 3:672 vs TAK 3:484, 2:340, 1:332, 4:277. Per family means (OURS→TAK): Sn 2.08→2.31, Cl 1.94→2.29, Jk 1.86→1.87, Sq 2.81→2.72 (only match). Sn modal OURS 2 (365) vs TAK 3 (85); Cl OURS 2 (318) vs TAK 2/1/3 spread.
+S4 (major) Sessions fewer-movement, median-heavy: size OURS mean 75.4 / med 79 / 26–145 vs TAK 73.3 / 63 / 27–126. Mov/sess OURS 3.35 (4:47, 3:30, 2:8, 1:4) vs TAK 4.46 (5:15, 4:12, 7:5, 6:5). Big-session quote: OURS m3w0d2 145r/4 slots (`SnPull+OtherSnatch 15×[60–100,[1,x]]`) vs TAK m0w0d0 126r/7 slots (`Snatch 6×2@60–70`, `Clean+Jerk 6×[2,2]`, `SnPull 4×[80,3]`, `ClPull 4×[80,4]`, `Squat 6×3`, `Press 6 sets`, `Fund 4×[70,7]`). OURS piles reps into 1–2 pair-slots; TAK spreads 6–7 slots.
+S5 (major) Taper singles missing: TAK m1w1d1 27r = `OtherSnatch 9×[90,1]`, `OtherClean+Jerk 9×[90,[1,1]]`; peaking days m1w1d3/m1w2d0 repeat 9×1@90. OURS smallest m4w3d0 26r = `Snatch 6×2@60–80`, `ClPull 80×3/90×2/90×2/100×1`, `Fund 6×1@60–80` — no 9×1@90 day; OURS 90%+ shares run 8.5–15.5% vs TAK 14.7–15.9% on Sn/Cl/Jk/Sq (and 60.9% pulls).
+S6 (minor) Group shares: OURS Sq 22.5 / Sn 19.4 / Fun 17.4 / Cl 15.0 / Pull 12.9 / Jk 12.7 vs TAK Sq 19.1 / Sn 18.6 / Cl 16.8 / Jk 16.1 / Pull 15.8 / Pr 9.3 / Fun 4.4. Deltas: Fun +13.0pp, Jk −3.4pp, Pull −2.9pp, Sq +3.4pp; Sn/Cl within 1pp.
+S7 (minor) Zone/modal otherwise close: Sn 72.8→73.8 (modal 80 both), Cl 73.0→73.6 (80→70), Jk 72.8→74.2 (70→80), Sq 75.1→75.6 (80 both). Only-on-TAK: `Other Squat` (370r), `OtherSnatch+OtherSquat`, `OtherSnatch+Press`. Only-on-OURS: `SnPull+OtherSnatch`, `ClPull+OtherClean`, `Clean+OtherJerk` (pair-with-Other inventions).
+
+Fix order: (1) pulls → 90×3 / 100×2–3, triples-based; (2) restore Press ~9% and cut Fundamental to ~5%; (3) shift Sn/Cl base sets 2→3; (4) split mega pair-slots into 5–7 movement sessions; (5) add 9×1@90 taper days.

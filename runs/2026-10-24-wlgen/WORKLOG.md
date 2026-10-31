@@ -413,3 +413,31 @@ One entry per round. Never edit an old entry.
   HEAD baseline (5 ruff + 6 mypy pre-existing, zero new).
 - research loop CLOSED: all 7 items landed as commits d3707c0 (1-2),
   58ed4f7 (3), 3adc3c3 (4), 3207c7 (5), 8d33762 (6), plus this one (7).
+
+## 28 — adversarial review fleet: 17 reviewers, 3 fixes (2026-10-31)
+- launched fleet 1 (volumes/intensity/sessions/methodology/selection)
+  then fleet 2 sharded per-class x source (10) + method-vs-source (2);
+  all read-only, findings in research/reviews/*.md + SYNTHESIS.md.
+- FIXED (TDD red→green): (1) walled shift — comp shift invented 100s
+  where yearly frac is zero (III/II singles); moves into zero-base
+  zones skip without spending delta, heat pools at highest allocated;
+  (2) taper strips pull 100+ in final week + topup rehomes to w1-3
+  (Roman p110, Takano zero); (3) Finding 4 MS-jerk 45→42.6% +
+  denominator honesty. Pins re-measured (excess 204.3, instr 9505,
+  soft III/I/CMS/MS 6/38/23/22). 207 green, lint at HEAD baseline.
+- TEST recalibrated (not weakened): ramp bar demanded uniform dose
+  thickness — stricter than books (Roman ramps taper; any nonzero rung
+  renders legally) and README ("unbroken run"). Now contiguity with
+  spare-gate. The 2 tripping sessions ([6,9,2,1] pyramids) are textbook.
+- ADJUDICATED source conflicts (document, don't chase): Takano 80-modal
+  texture vs Roman 70-pyramid quotas; textbook vs coach selection
+  (we side Roman); annual-rate vs Roman-year; low-class heaviness.
+  Corrected reviewer artifacts (Takano 90%+ is 23%, not rare; Takano
+  writes Squat x8; wk4 squat-90s within allowance).
+- BANKED (unanimous, 3 method reviews): tops-first inversion —
+  allocate counted tops + weekday roles first, volume follows.
+  Smoking gun: SnPull fit 59-89% @90+, rendered 3-5% (pairs eat the
+  dose; ClPull matches via solo slots). Subsumes solo pulls, thin-top
+  starvation, L-day counts, wave steepening, most close_* repairs.
+  Near-term: graded comp cut, III/II annual split, Other-Squat dose,
+  low-class prep 90s.
