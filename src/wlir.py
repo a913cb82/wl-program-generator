@@ -173,7 +173,35 @@ def to_ir(plan):
     return {"class": plan["class"], "sessions": sessions}
 
 
-def _week_entry(cls, mi, wi, sessions):
+def _restore_sessions(stored, movements_list, vols):
+    """Sessions back from stored JSON: pair keys split, seqs parsed."""
+    sessions = []
+    for s, movements, vol in zip(stored, movements_list, vols):
+        pairs = {}
+        for key, (ref, va, vb) in s["pairs"].items():
+            a, b = key.split("+")
+            pairs[(a, b)] = (ref, tuple(va), tuple(vb))
+        seqs = [_tuples(sl["seq"]) for sl in s["slots"]]
+        sessions.append(
+            {
+                "day": s["day"],
+                "vol": vol,
+                "movements": movements,
+                "pairs": pairs,
+                "slots": [
+                    {
+                        "movement": sl["movement"],
+                        "seq": seq,
+                        "items": _parse(seq)[2],
+                    }
+                    for sl, seq in zip(s["slots"], seqs)
+                ],
+            }
+        )
+    return sessions
+
+
+def _week_entry(cls, mi, wi, sessions, vol=None):
     bins: dict = {}
     groups: dict = {g: 0 for g in GROUPS}
     vols = []
@@ -188,7 +216,7 @@ def _week_entry(cls, mi, wi, sessions):
     for g in GROUPS:
         bins.setdefault(g, [0] * len(BIN_ZONES[BIN_GROUP[g]]))
     return {
-        "vol": week_vol(cls, mi, wi),
+        "vol": week_vol(cls, mi, wi) if vol is None else vol,
         "groups": groups,
         "sessions": [],
         "bins": bins,
@@ -213,6 +241,60 @@ def from_ir(ir):
             by_week[key] = []
             order.append(key)
         by_week[key].append(s)
+    meta = ir.get("mesos")
+    if meta is not None:
+        return _from_ir_stored(cls, ir.get("title"), meta, by_week, order)
+    return _from_ir_macro(cls, by_week)
+
+
+def _from_ir_stored(cls, title, meta, by_week, order):
+    """Rebuild from the JSON's own mesocycle list: weeks come from the
+    sessions themselves, never from a fixed grid. Volumes roll up from
+    the slots; no prescription exists, so actuals stand as planned."""
+    meso_ids = []
+    for mi, _wi in order:
+        if mi not in meso_ids:
+            meso_ids.append(mi)
+    mesos = []
+    for mi in meso_ids:
+        info = meta[mi] if mi < len(meta) else {}
+        weeks = []
+        for key in [k for k in order if k[0] == mi]:
+            stored = by_week[key]
+            actual = sum(
+                sum(v) for s in stored for v in s["movements"].values()
+            )
+            entry = _week_entry(cls, mi, key[1], stored, vol=actual)
+            entry["sessions"] = _restore_sessions(
+                stored, entry["_movements"], entry["_vols"]
+            )
+            del entry["_vols"]
+            del entry["_movements"]
+            weeks.append(entry)
+        mesos.append(
+            {
+                "name": info.get("name", f"Meso {mi + 1}"),
+                "phase": info.get("phase", "prep"),
+                "vol": sum(w["vol"] for w in weeks),
+                "groups": {
+                    g: sum(w["groups"][g] for w in weeks) for g in GROUPS
+                },
+                "weeks": weeks,
+            }
+        )
+    return {
+        "macro": title or f"Soviet year ({cls})",
+        "class": cls,
+        "annual": sum(m["vol"] for m in mesos),
+        "groups": {g: sum(m["groups"][g] for m in mesos) for g in GROUPS},
+        "mesos": mesos,
+    }
+
+
+def _from_ir_macro(cls, by_week):
+    """Legacy rebuild over the class macro grid (our own minimal JSON,
+    which carries no mesocycle list): planned volumes from the class
+    ground truth tables."""
     macro = CLASSES[cls]["macro"]
     mesos = []
     for mi, (name, phase, _, _) in enumerate(macro):
@@ -220,30 +302,9 @@ def from_ir(ir):
         for wi in range(len(macro[mi][2])):
             stored = by_week.get((mi, wi), [])
             entry = _week_entry(cls, mi, wi, stored)
-            sessions = []
-            for s, movements, vol in zip(stored, entry["_movements"], entry["_vols"]):
-                pairs = {}
-                for key, (ref, va, vb) in s["pairs"].items():
-                    a, b = key.split("+")
-                    pairs[(a, b)] = (ref, tuple(va), tuple(vb))
-                seqs = [_tuples(sl["seq"]) for sl in s["slots"]]
-                sessions.append(
-                    {
-                        "day": s["day"],
-                        "vol": vol,
-                        "movements": movements,
-                        "pairs": pairs,
-                        "slots": [
-                            {
-                                "movement": sl["movement"],
-                                "seq": seq,
-                                "items": _parse(seq)[2],
-                            }
-                            for sl, seq in zip(s["slots"], seqs)
-                        ],
-                    }
-                )
-            entry["sessions"] = sessions
+            entry["sessions"] = _restore_sessions(
+                stored, entry["_movements"], entry["_vols"]
+            )
             del entry["_vols"]
             del entry["_movements"]
             weeks.append(entry)

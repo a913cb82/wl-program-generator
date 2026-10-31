@@ -282,3 +282,21 @@ One entry per round. Never edit an old entry.
   shorter, so all weeks are visible; screenshot bytes are deterministic per
   HTML. Pre-existing lint debt unchanged (5 ruff + 4 mypy on HEAD)
 - next: Narrow Squat openers; fill 2 I meso holes; table-driven volume work
+
+## 26 — Generic IR: title + meso labels, no fixed grid (2026-10-31)
+- verdict: keep (192 green; 6 Takano fixtures reconverted, same sessions)
+- what changed: Takano JSONs now carry "title" + "mesos" (name + phase per
+  mesocycle, from book week headers: Preparation 1-4 etc.); from_ir builds
+  from stored (meso, week) keys instead of our 5x4 macro grid, so 8/9/12/17
+  week programs render with zero phantom weeks; volumes roll up from slots
+  (no prescription, so actuals stand as planned); to_ir stays minimal
+  (class + sessions) and the legacy macro path is verbatim, so our own
+  round-trip and book pins are untouched (test_ir_round_trip gates it);
+  to_html needed no changes (already data-driven); precomp scores with comp
+  ratios (competition-period training)
+- what learned: the parser already captured week phase labels, only 3
+  "?" headers needed continuity inheritance; the book has no Competition
+  phase weeks (finals are pre-competition); phantom idle was the whole
+  story (III 113->5, MS 40->10); illegal/clash/gaps/soft barely moved,
+  proving they were always content-driven
+- next: Narrow Squat openers; fill 2 I meso holes; table-driven volume work

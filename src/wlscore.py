@@ -197,6 +197,8 @@ def _step_ok(prev_zone, prev_value, zone, value, seen, present):
 
 def _nominal(cls, phase, week_vol):
     """Planned weekly lifts per group: the class ratio split of the week."""
+    if phase == "precomp":
+        phase = "comp"  # pre-competition is competition-period training
     ratios = CLASSES[cls]["ratios"][phase]
     return dict(
         zip(GROUPS, allocate(week_vol, [ratios[i] for i in range(len(GROUPS))]))

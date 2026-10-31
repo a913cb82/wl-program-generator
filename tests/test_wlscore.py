@@ -386,3 +386,11 @@ def test_soft_opener_prices_excess_reps():
     assert _soft_opener([(50, 5)]) == 0
     assert _soft_opener([(50, 12), (60, 7)]) == 7
     assert _soft_opener([(80, (2, 1))]) == 0
+
+
+def test_precomp_phase_scores_as_competition_period():
+    from wlscore import _nominal
+
+    # Takano headers name three phases; ours knows two. Pre-competition
+    # belongs to the competition period, so it shares comp ratios.
+    assert _nominal("III", "precomp", 100) == _nominal("III", "comp", 100)

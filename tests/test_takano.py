@@ -200,16 +200,16 @@ def test_fixtures_render_and_score():
     # movement rules; clash/idle are grid artifacts (empty weeks past his
     # shorter programs, his day mixes predate our templates)
     pins = {
-        "III": {"illegal": 6, "clash": 10, "idle": 113, "gaps": 0, "soft": 9.0},
-        "II": {"illegal": 14, "clash": 13, "idle": 104, "gaps": 0, "soft": 6.0},
-        "I": {"illegal": 47, "clash": 23, "idle": 87, "gaps": 0, "soft": 13.0},
-        "CMS": {"illegal": 71, "clash": 21, "idle": 84, "gaps": 2, "soft": 15.0},
-        "MS": {"illegal": 109, "clash": 37, "idle": 39, "gaps": 5, "soft": 36.0},
+        "III": {"illegal": 6, "clash": 10, "idle": 5, "gaps": 0, "soft": 9.0},
+        "II": {"illegal": 14, "clash": 13, "idle": 6, "gaps": 0, "soft": 6.0},
+        "I": {"illegal": 47, "clash": 23, "idle": 7, "gaps": 0, "soft": 13.0},
+        "CMS": {"illegal": 71, "clash": 21, "idle": 4, "gaps": 2, "soft": 15.0},
+        "MS": {"illegal": 109, "clash": 37, "idle": 9, "gaps": 3, "soft": 36.0},
         "MSIC": {
             "illegal": 126,
             "clash": 51,
-            "idle": 40,
-            "gaps": 4,
+            "idle": 10,
+            "gaps": 2,
             "soft": 45.0,
         },
     }
@@ -284,3 +284,17 @@ def test_unbalanced_open_repeat_applies_to_whole_chunk():
         (75, [1, 1]),
     ] * 3
     assert parse_scheme("(60%/1+1", True) == [(60, [1, 1])]
+
+
+def test_build_program_groups_phase_runs_into_mesos():
+    from takano import build_program
+
+    weeks = [
+        {"n": 1, "meso": "Preparation", "plan": 100, "days": []},
+        {"n": 2, "meso": "Preparation", "plan": 100, "days": []},
+        {"n": 3, "meso": "Pre-competition", "plan": 100, "days": []},
+    ]
+    sessions, mesos = build_program(weeks)
+    assert sessions == []
+    assert [m["phase"] for m in mesos] == ["prep", "precomp"]
+    assert [m["name"] for m in mesos] == ["Preparation 1-2", "Pre-competition 3-3"]

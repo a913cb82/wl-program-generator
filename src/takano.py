@@ -424,10 +424,54 @@ def build_session(ex_list, day):
     }
 
 
+PHASE_LABEL = {
+    "prep": "Preparation",
+    "precomp": "Pre-competition",
+    "comp": "Competition",
+}
+
+TITLE = {
+    "III": "Takano Class III",
+    "II": "Takano Class II",
+    "I": "Takano Class I",
+    "CMS": "Takano CMS",
+    "MS": "Takano MS",
+    "MSIC": "Takano MSIC",
+}
+
+
+def _week_phase(label, prev):
+    """Book week header label to our phase code; a header without one
+    inherits the running phase."""
+    low = (label or "").strip().lower()
+    if low.startswith("pre-competition") or low.startswith("precompetition"):
+        return "precomp"
+    if low.startswith("competition"):
+        return "comp"
+    if low.startswith("preparation"):
+        return "prep"
+    return prev
+
+
 def build_program(weeks):
-    """Schema-valid JSON: sequential meso/week keys over our grid."""
+    """Sessions plus mesocycle metadata: contiguous same-phase week runs
+    form mesocycles, so no fixed mesocycle length anywhere."""
     sessions = []
+    mesos = []
+    phase = "prep"
+    mi = -1
+    wi = 0
     for wk, w in enumerate(weeks):
+        phase = _week_phase(w.get("meso"), phase)
+        if mi < 0 or mesos[mi]["phase"] != phase:
+            mi += 1
+            wi = 0
+            mesos.append(
+                {"name": "", "phase": phase, "first": w["n"]}
+            )
+        mesos[mi]["name"] = (
+            f"{PHASE_LABEL[phase]} {mesos[mi]['first']}-{w['n']}"
+        )
         used = set()
         for day in w["days"]:
             if not day["ex"]:
@@ -440,10 +484,13 @@ def build_program(weeks):
                 LOG.append(f"week {wk}: weekday assigned to {d}")
             used.add(d)
             s = build_session(day["ex"], d)
-            s["meso"] = wk // 4
-            s["week"] = wk % 4
+            s["meso"] = mi
+            s["week"] = wi
             sessions.append(s)
-    return sessions
+        wi += 1
+    for m in mesos:
+        del m["first"]
+    return sessions, mesos
 
 
 def split_programs(weeks):
@@ -471,25 +518,30 @@ def main():
         jobs.append((program, cls, weeks))
     for program, cls, weeks in jobs:
         LOG = []
-        sessions = build_program(weeks)
+        sessions, meta = build_program(weeks)
+        by_key = {}
+        for s in sessions:
+            by_key.setdefault((s["meso"], s["week"]), []).append(s)
         mesos = []
-        for mi in range(max(s["meso"] for s in sessions) + 1):
+        for mi, info in enumerate(meta):
+            week_list = []
+            wi = 0
+            while (mi, wi) in by_key:
+                week_list.append({"sessions": by_key[(mi, wi)]})
+                wi += 1
             mesos.append(
                 {
-                    "weeks": [
-                        {
-                            "sessions": [
-                                s
-                                for s in sessions
-                                if s["meso"] == mi and s["week"] == wi
-                            ]
-                        }
-                        for wi in range(4)
-                    ]
+                    "name": info["name"],
+                    "phase": info["phase"],
+                    "weeks": week_list,
                 }
             )
         ir = to_ir({"class": cls, "mesos": mesos})
         ir["program"] = program
+        ir["title"] = TITLE.get(program, f"Takano {program}")
+        ir["mesos"] = [
+            {"name": m["name"], "phase": m["phase"]} for m in meta
+        ]
         with open(f"tests/fixtures/takano-{program}.json", "w") as f:
             json.dump(ir, f)
         print(program, "sessions:", len(sessions), "log lines:", len(LOG))
