@@ -425,13 +425,32 @@ def build_program(weeks):
     return sessions
 
 
+def split_programs(weeks):
+    """The I key lumps four book programs (Class 1, CMS, MS, IMS); a week
+    numbered 1 restarts the program."""
+    programs: list = []
+    for w in weeks:
+        if w.get("n") == 1 and programs and programs[-1]:
+            programs.append([])
+        if not programs:
+            programs.append([])
+        programs[-1].append(w)
+    return programs
+
+
 def main():
     global LOG
     with open("tests/fixtures/takano_prog.json") as f:
         data = json.load(f)
-    for cls in ("III", "II", "I"):
+    jobs = [("III", "III", data["III"]), ("II", "II", data["II"])]
+    for program, weeks in zip(
+        ("I", "CMS", "MS", "MSIC"), split_programs(data["I"])
+    ):
+        cls = program if program != "MSIC" else "MS"
+        jobs.append((program, cls, weeks))
+    for program, cls, weeks in jobs:
         LOG = []
-        sessions = build_program(data[cls])
+        sessions = build_program(weeks)
         mesos = []
         for mi in range(max(s["meso"] for s in sessions) + 1):
             mesos.append(
@@ -449,9 +468,10 @@ def main():
                 }
             )
         ir = to_ir({"class": cls, "mesos": mesos})
-        with open(f"tests/fixtures/takano-{cls}.json", "w") as f:
+        ir["program"] = program
+        with open(f"tests/fixtures/takano-{program}.json", "w") as f:
             json.dump(ir, f)
-        print(cls, "sessions:", len(sessions), "log lines:", len(LOG))
+        print(program, "sessions:", len(sessions), "log lines:", len(LOG))
         for line in LOG[:20]:
             print("   ", line)
 

@@ -181,28 +181,41 @@ def _load_fixture(cls):
 def test_fixtures_load_all_sessions():
     assert sum(len(w["sessions"]) for m in _load_fixture("III")["mesos"] for w in m["weeks"]) == 26
     assert sum(len(w["sessions"]) for m in _load_fixture("II")["mesos"] for w in m["weeks"]) == 26
-    # the 58-week I program loads its overlapping 20-week prefix
-    got = sum(len(w["sessions"]) for m in _load_fixture("I")["mesos"] for w in m["weeks"])
-    assert got == 88
+    # the I key lumps four book programs; each loads fully into our grid
+    counts = {"III": 26, "II": 26, "I": 48, "CMS": 55, "MS": 77, "MSIC": 94}
+    for cls, want in counts.items():
+        got = sum(
+            len(w["sessions"]) for m in _load_fixture(cls)["mesos"] for w in m["weeks"]
+        )
+        assert got == want, (cls, got)
 
 
 def test_fixtures_render_and_score():
     from wlgen import to_html
     from wlscore import _score_items
 
-    # illegal/gaps/soft/shortfall are his genuine rule breaks under our
-    # movement rules; clash/idle are grid artifacts (his weeks beyond our
-    # 20-week grid stand empty, his day mixes predate our templates)
+    # illegal/gaps/soft are his genuine rule breaks under our
+    # movement rules; clash/idle are grid artifacts (empty weeks past his
+    # shorter programs, his day mixes predate our templates)
     pins = {
         "III": {"illegal": 6, "clash": 10, "idle": 119, "gaps": 0, "soft": 8.0},
         "II": {"illegal": 14, "clash": 11, "idle": 112, "gaps": 0, "soft": 6.0},
-        "I": {"illegal": 103, "clash": 31, "idle": 14, "gaps": 1, "soft": 23.0},
+        "I": {"illegal": 42, "clash": 18, "idle": 89, "gaps": 0, "soft": 10.0},
+        "CMS": {"illegal": 69, "clash": 18, "idle": 96, "gaps": 1, "soft": 13.0},
+        "MS": {"illegal": 102, "clash": 31, "idle": 55, "gaps": 4, "soft": 33.0},
+        "MSIC": {
+            "illegal": 115,
+            "clash": 45,
+            "idle": 46,
+            "gaps": 4,
+            "soft": 29.0,
+        },
     }
     for cls, pin in pins.items():
         plan = _load_fixture(cls)
         html = to_html(plan)
         assert "Training Plan" in html
-        raw = _score_items([(cls, plan)])
+        raw = _score_items([(plan["class"], plan)])
         for key, value in pin.items():
             assert raw[key] == value, (cls, key)
 

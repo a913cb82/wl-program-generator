@@ -225,3 +225,15 @@ One entry per round. Never edit an old entry.
   converter: dropped MS W7, mis-attached II W9, 52 max lines)
 - next: upstream source recovery (PDF-parse gaps); Narrow Squat
   openers; fill 2 I meso holes
+
+## 23 — I key split into I/CMS/MS/MSIC; visual screenshot review (2026-10-30)
+- verdict: keep (6 fixtures, 183 green; 3 visual agents PASS, 0 conversion errors)
+- what changed: split_programs cuts the lumped I key at week-n restarts
+  (I 12w, CMS 12w, MS 17w, MSIC 17w); MSIC rides the MS grid + program key;
+  review renderer bypasses the 20-week grid so all weeks screenshot
+- what learned: visual review caught one systematic scratch-renderer bug
+  (Lifts column shows day-aggregates on duplicate-name rows; schemes +
+  fixture correct, cosmetic only); tallies arbitrate ambiguous parses;
+  mid-audit fixture churn is survivable when agents capture evidence early
+- next: upstream source recovery (dropped MS W7, mis-attached W9, 52 max
+  lines); Narrow Squat openers; fill 2 I meso holes
