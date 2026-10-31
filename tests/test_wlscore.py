@@ -178,10 +178,11 @@ def test_shipped_scores_clean():
         assert raw["gaps"] == {"III": 0, "II": 0, "I": 0, "CMS": 0, "MS": 0}[cls], cls
         # taper slack plus phase peak (2026-10-26): fewer soft openers;
         # walled shift (2026-10-31): heat pools at 90, pricing a few more
-        # low-class 90-openers the books prescribe
+        # low-class 90-openers the books prescribe; dead-pair removal
+        # (2026-10-31): variant-fusion soft openers gone (I/CMS/MS down)
         assert (
             raw["soft"]
-            == {"III": 6.0, "II": 26.0, "I": 38.0, "CMS": 23.0, "MS": 22.0}[cls]
+            == {"III": 6.0, "II": 26.0, "I": 25.0, "CMS": 16.0, "MS": 24.0}[cls]
         ), cls
         assert raw["idle"] == 0, cls
         assert raw["idle_meso"] == 0, cls
@@ -196,12 +197,15 @@ def test_book_numbers_match_research():
     # Walled shift (2026-10-31): no invented 100s, heat pools at 90.
     # Excess falls (less over-capacity stacking); instructions fall with
     # fewer top fragments; soft redistributes toward prescribed 90s.
-    assert round(book["excess"], 1) == 204.3
+    # Dead pairs (2026-10-31): fusion gone, mass re-hosts solo/paired;
+    # soft falls (fewer variant soft openers), one squat slot grows
+    # 30->33 sets (marathon class pre-exists; pairing reshape lands here).
+    assert round(book["excess"], 1) == 204.2
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9505
-    assert book["slots"] == 1431
-    assert book["longest"] == 30
+    assert book["instructions"] == 9454
+    assert book["slots"] == 1428
+    assert book["longest"] == 33
 
 
 def test_score_detects_gap():

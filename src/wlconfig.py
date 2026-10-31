@@ -237,9 +237,7 @@ DAY = [
             "Clean+Jerk",
             "Other Clean+Other Jerk",
             "Other Clean+Jerk",
-            "Clean+Other Jerk",
             "ClPull+Clean",
-            "ClPull+Other Clean",
         ],
         6,
         None,
@@ -271,9 +269,7 @@ PAIRS = [
     ("Clean", "Jerk"),
     ("Other Clean", "Other Jerk"),
     ("Other Clean", "Jerk"),
-    ("Clean", "Other Jerk"),
     ("ClPull", "Clean"),
-    ("ClPull", "Other Clean"),
 ]
 # reference member per pair for intensity tiers and zone labels: the classic
 # lift (or jerk) limits the complex, so paired pulls count at classic zones.
@@ -283,9 +279,7 @@ PAIR_REF = {
     ("Clean", "Jerk"): "Clean",
     ("Other Clean", "Other Jerk"): "Other Clean",
     ("Other Clean", "Jerk"): "Jerk",
-    ("Clean", "Other Jerk"): "Clean",
     ("ClPull", "Clean"): "Clean",
-    ("ClPull", "Other Clean"): "Other Clean",
 }
 PAIRED_GROUPS = {g for p in PAIRS for g in p}
 # allowed clean:jerk ratios when both are trained in one session

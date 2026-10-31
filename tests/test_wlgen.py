@@ -146,9 +146,7 @@ def test_day_template():
             "Clean+Jerk",
             "Other Clean+Other Jerk",
             "Other Clean+Jerk",
-            "Clean+Other Jerk",
             "ClPull+Clean",
-            "ClPull+Other Clean",
         },
         {"Squat", "SnPull", "ClPull"},
         {"Other Squat", "Press"},
@@ -157,7 +155,7 @@ def test_day_template():
     assert all(
         lo == MIN_DOSE and hi is None and optional for _, lo, hi, optional in DAY
     )
-    assert len(expand(DAY)) == 5 * 11 * 4 * 3 * 2
+    assert len(expand(DAY)) == 5 * 9 * 4 * 3 * 2
 
 
 def test_week_quota_respects_slot_and_cap():
@@ -1484,7 +1482,8 @@ def test_day_patterns_keep_canonical_first():
         ("II", "Comp 1", 3): "MLM",
         ("II", "Comp 2", 3): "LML",
         ("I", "Prep 4-2", 0): "LMLM",
-        ("I", "Prep 4-2", 3): "MSLSMS",
+        ("I", "Prep 2-4", 0): "LMLM",
+        ("I", "Prep 2-4", 1): "MSLSMS",
         ("I", "Prep 2-4", 2): "LMLM",
         ("I", "Prep 3-1", 1): "LMLM",
         ("I", "Comp 1", 2): "LMLM",
@@ -1492,6 +1491,8 @@ def test_day_patterns_keep_canonical_first():
         ("I", "Comp 2", 1): "LMLM",
         ("I", "Comp 2", 2): "LMLM",
         ("CMS", "Prep 4-2", 0): "LMLM",
+        ("CMS", "Prep 2-4", 0): "LMLM",
+        ("CMS", "Prep 2-4", 1): "MSLSMS",
         ("CMS", "Prep 2-4", 2): "LMLM",
         ("CMS", "Prep 3-1", 1): "LMLM",
         ("CMS", "Comp 1", 2): "LMLM",
@@ -2081,6 +2082,8 @@ def test_rendered_set_sizes_match_takano_centers():
     # ladder work, moves this). Pull 100s render 2s: rehomed from the
     # tapered final week into high-volume weeks, they pack Takano-style
     # (his CMS ClPull runs [100,2]x3) against Roman's pull singles.
+    # Solo ClPull renders 80x3 after the dead-pair removal (ClPull dose
+    # goes solo): Roman allows pulls 2-6 at 80-99%, Takano does 3s/4s.
     # Changes here must move the pins deliberately.
     assert modes == {
         ("Snatch", 60): 3,
@@ -2097,8 +2100,8 @@ def test_rendered_set_sizes_match_takano_centers():
         ("Squat", 80): 2,
         ("Squat", 90): 2,
         ("ClPull", 70): 1,
-        ("ClPull", 80): 1,
-        ("ClPull", 90): 3,
+        ("ClPull", 80): 3,
+        ("ClPull", 90): 2,
         ("ClPull", 100): 2,
         ("Fund", 50): 1,
         ("Fund", 60): 1,
@@ -2299,3 +2302,19 @@ def test_taper_topup_rehomes_pull_maxes():
     week_groups = [{g: sum(w["bins"][g]) for g in GROUPS} for w in meso["weeks"]]
     top = taper_topup("III", 4, week_groups)
     assert sum(top[w]["SnPull"] + top[w]["ClPull"] for w in range(4)) == 0
+
+
+def test_dead_pairs_never_render():
+    # Neither book programs Clean+Other Jerk or ClPull+Other Clean
+    # (fusion with no precedent in Takano's fixtures or Roman's
+    # rulebook); the generator must not list or emit them. Their
+    # members still host solo in the same DAY slots.
+    from wlconfig import PAIRS
+
+    dead = {"Clean+Other Jerk", "ClPull+Other Clean"}
+    assert not (dead & {"+".join(p) for p in PAIRS})
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        ir = to_ir(ir_with_slots(build_plan(cls)))
+        for s in ir["sessions"]:
+            for slot in s["slots"]:
+                assert slot["movement"] not in dead, (cls, s["meso"])

@@ -198,16 +198,18 @@ def test_fixtures_render_and_score():
 
     # illegal/gaps/soft are his genuine rule breaks under our
     # movement rules; clash/idle are grid artifacts (empty weeks past his
-    # shorter programs, his day mixes predate our templates)
+    # shorter programs, his day mixes predate our templates). Removing
+    # pairs neither book programs raises clash by the sessions that
+    # co-hosted them.
     pins = {
-        "III": {"illegal": 6, "clash": 10, "idle": 5, "gaps": 0, "soft": 9.0},
-        "II": {"illegal": 14, "clash": 13, "idle": 6, "gaps": 0, "soft": 6.0},
-        "I": {"illegal": 47, "clash": 23, "idle": 7, "gaps": 0, "soft": 13.0},
+        "III": {"illegal": 6, "clash": 12, "idle": 5, "gaps": 0, "soft": 9.0},
+        "II": {"illegal": 14, "clash": 15, "idle": 6, "gaps": 0, "soft": 6.0},
+        "I": {"illegal": 47, "clash": 24, "idle": 7, "gaps": 0, "soft": 13.0},
         "CMS": {"illegal": 71, "clash": 21, "idle": 4, "gaps": 2, "soft": 15.0},
-        "MS": {"illegal": 109, "clash": 37, "idle": 9, "gaps": 3, "soft": 36.0},
+        "MS": {"illegal": 109, "clash": 38, "idle": 9, "gaps": 3, "soft": 36.0},
         "MSIC": {
             "illegal": 126,
-            "clash": 51,
+            "clash": 52,
             "idle": 10,
             "gaps": 2,
             "soft": 45.0,
