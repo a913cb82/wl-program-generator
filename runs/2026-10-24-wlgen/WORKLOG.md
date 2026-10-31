@@ -506,3 +506,11 @@ One entry per round. Never edit an old entry.
 - Verdict: absorbers must not pair (invariant test stays); variant-
   variant pairs need the tops-first hosting redesign. Reverted both
   changes; suite 209 green, book back to 2.67, outputs regenerated.
+
+## 34 — complexes step 5 PINNED (mechanism already exists)
+- Measured: all 114 test-pair 90-sets program-wide render [1,1]
+  (zero exceptions); 6-10-dose flat blocks already sit on big-day
+  C+J slots (III 1, I 4, CMS 5, MS 8), ramps below (Takano's shape:
+  his blocks top ladders). No code change; new strict-singles test
+  + block floors {I:3, CMS:4, MS:6}. Density is tops-first's dose
+  question, not a rendering one.

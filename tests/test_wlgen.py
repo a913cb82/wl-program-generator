@@ -2358,3 +2358,27 @@ def test_tech_complexes_never_train_heavy():
                         s["meso"],
                         slot["movement"],
                     )
+
+
+def test_peak_blocks_are_flat_singles():
+    # Takano peaks through flat Clean+Jerk 90-singles (6-9x[90,[1,1]]
+    # atop warmup ladders on big days). The renderer already emits
+    # every test-pair 90-set as [1,1]; blocks concentrate in the top
+    # classes where 90-dose lives. Density (more blocks) is a dose-
+    # concentration question for tops-first, not a rendering one.
+    floors = {"III": 0, "II": 0, "I": 3, "CMS": 4, "MS": 6}
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        ir = to_ir(ir_with_slots(build_plan(cls)))
+        blocks = 0
+        for s in ir["sessions"]:
+            for slot in s["slots"]:
+                if slot["movement"] not in ("Clean+Jerk", "Other Clean+Jerk"):
+                    continue
+                dose = 0
+                for z, r in slot["seq"]:
+                    if z == 90:
+                        assert list(r) == [1, 1], (cls, s["meso"], slot)
+                        dose += sum(r)
+                if dose >= 6:
+                    blocks += 1
+        assert blocks >= floors[cls], (cls, blocks)
