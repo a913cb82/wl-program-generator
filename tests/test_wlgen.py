@@ -71,7 +71,7 @@ from wlgen import (
     zone_alloc,
 )
 
-ANNUALS = {"III": 12000, "II": 12000, "I": 15000, "CMS": 15000, "MS": 18000}
+ANNUALS = {"III": 13000, "II": 13000, "I": 17500, "CMS": 17500, "MS": 22000}
 
 
 def test_allocate():
@@ -225,6 +225,10 @@ def test_quota_prior_keeps_exact_margins():
 def test_spread_avoids_back_to_back_sessions():
     # Split groups train both paired (classic days) and standalone, so they
     # land on more days than before; the cap counts that structural cost.
+    # A group filling k of S sessions forces 2k-S-1 adjacencies (pigeonhole;
+    # Roman programs squats and pulls almost daily) so only adjacencies
+    # beyond the forced minimum count: those are scatter the spreader
+    # could have placed on a free day.
     for cls in ANNUALS:
         short = boundary = 0
         for m in build_plan(cls)["mesos"]:
@@ -233,11 +237,12 @@ def test_spread_avoids_back_to_back_sessions():
                 ss = w["sessions"]
                 for g in GROUPS:
                     ts = [j for j, s in enumerate(ss) if g in s["movements"]]
-                    short += sum(1 for a, b in zip(ts, ts[1:]) if b - a == 1)
+                    actual = sum(1 for a, b in zip(ts, ts[1:]) if b - a == 1)
+                    short += actual - max(0, 2 * len(ts) - len(ss) - 1)
                 if prev_last is not None:
                     boundary += len(prev_last & set(ss[0]["movements"]))
                 prev_last = set(ss[-1]["movements"])
-        assert short < 130, (cls, short)
+        assert short < 100, (cls, short)
         # The minimum-dose floor concentrates stray doses into sibling
         # sessions, costing a carryover or two at week edges in I.
         assert boundary <= 10, (cls, boundary)
@@ -1054,7 +1059,7 @@ def test_two_reps_at_low_zones_are_one_set():
 
 def test_group_totals():
     plan = build_plan("I")
-    expected = round(15000 * macro_days(CLASSES["I"]["macro"]) / 365)
+    expected = round(CLASSES["I"]["annual"] * macro_days(CLASSES["I"]["macro"]) / 365)
     assert sum(plan["groups"].values()) == expected
     for m in plan["mesos"]:
         assert sum(m["groups"].values()) == m["vol"]
@@ -1079,7 +1084,7 @@ def test_html_tables_at_every_level():
     assert "<h4" not in micro
     assert micro.count('<table class="micro">') == 1
     assert "Prep 4-2 (prep)</th>" in micro
-    assert "W1 · 242" in micro
+    assert "W1 · 282" in micro
     assert '<th scope="col">Group</th>' in micro
     plan = html.split('<h1 id="training-plan">')[1]
     assert plan.count('<table class="plan">') == 5
@@ -1143,10 +1148,10 @@ def test_html_tags_balance():
 
 def test_sizes_at_every_level():
     html = to_html(build_plan("I"))
-    assert "Meso sizes: 1151, 1266, 1438, 1035, 863" in html
+    assert "Meso sizes: 1342, 1477, 1678, 1208, 1007" in html
     assert "Day sizes:" not in html
     assert html.count('class="sizes"') == 6
-    assert "Prep 4-2 (prep) - Week sizes: 242, 322, 196, 391" in html
+    assert "Prep 4-2 (prep) - Week sizes: 282, 376, 228, 456" in html
     assert "<h4" not in html
 
 
@@ -1238,7 +1243,7 @@ def test_html():
     assert 'id="microcycles"' in html
     assert 'id="training-plan"' in html
     assert ">Prep 4-2 (prep)</h2>" in html
-    assert ">W1 · 290<" in html
+    assert ">W1 · 354<" in html
     assert ">Snatch<" in html
     assert 'class="frac"' in html
     assert "@" not in html
@@ -1246,19 +1251,21 @@ def test_html():
     assert ">Other Squat<" in to_html(build_plan("III"))
 
 
-# Takano yearly ARI per bin table (ch. 8/11/12/13); fund tables are approximate
+# Takano measured annual ARI per bin table (sample programs); each class
+# rises with level in every lift family. Fund rows are approximate.
 SOURCE_ARI = {
-    "C2": {"Snatch": 75, "CJ": 76, "SnPull": 92, "ClPull": 89, "Squat": 71, "Fund": 80},
-    "C1": {"Snatch": 75, "CJ": 77, "SnPull": 92, "ClPull": 87, "Squat": 70, "Fund": 78},
+    "III": {"Snatch": 68, "CJ": 69, "SnPull": 82, "ClPull": 81, "Squat": 72, "Fund": 76},
+    "II": {"Snatch": 70, "CJ": 70, "SnPull": 83, "ClPull": 82, "Squat": 73, "Fund": 80},
+    "I": {"Snatch": 73, "CJ": 73, "SnPull": 88, "ClPull": 87, "Squat": 75, "Fund": 75},
     "CMS": {
-        "Snatch": 72,
+        "Snatch": 73,
         "CJ": 74,
-        "SnPull": 91,
-        "ClPull": 84,
-        "Squat": 68,
-        "Fund": 79,
+        "SnPull": 94,
+        "ClPull": 89,
+        "Squat": 75,
+        "Fund": 80,
     },
-    "MS": {"Snatch": 71, "CJ": 73, "SnPull": 91, "ClPull": 84, "Squat": 66, "Fund": 79},
+    "MS": {"Snatch": 75, "CJ": 74, "SnPull": 95, "ClPull": 90, "Squat": 77, "Fund": 79},
 }
 
 
@@ -1284,9 +1291,9 @@ def test_bin_tables_match_source_ari():
 
 def test_shift_hits_target():
     for bc, bt in [
-        ("C1", "Snatch"),
+        ("I", "Snatch"),
         ("MS", "Squat"),
-        ("C2", "Fund"),
+        ("II", "Fund"),
         ("CMS", "ClPull"),
     ]:
         lo = BIN_ZONES[bt]
@@ -1395,7 +1402,7 @@ def test_html_week_bins():
     head = micro.split("</thead>")[0]
     assert head.count("colspan=") == 5
     assert head.count(">W") == 20
-    assert "W1 · 242" in head
+    assert "W1 · 282" in head
     snatch = micro.split('<th scope="row">Snatch</th>')[1].split('<tr class="grp">')[0]
     for zone in ("90%", "100%"):
         row = snatch.split(f'<th scope="row">{zone}</th>')[1].split("</tr>")[0]
@@ -1463,30 +1470,36 @@ def test_day_patterns_keep_canonical_first():
         assert patterns[0] == PATTERNS[n]
     # Weeks whose canonical sizes cannot host every dose at >= MIN_DOSE
     # use the first variant that can (the dose floor outranks pattern
-    # preference); all other weeks keep canonical sizes.
+    # preference); all other weeks keep canonical sizes. week_sessions
+    # always prefers the canonical variant, so every entry here is
+    # forced, never a preference: higher volumes strand fewer doses
+    # (so old exceptions evaporate) and breach the day cap sooner.
     exceptions = {
         ("III", "Comp 1", 3): "MLM",
-        ("III", "Comp 2", 3): "LSL",
+        ("III", "Comp 2", 3): "LML",
         ("II", "Comp 1", 3): "MLM",
-        ("II", "Comp 2", 3): "LSL",
-        ("I", "Prep 2-4", 0): "LMLM",
-        ("I", "Prep 2-4", 3): "LMLM",
+        ("II", "Comp 2", 3): "LML",
+        ("I", "Prep 4-2", 0): "LMLM",
+        ("I", "Prep 4-2", 3): "MSLSMS",
+        ("I", "Prep 2-4", 2): "LMLM",
         ("I", "Prep 3-1", 1): "LMLM",
-        ("I", "Prep 3-1", 3): "LMLM",
-        ("I", "Comp 1", 1): "LMLM",
+        ("I", "Comp 1", 2): "LMLM",
+        ("I", "Comp 2", 0): "LMLM",
         ("I", "Comp 2", 1): "LMLM",
-        ("I", "Comp 2", 3): "MLM",
-        ("CMS", "Prep 2-4", 0): "LMLM",
-        ("CMS", "Prep 2-4", 3): "LMLM",
+        ("I", "Comp 2", 2): "LMLM",
+        ("CMS", "Prep 4-2", 0): "LMLM",
+        ("CMS", "Prep 2-4", 2): "LMLM",
         ("CMS", "Prep 3-1", 1): "LMLM",
-        ("CMS", "Prep 3-1", 3): "LMLM",
-        ("CMS", "Comp 1", 2): "MLM",
-        ("CMS", "Comp 2", 0): "MLM",
-        ("CMS", "Comp 2", 3): "MLM",
-        ("MS", "Prep 2-4", 3): "MSLMM",
-        ("MS", "Prep 3-1", 3): "MSLMM",
-        ("MS", "Comp 1", 0): "MSLMM",
+        ("CMS", "Comp 1", 2): "LMLM",
+        ("CMS", "Comp 2", 0): "LMLM",
+        ("CMS", "Comp 2", 1): "LMLM",
+        ("CMS", "Comp 2", 2): "LMLM",
+        ("MS", "Prep 4-2", 0): "SLSLS",
+        ("MS", "Prep 3-1", 1): "MSLMM",
+        ("MS", "Comp 1", 1): "MSLMM",
         ("MS", "Comp 1", 3): "LSL",
+        ("MS", "Comp 2", 0): "MSLMM",
+        ("MS", "Comp 2", 1): "MSLMM",
     }
     for cls in ANNUALS:
         for m in build_plan(cls)["mesos"]:
@@ -1712,8 +1725,10 @@ def test_prep_weeks_concentrate_top():
 
     from wlgen import build_plan
 
+    # MS carries the fattest tops, so the concentration ratio is stable;
+    # low classes train so little at 90%+ that one lift swings the ratio.
     prep, comp = [], []
-    for m in build_plan("III")["mesos"]:
+    for m in build_plan("MS")["mesos"]:
         for w in m["weeks"]:
             (prep if m["phase"] == "prep" else comp).extend(_week_concentration(w))
     assert 1.06 <= st.median(prep) <= 1.26, st.median(prep)
@@ -1936,14 +1951,15 @@ def test_ipf_matches_naive_reference():
 
 
 def test_equal_classes_share_zone_bins():
-    assert week_bins("III", 0, 0, "Squat") == week_bins("II", 0, 0, "Squat")
-    assert week_units("III", 0, 0, 10) == week_units("II", 0, 0, 10)
+    # III and II carry their own bin tables now (the intensity profile
+    # grades per class), so only same-class calls share cache entries.
+    assert week_bins("III", 0, 0, "Squat") != week_bins("II", 0, 0, "Squat")
     keyed = wlgen._week_units_keyed
     keyed.cache_clear()
     try:
         week_units("III", 0, 0, 10)
         before = keyed.cache_info()
-        week_units("II", 0, 0, 10)
+        week_units("III", 0, 0, 10)
         after = keyed.cache_info()
     finally:
         week_units("III", 0, 0, 10)
@@ -1994,3 +2010,37 @@ def test_spread_extra_favors_light_sessions():
     assert sum(c for c, z in zip(vecs[1], zones) if z >= 90) == 1
     assert sum(c for c, z in zip(vecs[0], zones) if z >= 90) == 2
     assert sum(sum(v) for v in vecs) == 11
+
+
+def _plan_intensity(plan):
+    from wlconfig import BIN_GROUP, BIN_ZONES
+
+    tot = wsum = hi = 0
+    for m in plan["mesos"]:
+        for w in m["weeks"]:
+            for g, vec in w["bins"].items():
+                for z, x in zip(BIN_ZONES[BIN_GROUP[g]], vec):
+                    tot += x
+                    wsum += z * x
+                    hi += x if z >= 90 else 0
+    return wsum / tot, hi / tot
+
+
+def test_intensity_grades_with_level_like_takano():
+    # Both books agree the profile steepens with level: mean zone and
+    # 90%+ share rise monotonically, with a wide spread top to bottom.
+    # Exact low-class pins are Takano's, whose blocks program pulls for
+    # beginners against Roman's explicit no-pulls rule (p61, p118), so
+    # the test asserts the slope all classes share, not exact low pins.
+    means = {}
+    his = {}
+    for cls in ("III", "II", "I", "CMS", "MS"):
+        mean, hi = _plan_intensity(build_plan(cls))
+        means[cls] = mean
+        his[cls] = hi
+    order = ["III", "II", "I", "CMS", "MS"]
+    for lo, hi in zip(order, order[1:]):
+        assert means[lo] < means[hi], (lo, hi, means)
+        assert his[lo] < his[hi], (lo, hi, his)
+    assert means["MS"] - means["III"] >= 5, means  # Takano spread is 6.3
+    assert his["MS"] - his["III"] >= 0.12, his  # Takano spread is 19pp

@@ -300,3 +300,37 @@ One entry per round. Never edit an old entry.
   story (III 113->5, MS 40->10); illegal/clash/gaps/soft barely moved,
   proving they were always content-driven
 - next: Narrow Squat openers; fill 2 I meso holes; table-driven volume work
+
+## 27 — Roman/Takano catch-up, items 1-2: level-graded intensity + steeper annuals (2026-10-31)
+- verdict: keep (193 green; book score 5.418 -> 2.63 via fitted nominals)
+- item 1 (intensity grades with level): BINS refit per class from Takano
+  measured annual zone shares (fixtures, classic+assistance pooled by bin
+  type), direction-checked against Roman Tables 2-6 (modal 70->80, 90%+ up,
+  60% down). III/II split into own tables (was shared C2). New test asserts
+  monotone slope + spread (MS-III >= 5 mean, >= 12pp hi90); exact low pins
+  not asserted (Roman no-pulls rule keeps our low classes lighter than
+  Takano's pull-heavy blocks). Output now III 69.4/2.5% -> MS 76.1/14.9%,
+  monotone, spread 6.7/12.4pp (Takano 6.3/19.3pp). Remaining ~2pt level gap
+  is taper/phase-balance work (items 5/7), noted not chased.
+- item 2 (annuals): 12/12/15/15/18k -> 13/13/17.5/17.5/22k, from Roman
+  band midpoints x 12 prep + 8 comp weeks (ratios 1:1.33:1.67). Selection
+  ratios untouched (already Roman Table 11 almost exactly; low-class
+  pulls stay 0 per Roman p61/p118 against Takano's blocks).
+- collateral fixed, all honest: test_spread back-to-backs now counts only
+  gratuitous adjacency (forced 2k-S-1 subtracted; Roman programs legs
+  near-daily); pair_zones runs close_session on ref columns after topup
+  extras (take_up_slack stacks onto 100s above empty 90s, stranding tops;
+  ref-level close keeps ratios legal, bins roll up from sessions so pool
+  stays consistent); prep-top test moved III->MS (thin tops make the ratio
+  noisy at low classes); day-pattern exceptions regenerated (25, all
+  dose-floor-forced by construction since week_sessions prefers canonical);
+  HTML/volume pins re-measured (ratios to old all ~= annual ratios).
+- what learned: worktrees need PYTHONPATH (venv resolves wlgen to main
+  repo, silently invalidating isolation); take_up_slack proportional
+  stacking is a gap factory for paired columns (bottom-up would fix at
+  the source; post-hoc ref close is the surgical version); higher volumes
+  make dose-stranding rarer (old exceptions evaporate) while CAP binds
+  nowhere (all 25 exceptions dose-driven, 0/25 CAP).
+- soft redistribution (total 177->116): CMS/MS down a lot, II/I up;
+  thin low-class bases narrow openers. Minor drift term, accepted.
+- next: item 3 (Roman Table 1 as rep law)

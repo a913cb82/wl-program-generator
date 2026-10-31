@@ -1558,6 +1558,17 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None):
             col = take_up_slack([m[z][k] for z in range(len(counts))], lo[: len(counts)], dk)
             for z in range(len(counts)):
                 m[z][k] = col[z]
+        # Extras stack onto existing tops, so a column can end with 100+
+        # above an empty 90 (and close_ramps leaves pool-short ref gaps
+        # for the same reason). Drop those lone tops to 90 while still at
+        # reference level, so both legs inherit a climbable ladder and the
+        # per-zone pair ratios survive the re-split below.
+        for k in range(nS):
+            col = close_session(
+                [m[z][k] for z in range(len(counts))], lo[: len(counts)]
+            )
+            for z in range(len(counts)):
+                m[z][k] = col[z]
         for k, (j, a, b, _t, (rh, rm, rl), ref) in enumerate(items):
             ratios = [
                 rh if lo[z] >= 90 else rm if lo[z] == 80 else rl

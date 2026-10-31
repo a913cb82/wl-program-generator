@@ -129,18 +129,65 @@ MS_R = {
     "comp": [8, 13, 5, 8, 6, 8, 20, 0, 5, 12, 0, 15],
 }
 
+# Yearly lifts per class: 12 prep weeks at the prep band midpoint plus 8
+# comp weeks at the comp band midpoint (Roman p88: low 1250/900,
+# I&CMS 1650/1200, MS 2100/1500 lifts/month). Ratios 1 : 1.33 : 1.67.
 CLASSES: Dict[str, Any] = {
-    "III": {"annual": 12000, "macro": MACRO, "ratios": III_II},
-    "II": {"annual": 12000, "macro": MACRO, "ratios": III_II},
-    "I": {"annual": 15000, "macro": MACRO, "ratios": I_CMS},
-    "CMS": {"annual": 15000, "macro": MACRO, "ratios": I_CMS},
-    "MS": {"annual": 18000, "macro": MACRO, "ratios": MS_R},
+    "III": {"annual": 13000, "macro": MACRO, "ratios": III_II},
+    "II": {"annual": 13000, "macro": MACRO, "ratios": III_II},
+    "I": {"annual": 17500, "macro": MACRO, "ratios": I_CMS},
+    "CMS": {"annual": 17500, "macro": MACRO, "ratios": I_CMS},
+    "MS": {"annual": 22000, "macro": MACRO, "ratios": MS_R},
 }
 
-# Intensity bins: yearly share of each group's reps per zone (Takano ch. 8,
-# Medvedyev; III/II use the Class 2 table). Bins are 5 points wide and 10 apart
-# and labels show the lower edge; the top zone is open. "Other" groups and
-# Press inherit their parent table.
+# Intensity bins: measured annual zone shares from the Takano sample
+# programs (fixtures takano-{III,II,I,CMS,MS}.json, classic and assistance
+# lifts pooled by bin type). Direction checked against Roman Tables 2-6:
+# modal mass moves 70 toward 80, 90%+ grows, 60% shrinks with level.
+# Keyed per class; III and II get their own tables, not one shared table.
+BINS = {
+    "III": {
+        "Snatch": [0.49, 0.32, 0.15, 0.04, 0.0],
+        "CJ": [0.45, 0.35, 0.16, 0.04, 0.0],
+        "Squat": [0.04, 0.24, 0.34, 0.35, 0.03],
+        "SnPull": [0.91, 0.09, 0.0, 0.0],
+        "ClPull": [0.08, 0.84, 0.08, 0.0, 0.0],
+        "Fund": [0.04, 0.09, 0.24, 0.63, 0.0, 0.0, 0.0],
+    },
+    "II": {
+        "Snatch": [0.36, 0.36, 0.26, 0.02, 0.0],
+        "CJ": [0.4, 0.36, 0.21, 0.03, 0.0],
+        "Squat": [0.02, 0.23, 0.32, 0.37, 0.06],
+        "SnPull": [0.78, 0.22, 0.0, 0.0],
+        "ClPull": [0.0, 0.85, 0.15, 0.0, 0.0],
+        "Fund": [0.0, 0.05, 0.05, 0.81, 0.09, 0.0, 0.0],
+    },
+    "I": {
+        "Snatch": [0.27, 0.33, 0.33, 0.07, 0.0],
+        "CJ": [0.26, 0.34, 0.32, 0.08, 0.0],
+        "Squat": [0.01, 0.19, 0.23, 0.51, 0.06],
+        "SnPull": [0.41, 0.43, 0.16, 0.0],
+        "ClPull": [0.04, 0.42, 0.45, 0.09, 0.0],
+        "Fund": [0.0, 0.2, 0.23, 0.53, 0.04, 0.0, 0.0],
+    },
+    "CMS": {
+        "Snatch": [0.24, 0.37, 0.33, 0.06, 0.0],
+        "CJ": [0.23, 0.36, 0.34, 0.07, 0.0],
+        "Squat": [0.02, 0.2, 0.26, 0.44, 0.08],
+        "SnPull": [0.11, 0.49, 0.4, 0.0],
+        "ClPull": [0.02, 0.41, 0.36, 0.21, 0.0],
+        "Fund": [0.0, 0.09, 0.13, 0.62, 0.16, 0.0, 0.0],
+    },
+    "MS": {
+        "Snatch": [0.19, 0.34, 0.39, 0.08, 0.0],
+        "CJ": [0.2, 0.36, 0.34, 0.1, 0.0],
+        "Squat": [0.01, 0.15, 0.18, 0.58, 0.08],
+        "SnPull": [0.14, 0.34, 0.49, 0.03],
+        "ClPull": [0.03, 0.24, 0.51, 0.22, 0.0],
+        "Fund": [0.0, 0.09, 0.2, 0.57, 0.11, 0.03, 0.0],
+    },
+}
+BIN_CLASS = {"III": "III", "II": "II", "I": "I", "CMS": "CMS", "MS": "MS"}
 BIN_ZONES = {
     "Snatch": [60, 70, 80, 90, 100],
     "CJ": [60, 70, 80, 90, 100],
@@ -149,47 +196,6 @@ BIN_ZONES = {
     "ClPull": [70, 80, 90, 100, 110],
     "Fund": [50, 60, 70, 80, 90, 100, 110],
 }
-BINS = {
-    "C2": {
-        "Snatch": [0.09, 0.51, 0.29, 0.11, 0.00],
-        "CJ": [0.08, 0.42, 0.37, 0.12, 0.01],
-        "SnPull": [0.20, 0.41, 0.36, 0.03],
-        "ClPull": [0.06, 0.30, 0.40, 0.20, 0.04],
-        "Squat": [0.13, 0.28, 0.27, 0.30, 0.02],
-        "Fund": [0.03, 0.08, 0.28, 0.32, 0.16, 0.12, 0.01],
-    },
-    "C1": {
-        "Snatch": [0.07, 0.56, 0.28, 0.08, 0.01],
-        "CJ": [0.04, 0.45, 0.39, 0.11, 0.01],
-        "SnPull": [0.24, 0.33, 0.39, 0.04],
-        "ClPull": [0.17, 0.34, 0.26, 0.19, 0.04],
-        "Squat": [0.14, 0.27, 0.21, 0.35, 0.03],
-        "Fund": [0.03, 0.11, 0.31, 0.31, 0.16, 0.07, 0.01],
-    },
-    "CMS": {
-        "Snatch": [0.10, 0.61, 0.25, 0.04, 0.00],
-        "CJ": [0.09, 0.53, 0.33, 0.05, 0.00],
-        "SnPull": [0.31, 0.32, 0.31, 0.06],
-        "ClPull": [0.23, 0.36, 0.23, 0.13, 0.05],
-        "Squat": [0.22, 0.28, 0.25, 0.22, 0.03],
-        "Fund": [0.05, 0.11, 0.40, 0.26, 0.10, 0.06, 0.02],
-    },
-    "MS": {
-        "Snatch": [0.16, 0.63, 0.19, 0.02, 0.00],
-        "CJ": [0.11, 0.55, 0.31, 0.03, 0.00],
-        "SnPull": [0.25, 0.37, 0.32, 0.06],
-        "ClPull": [0.20, 0.38, 0.24, 0.13, 0.05],
-        "Squat": [
-            0.22,
-            0.30,
-            0.25,
-            0.20,
-            0.03,
-        ],  # source prints 2% at 90% but sums 99 and ARI 66
-        "Fund": [0.04, 0.13, 0.39, 0.25, 0.10, 0.08, 0.01],
-    },
-}
-BIN_CLASS = {"III": "C2", "II": "C2", "I": "C1", "CMS": "CMS", "MS": "MS"}
 BIN_GROUP = {
     "Snatch": "Snatch",
     "Other Snatch": "Snatch",
