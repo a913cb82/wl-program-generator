@@ -1,0 +1,2 @@
+research/beam-narrow: verdict=rejected
+rejected: Beam narrow: halved beams break byte-identity, revert (null result)
