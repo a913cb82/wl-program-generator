@@ -1,0 +1,2 @@
+research/longest-cut: verdict=rejected
+rejected: research: longest-cut probe maps 21-set slots, no scheme change
