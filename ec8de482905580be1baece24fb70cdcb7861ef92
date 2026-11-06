@@ -1,0 +1,2 @@
+research/perclass-weights: verdict=rejected
+rejected: Probe per-class SIZE_WEIGHT: MS-only M+1 moves audit right, breaks 3 guards, revert
