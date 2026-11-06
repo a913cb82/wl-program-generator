@@ -1,0 +1,2 @@
+research/snatch-spill: verdict=rejected
+rejected: Stack snatch-spill: verbatim top-1 clone reverted, drift defect (exc 144.7 -> 144.4, bad 0 -> 1)
