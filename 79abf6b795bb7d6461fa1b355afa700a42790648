@@ -1,0 +1,2 @@
+research/split-20: verdict=rejected
+rejected: split-20: post-pass split is illegal under cell-match rule, probe test only
