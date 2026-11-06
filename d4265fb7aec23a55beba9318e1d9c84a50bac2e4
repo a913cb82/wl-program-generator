@@ -1,0 +1,2 @@
+research/env-t: verdict=rejected
+rejected: env-t: WLGEN_T sweep is dead knob (audit-only)
