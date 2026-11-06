@@ -211,11 +211,12 @@ def test_book_numbers_match_research():
     # Dead pairs (2026-10-31): fusion gone, mass re-hosts solo/paired;
     # soft falls (fewer variant soft openers), one squat slot grows
     # 30->33 sets (marathon class pre-exists; pairing reshape lands here).
-    # Thin slots (2026-10-31): marathon singles overflow into a second
-    # slot the same day, where slots are built. Excess is exact (the
-    # movements matrix is untouched); instructions fall (each half
-    # compresses cleanly); slots rise (one cell, two slots); longest
-    # falls 33->24 (residual: a 24-set tech pair, pairs never split).
+    # Thin slots, split-deep and wide-split are gone (2026-11-01):
+    # splitting one movement group across same-day slots has no Takano
+    # session-level precedent (his within-session doubles are distinct
+    # exercises or complex legs; only Roman's two-series repeats one
+    # exercise). One group renders one slot again: longest returns to 33
+    # with exc/rhythm/soft/fusion/share exact (render-only either way).
     # Flatten-80 (2026-10-31): squat prep peak 2.0 -> -1.0 counter-spread.
     # Each prep week's 80s deal back toward even across hosting days instead
     # of piling onto the biggest day (Takano spreads 80s evenly at 0.98,
@@ -223,26 +224,13 @@ def test_book_numbers_match_research():
     # ~20-30 squats/workout). Excess falls with month/zone totals
     # bit-identical (fit margins exact: ob/iv stay 0.0); each hosting day
     # renders its own 80 ladder at ladder-max sizes, so instructions rise
-    # (more days carry 80s) while modes and longest are untouched.
-    # Split deep (2026-10-31): recursion to clean chunks, set-halving for
-    # zone-narrow leftovers, pair set-halving, feeler folding. Excess,
-    # shortfall, rhythm, and soft exact vs flatten-80; longest falls
-    # further (residue: wide no-boundary solos plus opener-guarded pairs;
-    # width needs hosting redesign); instructions/slots rise with the
-    # extra same-day slots.
-    # Wide-split (2026-10-31): the last 5 wide no-boundary marathons
-    # (II Press 17, CMS Fundamental 16/15/14, MS Squat 14) peel half
-    # their largest zone-cell into a second same-day slot. Excess,
-    # shortfall, rhythm, and soft exact (movements matrix untouched);
-    # longest falls 17->13 (no slot past 13 sets anywhere; Takano tops
-    # at 10, his medians at 4-5); instructions/slots rise with the 5
-    # extra same-day slots.
+    # (more days carry 80s) while modes are untouched.
     assert round(book["excess"], 1) == 187.8
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9599
-    assert book["slots"] == 1592
-    assert book["longest"] == 13
+    assert book["instructions"] == 9528
+    assert book["slots"] == 1440
+    assert book["longest"] == 33
 
 
 def test_score_detects_gap():

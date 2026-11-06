@@ -475,171 +475,13 @@ def test_scheme_entries_example():
         },
     }
     entries = scheme_entries(s)
-    # The Snatch cell renders 15 sets, past the marathon line, so it
-    # overflows into a second slot the same day (Takano tops out at 10).
     assert [m for m, _ in entries] == [
-        "Snatch",
         "Snatch",
         "Other Clean+Other Jerk",
         "Squat",
         "Other Squat",
     ]
     assert all(seq for _, seq in entries)
-
-
-def test_split_marathon_balances_and_guards_min_dose():
-    # Most balanced legal boundary wins; chunks stay contiguous bands.
-    lo, hi = wlgen.split_marathon((1, 15, 18, 34, 10))
-    assert lo == (1, 15, 18, 0, 0)
-    assert hi == (0, 0, 0, 34, 10)
-    # No boundary keeps both chunks legal: ramp dribs cannot split off.
-    assert wlgen.split_marathon((1, 1, 1, 30, 0)) is None
-    # Two zones never split, however deep.
-    assert wlgen.split_marathon((0, 0, 20, 20, 0)) is None
-
-
-def test_scheme_entries_splits_marathon_singles():
-    # A 33-set monster overflows into same-day slots until every chunk
-    # renders clean, with the dose exact across the partition.
-    s = {"movements": {"Squat": [1, 15, 18, 34, 10]}}
-    entries = scheme_entries(s)
-    assert [m for m, _ in entries] == ["Squat", "Squat", "Squat"]
-    seqs = [seq for _, seq in entries]
-    assert sum(sum(v for _, v in seq) for seq in seqs) == 1 + 15 + 18 + 34 + 10
-    assert all(len(seq) < wlgen.MARATHON_SETS for seq in seqs)
-    # Narrow cells never split.
-    s = {"movements": {"Squat": [5, 10, 10, 10, 0]}}
-    assert [m for m, _ in scheme_entries(s)] == ["Squat"]
-
-
-def test_halve_counts_deals_exact_and_guards_floor_and_span():
-    # Even dealing sums back exactly; odd lifts go to the lighter half.
-    assert wlgen.halve_counts((0, 0, 20, 20, 0)) == (
-        (0, 0, 10, 10, 0),
-        (0, 0, 10, 10, 0),
-    )
-    assert wlgen.halve_counts((0, 0, 9, 5, 0)) == (
-        (0, 0, 4, 2, 0),
-        (0, 0, 5, 3, 0),
-    )
-    # Halves under the dose floor stay whole, as do wide chunks: their
-    # width needs hosting redesign, not render halving.
-    assert wlgen.halve_counts((0, 0, 5, 5, 0)) is None
-    assert wlgen.halve_counts((1, 8, 13, 11, 0)) is None
-
-
-def test_halve_largest_cell_peels_exact_and_guards_floor():
-    # Wide chunks with no legal boundary peel half the largest zone-cell
-    # into its own same-day slot; the remainder keeps every other zone.
-    # Halves sum back exactly and both hold at least MIN_DOSE lifts.
-    assert wlgen.halve_largest_cell((0, 2, 2, 28, 2, 0, 0)) == (
-        (0, 2, 2, 14, 2, 0, 0),
-        (0, 0, 0, 14, 0, 0, 0),
-    )
-    assert wlgen.halve_largest_cell((0, 2, 3, 22, 4, 0, 0)) == (
-        (0, 2, 3, 11, 4, 0, 0),
-        (0, 0, 0, 11, 0, 0, 0),
-    )
-    # Odd largest cells deal the parity to the legal side: 11 lifts peel
-    # 6 (both chunk-halves stay at/above the floor), volumes exact.
-    assert wlgen.halve_largest_cell((0, 1, 2, 11, 0)) == (
-        (0, 1, 2, 5, 0),
-        (0, 0, 0, 6, 0),
-    )
-    # Narrow cells still halve evenly (halve_counts owns them).
-    assert wlgen.halve_largest_cell((0, 0, 20, 20, 0)) is None
-    assert wlgen.halve_largest_cell((0, 0, 9, 5, 0)) is None
-    # Halves under the dose floor stay whole: peeling 5 of 9 strands
-    # sub-minimum lifts on one side, and a 10-lift cell cannot deal two
-    # legal halves at all.
-    assert wlgen.halve_largest_cell((0, 1, 2, 9, 0)) is None
-    assert wlgen.halve_largest_cell((0, 1, 2, 5, 2, 0, 0)) is None
-
-
-def test_strip_feelers_folds_same_zone_and_keeps_volume():
-    # A warmed-up later chunk renders without entry singles: the feeler
-    # folds into same-zone work, volumes exact, ladder caps respected.
-    def capped(zlo, v):
-        return v <= 5
-
-    assert wlgen.strip_feelers(((70, 1), (80, 1), (70, 3), (80, 3)), capped) == (
-        (70, 1),
-        (70, 3),
-        (80, 4),
-    )
-    # No same-zone work, no fold: the single stays, volume untouched.
-    assert wlgen.strip_feelers(((80, 1), (90, 3)), capped) == (
-        (80, 1),
-        (90, 3),
-    )
-    # The fold never builds past the cap, nor the opener past 1-5.
-    assert wlgen.strip_feelers(((60, 1), (60, 5)), capped) == (
-        (60, 1),
-        (60, 5),
-    )
-
-
-def test_strip_feelers_handles_pair_complexes():
-    seq = ((60, (1, 1)), (70, (2, 2)), (60, (2, 2)))
-
-    def ok(zlo, v):
-        return v[0] <= 4 and v[1] <= 4
-
-    folded = wlgen.strip_feelers(seq, ok)
-    assert folded == ((70, (2, 2)), (60, (3, 3)))
-    assert sum(a + b for _, (a, b) in folded) == sum(a + b for _, (a, b) in seq)
-
-
-def test_split_chunks_recurses_until_clean():
-    # The 33-set monster splits until every chunk renders clean.
-    chunks = wlgen.split_chunks((1, 15, 18, 34, 10), "Squat")
-    assert len(chunks) > 2
-    assert sum(map(sum, chunks)) == 78
-    for chunk in chunks:
-        assert len(wlgen.best_scheme(chunk, "Squat")[0]) < wlgen.MARATHON_SETS
-    # Wide chunks with no legal boundary peel half their largest zone-cell
-    # into a second same-day slot until every chunk renders clean, the
-    # dose exact across the partition (II Press 17, the CMS Fundamental
-    # 16/15/14s, and the MS Squat 14 all die this way; the book has no
-    # slot past 13 sets now).
-    wide = (0, 2, 3, 22, 4, 0, 0)
-    chunks = wlgen.split_chunks(wide, wlgen.BIN_GROUP["Fundamental"])
-    assert len(chunks) == 2
-    assert sum(map(sum, chunks)) == sum(wide)
-    for chunk in chunks:
-        assert len(wlgen.best_scheme(chunk, "Fund")[0]) < wlgen.MARATHON_SETS
-
-
-def test_split_pair_chunks_keeps_heavy_openers_whole():
-    # Halving by set list is exact, but halves that would open past 1-5
-    # stay whole instead: Takano opens light in every slot.
-    va = vb = (9, 13, 12, 0, 0)
-    chunks = wlgen.split_pair_chunks(va, vb, "SnPull", "Other Snatch", "Clean")
-    assert chunks == [(tuple(va), tuple(vb))]
-    # Real plan pairs do split: every created piece renders clean with a
-    # light opener, and the halves sum back to the plan exactly.
-    seen = 0
-    for cls in ("I", "CMS", "MS"):
-        plan = build_plan(cls)
-        for m in plan["mesos"]:
-            for w in m["weeks"]:
-                for s in w["sessions"]:
-                    for (a, b), (ref, pa, pb) in s.get("pairs", {}).items():
-                        seq = wlgen.best_pair_scheme(tuple(pa), tuple(pb), a, b, ref)[0]
-                        if len(seq) < wlgen.MARATHON_SETS:
-                            continue
-                        parts = wlgen.split_pair_chunks(tuple(pa), tuple(pb), a, b, ref)
-                        if len(parts) < 2:
-                            continue
-                        seen += 1
-                        assert sum(sum(v) for part in parts for v in part) == sum(
-                            pa
-                        ) + sum(pb)
-                        for xa, xb in parts:
-                            q = wlgen.best_pair_scheme(xa, xb, a, b, ref)[0]
-                            assert len(q) < wlgen.MARATHON_SETS
-                            assert wlgen.atom_total(q[0][1]) <= 5
-    assert seen, "no real plan pair splits"
 
 
 def test_prune_doses_keeps_sessions_matchable():
@@ -2397,16 +2239,9 @@ def test_rendered_set_sizes_match_takano_centers():
     # (his CMS ClPull runs [100,2]x3) against Roman's pull singles.
     # Solo ClPull renders 80x3 after the dead-pair removal (ClPull dose
     # goes solo): Roman allows pulls 2-6 at 80-99%, Takano does 3s/4s.
-    # Squat 70 renders 2s again on the flatten-80 spread: split-deep
-    # removed the joint-render 2s (three 14-20-set renders past both
-    # books' slot max), but distributed 70-ladders across more squat
-    # days restore them (Takano aggregate mode is 2, his class modes
-    # 2-4). The count sits at his mode with no slot past 13 sets. Squat 80 renders 4s: the old 2-mode was carried by
-    # seventeen-identical-double marathons, and the same dose now fills
-    # at ladder-max inside two thin slots. ClPull 80 renders 1s: its old
-    # 3-mode lived inside 15-17-set marathons (past Takano's max-10
-    # shape), and the remainder is feeler-singles noise across many thin
-    # slots while the bulk still goes in 3s/4s.
+    # Squat 70 renders 2s on the flatten-80 spread: distributed
+    # 70-ladders across more squat days land on 2s (Takano aggregate
+    # mode is 2, his class modes 2-4).
     # Changes here must move the pins deliberately.
     assert modes == {
         ("Snatch", 60): 3,
@@ -2420,10 +2255,10 @@ def test_rendered_set_sizes_match_takano_centers():
         ("Squat", 50): 1,
         ("Squat", 60): 1,
         ("Squat", 70): 2,
-        ("Squat", 80): 4,
+        ("Squat", 80): 2,
         ("Squat", 90): 2,
         ("ClPull", 70): 1,
-        ("ClPull", 80): 1,
+        ("ClPull", 80): 3,
         ("ClPull", 90): 2,
         ("ClPull", 100): 2,
         # Solo SnPull renders table-max after the dose gate splits big
