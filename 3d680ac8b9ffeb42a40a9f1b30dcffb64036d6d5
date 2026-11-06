@@ -1,0 +1,2 @@
+research/mindose-tol: verdict=rejected
+rejected: Probe MIN_DOSE 5/7, TOL 0.15/0.25: all revert, no win (notes only)
