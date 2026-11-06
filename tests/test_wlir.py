@@ -121,3 +121,55 @@ def test_ir_carries_non_middle_bodyweight():
     middle = to_ir(ir_with_slots(build_plan("MS")))
     assert "bw" not in middle
     assert from_ir(middle)["bw"] == "middle"
+
+
+def _half_session(meso, week, day, half, lifts=6):
+    s = _session(meso, week, day, lifts)
+    s["half"] = half
+    return s
+
+
+def json_round(ir):
+    import json
+
+    return json.loads(json.dumps(ir))
+
+
+def test_half_round_trip_preserves_am_pm():
+    ir = {
+        "class": "III",
+        "title": "Takano Class III",
+        "mesos": [{"name": "Week", "phase": "prep"}],
+        "sessions": [
+            _half_session(0, 0, 0, "AM"),
+            _half_session(0, 0, 0, "PM"),
+            _half_session(0, 0, 2, None),
+        ],
+    }
+    back = to_ir(from_ir(ir))
+    assert [(s["day"], s["half"]) for s in back["sessions"]] == [
+        (0, "AM"),
+        (0, "PM"),
+        (2, None),
+    ]
+    assert json_round(back) == back
+
+
+def test_half_defaults_to_null():
+    ir = {"class": "III", "sessions": [_session(0, 0, 0)]}
+    assert to_ir(from_ir(ir))["sessions"][0]["half"] is None
+
+
+def test_day_sums_halves():
+    ir = {
+        "class": "III",
+        "mesos": [{"name": "Week", "phase": "prep"}],
+        "sessions": [
+            _half_session(0, 0, 0, "AM", lifts=6),
+            _half_session(0, 0, 0, "PM", lifts=12),
+        ],
+    }
+    plan = from_ir(ir)
+    week = plan["mesos"][0]["weeks"][0]
+    assert week["vol"] == 18
+    assert len(week["sessions"]) == 2

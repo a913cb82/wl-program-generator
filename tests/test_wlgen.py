@@ -74,7 +74,7 @@ from wlgen import (
     write_outputs,
     zone_alloc,
 )
-from wlir import to_ir
+from wlir import from_ir, to_ir
 
 ANNUALS = {"III": 13000, "II": 13000, "I": 17500, "CMS": 17500, "MS": 22000}
 
@@ -321,24 +321,53 @@ def test_training_plan_tables():
         rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.DOTALL)
         body = rows[1:]
         idx = 0
-        for si in range(max(len(w["sessions"]) for w in m["weeks"])):
-            present = [w for w in m["weeks"] if si < len(w["sessions"])]
-            nslots = max(len(scheme_entries(w["sessions"][si])) for w in present)
+
+        # rows follow (day, half): same key order as the renderer
+        def _key(w, si):
+            s = w["sessions"][si]
+            day = s.get("day")
+            return (day, s.get("half"), si if day is None else 0)
+
+        keys = []
+        for w in m["weeks"]:
+            for si in range(len(w["sessions"])):
+                key = _key(w, si)
+                if key not in keys:
+                    keys.append(key)
+        keys.sort(
+            key=lambda k: (
+                k[0] if k[0] is not None else 99,
+                {"AM": 1, "PM": 2}.get(k[1], 0),
+                k[2],
+            )
+        )
+        for key in keys:
+            day, half, si0 = key
+            matched = []
+            for w in m["weeks"]:
+                hit = [s for i, s in enumerate(w["sessions"]) if _key(w, i) == key]
+                matched.append(hit[0] if hit else None)
+            nslots = max(
+                [len(scheme_entries(s)) for s in matched if s is not None], default=0
+            )
             for k in range(nslots):
                 cells = re.findall(r"<(?:td|th)[^>]*>(.*?)</(?:td|th)>", body[idx])
                 if k == 0:
-                    day = present[0]["sessions"][si].get("day")
-                    assert cells[0] == (WEEKDAYS[day] if day is not None else str(si + 1))
+                    expect = WEEKDAYS[day] if day is not None else str(si0 + 1)
+                    if half:
+                        expect += f" {half}"
+                    assert cells[0] == expect
                     assert f'rowspan="{nslots}"' in body[idx]
                     base = 1
                 else:
                     base = 0
                 for wi, w in enumerate(m["weeks"]):
-                    if si >= len(w["sessions"]):
+                    sess = matched[wi]
+                    if sess is None:
                         assert cells[base + 2 * wi] == ""
                         assert cells[base + 2 * wi + 1] == ""
                         continue
-                    entries = scheme_entries(w["sessions"][si])
+                    entries = scheme_entries(sess)
                     if k >= len(entries):
                         assert cells[base + 2 * wi] == ""
                         assert cells[base + 2 * wi + 1] == ""
@@ -530,10 +559,14 @@ def test_halve_largest_cell_peels_exact_and_guards_floor():
 def test_strip_feelers_folds_same_zone_and_keeps_volume():
     # A warmed-up later chunk renders without entry singles: the feeler
     # folds into same-zone work, volumes exact, ladder caps respected.
-    capped = lambda zlo, v: v <= 5
-    assert wlgen.strip_feelers(
-        ((70, 1), (80, 1), (70, 3), (80, 3)), capped
-    ) == ((70, 1), (70, 3), (80, 4))
+    def capped(zlo, v):
+        return v <= 5
+
+    assert wlgen.strip_feelers(((70, 1), (80, 1), (70, 3), (80, 3)), capped) == (
+        (70, 1),
+        (70, 3),
+        (80, 4),
+    )
     # No same-zone work, no fold: the single stays, volume untouched.
     assert wlgen.strip_feelers(((80, 1), (90, 3)), capped) == (
         (80, 1),
@@ -548,12 +581,13 @@ def test_strip_feelers_folds_same_zone_and_keeps_volume():
 
 def test_strip_feelers_handles_pair_complexes():
     seq = ((60, (1, 1)), (70, (2, 2)), (60, (2, 2)))
-    ok = lambda zlo, v: v[0] <= 4 and v[1] <= 4
+
+    def ok(zlo, v):
+        return v[0] <= 4 and v[1] <= 4
+
     folded = wlgen.strip_feelers(seq, ok)
     assert folded == ((70, (2, 2)), (60, (3, 3)))
-    assert sum(a + b for _, (a, b) in folded) == sum(
-        a + b for _, (a, b) in seq
-    )
+    assert sum(a + b for _, (a, b) in folded) == sum(a + b for _, (a, b) in seq)
 
 
 def test_split_chunks_recurses_until_clean():
@@ -598,7 +632,9 @@ def test_split_pair_chunks_keeps_heavy_openers_whole():
                         if len(parts) < 2:
                             continue
                         seen += 1
-                        assert sum(sum(v) for part in parts for v in part) == sum(pa) + sum(pb)
+                        assert sum(sum(v) for part in parts for v in part) == sum(
+                            pa
+                        ) + sum(pb)
                         for xa, xb in parts:
                             q = wlgen.best_pair_scheme(xa, xb, a, b, ref)[0]
                             assert len(q) < wlgen.MARATHON_SETS
@@ -720,6 +756,76 @@ def test_render_html():
         '<span class="reps">2</span></span></span>'
         '<span class="pr">)</span><span class="rep">×3</span></span>',
     )
+
+
+def test_split_day_labels_halves():
+    # AM/PM sessions label their half; a whole-day session shows the
+    # bare weekday with no half distinction.
+    am = {
+        "day": 3,
+        "half": "AM",
+        "movements": {"Squat": [3, 0, 0, 0, 0]},
+        "pairs": {},
+        "slots": [{"movement": "Squat", "seq": [(60, 3)]}],
+    }
+    pm = {
+        "day": 3,
+        "half": "PM",
+        "movements": {"Press": [0, 0, 0, 3, 0, 0, 0]},
+        "pairs": {},
+        "slots": [{"movement": "Press", "seq": [(60, 3)]}],
+    }
+    whole = {
+        "day": 0,
+        "half": None,
+        "movements": {"Snatch": [3, 0, 0, 0, 0]},
+        "pairs": {},
+        "slots": [{"movement": "Snatch", "seq": [(60, 3)]}],
+    }
+    meso = {
+        "name": "M",
+        "phase": "prep",
+        "weeks": [{"vol": 1, "sessions": [whole, am, pm]}],
+    }
+    table = training_table(meso)
+    assert ">Thu AM<" in table
+    assert ">Thu PM<" in table
+    assert ">Mon<" in table
+    assert "Mon AM" not in table and "Mon PM" not in table
+
+
+def test_rows_align_by_day_not_position():
+    # a week's second session is Tuesday while another week's second
+    # session is Monday PM: rows must follow the day, not the position.
+    def sess(day, half, group):
+        return {
+            "day": day,
+            "half": half,
+            "movements": {group: [3, 0, 0, 0, 0]},
+            "pairs": {},
+            "slots": [{"movement": group, "seq": [(60, 3)]}],
+        }
+
+    w1 = [sess(0, None, "Squat"), sess(1, None, "Press")]
+    w2 = [sess(0, "AM", "Squat"), sess(0, "PM", "Press"), sess(1, None, "Press")]
+    meso = {
+        "name": "M",
+        "phase": "prep",
+        "weeks": [{"vol": 1, "sessions": w1}, {"vol": 1, "sessions": w2}],
+    }
+    table = training_table(meso)
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.DOTALL)[1:]
+    by_label = {}
+    for r in rows:
+        cells = re.findall(r"<(?:td|th)[^>]*>(.*?)</(?:td|th)>", r)
+        by_label.setdefault(cells[0], []).append(cells[1:])
+    assert ">Mon PM<" in table
+    # Monday PM row: week 1 empty, week 2 shows the PM session
+    assert by_label["Mon PM"][0][:2] == ["", ""]
+    assert by_label["Mon PM"][0][2] == "Press"
+    # Tuesday row holds only Tuesday sessions, never Monday's PM half
+    assert all(c[2] == "Press" or c[2] == "" for c in by_label["Tue"])
+    assert all(c[0] == "Press" or c[0] == "" for c in by_label["Tue"])
 
 
 def test_training_table_exact():
@@ -1412,7 +1518,14 @@ def test_html():
 # Takano measured annual ARI per bin table (sample programs); each class
 # rises with level in every lift family. Fund rows are approximate.
 SOURCE_ARI = {
-    "III": {"Snatch": 68, "CJ": 69, "SnPull": 82, "ClPull": 81, "Squat": 72, "Fund": 76},
+    "III": {
+        "Snatch": 68,
+        "CJ": 69,
+        "SnPull": 82,
+        "ClPull": 81,
+        "Squat": 72,
+        "Fund": 76,
+    },
     "II": {"Snatch": 70, "CJ": 70, "SnPull": 83, "ClPull": 82, "Squat": 73, "Fund": 80},
     "I": {"Snatch": 73, "CJ": 73, "SnPull": 88, "ClPull": 87, "Squat": 75, "Fund": 75},
     "CMS": {
@@ -1772,9 +1885,7 @@ def _untapered_90(cls, mi, wi, g, total):
     from wlgen import allocate, close_bins, untapered_week_bins
 
     counts = close_bins(allocate(total, untapered_week_bins(cls, mi, wi, g)))
-    zones = __import__("wlconfig").BIN_ZONES[
-        __import__("wlconfig").BIN_GROUP[g]
-    ]
+    zones = __import__("wlconfig").BIN_ZONES[__import__("wlconfig").BIN_GROUP[g]]
     return sum(n for n, z in zip(counts, zones) if z >= 90)
 
 
@@ -1803,8 +1914,8 @@ def _tapered_groups():
 
 
 def test_taper_topup_sums_to_slack():
-    from wlgen import build_plan, taper_topup
     from wlconfig import GROUPS
+    from wlgen import build_plan, taper_topup
 
     for cls in ("III", "MS"):
         meso = build_plan(cls)["mesos"][-1]
@@ -1816,8 +1927,8 @@ def test_taper_topup_sums_to_slack():
 
 def test_comp2_keeps_taper_slack():
     import wlgen
-    from wlgen import build_plan, taper_topup
     from wlconfig import GROUPS
+    from wlgen import taper_topup
 
     for cls in ("III", "MS"):
         # bypass the build cache: the counterfactual needs a fresh plan
@@ -1834,7 +1945,11 @@ def test_comp2_keeps_taper_slack():
         real = sum(_meso_80(meso, g) for g in tapered)
         orig = wlgen.taper_topup
         try:
-            wlgen.taper_topup = lambda *a: [{g: 0 for g in GROUPS} for _ in range(4)]
+
+            def _zero_topup(*a):
+                return [{g: 0 for g in GROUPS} for _ in range(4)]
+
+            wlgen.taper_topup = _zero_topup
             base = fresh(cls)["mesos"][-1]
         finally:
             wlgen.taper_topup = orig
@@ -2104,9 +2219,11 @@ def test_feasible_matches_brute_force():
         ([[1, 0], [0, 1]], [1, 0], [1, 0]),
     ]
     for prior, rows, cols in cases:
-        assert feasible(prior, rows, cols) == _brute_feasible(
-            prior, rows, cols
-        ), (prior, rows, cols)
+        assert feasible(prior, rows, cols) == _brute_feasible(prior, rows, cols), (
+            prior,
+            rows,
+            cols,
+        )
 
 
 def test_feasible_uses_only_support():
@@ -2624,3 +2741,25 @@ def test_spreading_90_never_raises_session_penalty():
         prilepin_score(rest), "Squat"
     )
     assert two <= one
+
+
+def test_generated_sessions_are_whole_days():
+    # the generator builds one whole-day session per day: half is null.
+    # AM/PM halves arrive only via foreign (Takano) JSON.
+    for cls in ("III", "MS"):
+        for m in build_plan(cls)["mesos"]:
+            for w in m["weeks"]:
+                days = [s["day"] for s in w["sessions"]]
+                assert len(set(days)) == len(days)
+                assert all(s.get("half") is None for s in w["sessions"])
+                assert all("half" in s for s in w["sessions"])
+
+
+def test_ir_writes_null_half():
+    ir = to_ir(ir_with_slots(build_plan("III")))
+    assert all(s["half"] is None for s in ir["sessions"])
+    back = from_ir(ir)
+    for m in back["mesos"]:
+        for w in m["weeks"]:
+            assert all(s["half"] is None for s in w["sessions"])
+    assert to_ir(back) == ir

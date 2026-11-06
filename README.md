@@ -9,13 +9,17 @@ Generates a 20-week Soviet-style Olympic weightlifting macrocycle from an annual
 - A group is one of the 12 movement groups in the plan, for example snatch or squat.
 - Prep is the preparation phase, which builds volume. Comp is the competition phase, which peaks for the contest.
 - A macrocycle is the full program of 20 weeks. It holds five mesocycles of four weeks. Each mesocycle holds four microcycles of one week. Each microcycle holds training sessions.
-- A session is one training day. It holds up to five slots. Each slot holds one movement or one combined movement.
+<<<<<<< HEAD
+- A training day holds one session or two half-sessions (AM/PM). A session holds up to five slots. Each slot holds one movement or one combined movement. Our plans train one whole-day session per day; Takano days may hold AM and PM halves.
+=======
+- A training day holds one session or two half-sessions (AM/PM). A session holds up to five slots. Each slot holds one movement or one combined movement. Our plans train one whole-day session per day; Takano days may hold AM and PM halves.
+>>>>>>> bac230a (exp: day-not-session halves merge to day-granular dose health)
 - A combined movement trains two movements in one slot, for example clean and jerk.
-- A set is one group of reps. A rep is one lift. A scheme is the written set plan for one slot. A dose is the lifts prescribed for one movement in one session.
+- A set is one group of reps. A rep is one lift. A scheme is the written set plan for one slot. A dose is the lifts prescribed for one movement in one training day (both halves together when a day splits).
 - Median means the middle value.
 - Instructions are the items the athlete must read and follow.
 - A taper is a planned easy week with lighter loads.
-- Prilepin's chart is a published table that links intensity to recommended reps. A session unit is one full session of work under that chart. Tolerance is the largest healthy dose for one movement in one session. The floor is the smallest useful dose.
+- Prilepin's chart is a published table that links intensity to recommended reps. A session unit is one full session of work under that chart. Tolerance is the largest healthy dose for one movement in one training day. The floor is the smallest useful dose.
 - Contrast is the biggest training day divided by the smallest training day in one week. Range is the biggest day minus the smallest day.
 - A planned amount is the lifts a week should contain for one movement. A band is the allowed range around a planned amount, 20 percent up or down.
 - A base zone is the lightest zone the week uses.
@@ -123,13 +127,17 @@ Each level takes a share of the level above it.
 
 ## Representation and scoring
 
-Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds the class label and the sessions, plus bodyweight when it is not middleweight. Each session knows its mesocycle, week and weekday plus its movements, combined movements, and slots. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
+<<<<<<< HEAD
+Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds the class label and the sessions, plus bodyweight when it is not middleweight. Each session knows its mesocycle, week, weekday and half (null for a whole day, AM/PM for a half day) plus its movements, combined movements, and slots. The unique session key is mesocycle, week, day, half. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
+=======
+Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds the class label and the sessions, plus bodyweight when it is not middleweight. Each session knows its mesocycle, week, weekday and half (null for a whole day, AM/PM for a half day) plus its movements, combined movements, and slots. The unique session key is mesocycle, week, day, half. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
+>>>>>>> bac230a (exp: day-not-session halves merge to day-granular dose health)
 
 `wlgen audit` builds all five classes and prints one scoreboard row per class plus the book total. The score has four parts. Lower is better.
 
-- **Strain** — dose health. Work over the tolerance plus work under the 0.25 floor, in session units, divided by 150.
+- **Strain** — dose health. Work over the tolerance plus work under the 0.25 floor, per training day, divided by 150.
 - **Size** — instructions to follow plus the longest single slot.
-- **Rhythm** — whether the median week has a wave, whether heavy days follow rest, and whether the plan has an intensity wave. Day-to-day movement as a share of the week's volume, split across its training days, must reach 0.1 per day. Rest days count as the gaps between sessions, never as zeros. Shortfall below that is priced. The median week must not put heavy days after short rest. Only missing rest is priced, nothing above neutral. Missing turns in session order add more. Each session carries its weekday in the plan JSON. Extra peaks are free. A turn is a change of direction between sessions. The intensity wave fits an annual sine, peaking at 0.85 of plan length, to the weekly mean zones with the meet week dropped. Shortfall below a fitted depth of 0.02 is priced.
+- **Rhythm** — whether the median week has a wave, whether heavy days follow rest, and whether the plan has an intensity wave. Day-to-day movement as a share of the week's volume, split across its training days, must reach 0.1 per day. Rest days count as the gaps between sessions, never as zeros. Shortfall below that is priced. The median week must not put heavy days after short rest. Only missing rest is priced, nothing above neutral. Missing turns in day order add more. Each session carries its weekday and half in the plan JSON. Extra peaks are free. A turn is a change of direction between sessions. The intensity wave fits an annual sine, peaking at 0.85 of plan length, to the weekly mean zones with the meet week dropped. Shortfall below a fitted depth of 0.02 is priced.
 - **Drift** — everything off plan. Group and total misses at week, mesocycle, and program scale. Group misses count only beyond the band. Total misses count in full. Illegal sets, clashes, gaps, idle movements, warmup softness, uneven spacing, and pace.
 
 The divisors (150, 9300, 25, 0.5) scale each part to about 1.0 on today's plans. `score = 0.4·strain + 0.3·size + 0.1·rhythm + 0.2·drift`. A shipped plan scores zero on illegal sets, clashes, and idle movements. Warmup softness is nonzero in current plans. The generator must narrow the openers.

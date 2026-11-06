@@ -1,8 +1,12 @@
 """The intermediate representation: the plan as pure training data.
 
 The file JSON is only the class label and the sessions: each session
-knows its mesocycle, week and weekday plus the executed slots (movement
-name and atom scheme per slot). Volumes, groups, bins, nominals, names
+knows its mesocycle, week, weekday and half (null/AM/PM) plus the
+executed slots (movement name and atom scheme per slot). A day is a
+container: it holds one whole-day session (half null, what the generator
+builds) or two half-day sessions (AM/PM, as in Takano's parsed days);
+the unique session key is (meso, week, day, half). Volumes, groups,
+bins, nominals, names
 and phases all derive from the sessions and the class ground truth
 tables, for rendering and scoring. from_ir rebuilds the rich structure;
 nothing redundant is stored.
@@ -141,7 +145,8 @@ def _jsonable_seq(seq):
 
 def to_ir(plan):
     """Minimal file JSON: the class label and the sessions. Each session
-    carries its mesocycle, week and weekday plus the executed slots."""
+    carries its mesocycle, week, weekday and half (null for a whole-day
+    session, AM/PM for a half-day one) plus the executed slots."""
     sessions = []
     for mi, m in enumerate(plan["mesos"]):
         for wi, w in enumerate(m["weeks"]):
@@ -156,6 +161,7 @@ def to_ir(plan):
                         "meso": mi,
                         "week": wi,
                         "day": s["day"],
+                        "half": s.get("half"),
                         "movements": {g: list(v) for g, v in s["movements"].items()},
                         "pairs": {
                             f"{a}+{b}": [ref, list(va), list(vb)]
@@ -177,7 +183,8 @@ def to_ir(plan):
 
 
 def _restore_sessions(stored, movements_list, vols):
-    """Sessions back from stored JSON: pair keys split, seqs parsed."""
+    """Sessions back from stored JSON: pair keys split, seqs parsed, the
+    weekday and half carried over untouched."""
     sessions = []
     for s, movements, vol in zip(stored, movements_list, vols):
         pairs = {}
@@ -188,6 +195,7 @@ def _restore_sessions(stored, movements_list, vols):
         sessions.append(
             {
                 "day": s["day"],
+                "half": s.get("half"),
                 "vol": vol,
                 "movements": movements,
                 "pairs": pairs,
@@ -232,9 +240,10 @@ def _week_entry(cls, mi, wi, sessions, vol=None):
 
 def from_ir(ir):
     """Rebuild the rich plan from minimal JSON: sessions grouped into
-    weeks and mesocycles, volumes and bins rolled up from the slots,
-    nominals from the class ground truth tables. Rendering and scoring
-    accept the result as built."""
+    weeks and mesocycles by (meso, week), volumes and bins rolled up from
+    the slots, nominals from the class ground truth tables. Halves
+    sharing a day stay separate sessions; day-level rollups sum them.
+    Rendering and scoring accept the result as built."""
     cls = ir["class"]
     by_week: dict = {}
     order: list = []
@@ -267,9 +276,7 @@ def _from_ir_stored(cls, title, meta, by_week, order):
         weeks = []
         for key in [k for k in order if k[0] == mi]:
             stored = by_week[key]
-            actual = sum(
-                sum(v) for s in stored for v in s["movements"].values()
-            )
+            actual = sum(sum(v) for s in stored for v in s["movements"].values())
             entry = _week_entry(cls, mi, key[1], stored, vol=actual)
             entry["sessions"] = _restore_sessions(
                 stored, entry["_movements"], entry["_vols"]
@@ -282,9 +289,7 @@ def _from_ir_stored(cls, title, meta, by_week, order):
                 "name": info.get("name", f"Meso {mi + 1}"),
                 "phase": info.get("phase", "prep"),
                 "vol": sum(w["vol"] for w in weeks),
-                "groups": {
-                    g: sum(w["groups"][g] for w in weeks) for g in GROUPS
-                },
+                "groups": {g: sum(w["groups"][g] for w in weeks) for g in GROUPS},
                 "weeks": weeks,
             }
         )

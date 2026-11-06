@@ -336,8 +336,10 @@ def _add(vec, grid, zone, lifts):
     vec[grid.index(floor_zone(zone, grid))] += lifts
 
 
-def build_session(ex_list, day):
-    """One session in our JSON shape from his exercise lines."""
+def build_session(ex_list, day, half=None):
+    """One session in our JSON shape from his exercise lines.
+    half is None for whole-day sessions, else 'AM'/'PM' for the
+    morning/afternoon block of a split day."""
     movements: dict = {}
     pairs: dict = {}
     slots: list = []
@@ -376,7 +378,7 @@ def build_session(ex_list, day):
         if name is None:
             LOG.append(f"unmapped exercise: {text!r}")
             continue
-        body = text[len(name):].lstrip(":").strip()
+        body = text[len(name) :].lstrip(":").strip()
         mapped = EXERCISE_MAP[name]
         if mapped == "drop":
             continue
@@ -418,6 +420,7 @@ def build_session(ex_list, day):
             slots.append({"movement": single, "seq": seq})
     return {
         "day": day,
+        "half": half,
         "movements": movements,
         "pairs": pairs,
         "slots": slots,
@@ -456,8 +459,8 @@ def _week_phase(label, prev):
 def build_program(weeks):
     """Sessions plus mesocycle metadata: contiguous same-phase week runs
     form mesocycles, so no fixed mesocycle length anywhere."""
-    sessions = []
-    mesos = []
+    sessions: list = []
+    mesos: list = []
     phase = "prep"
     mi = -1
     wi = 0
@@ -466,15 +469,12 @@ def build_program(weeks):
         if mi < 0 or mesos[mi]["phase"] != phase:
             mi += 1
             wi = 0
-            mesos.append(
-                {"name": "", "phase": phase, "first": w["n"]}
-            )
-        mesos[mi]["name"] = (
-            f"{PHASE_LABEL[phase]} {mesos[mi]['first']}-{w['n']}"
-        )
+            mesos.append({"name": "", "phase": phase, "first": w["n"]})
+        mesos[mi]["name"] = f"{PHASE_LABEL[phase]} {mesos[mi]['first']}-{w['n']}"
         used = set()
         for day in w["days"]:
-            if not day["ex"]:
+            blocks = day.get("blocks", [{"half": None, "ex": day["ex"]}])
+            if not any(b["ex"] for b in blocks):
                 continue
             d = WEEKDAYS.get(day.get("weekday"), None)
             if d is None or d in used:
@@ -483,10 +483,13 @@ def build_program(weeks):
                 d = free[0]
                 LOG.append(f"week {wk}: weekday assigned to {d}")
             used.add(d)
-            s = build_session(day["ex"], d)
-            s["meso"] = mi
-            s["week"] = wi
-            sessions.append(s)
+            for b in blocks:
+                if not b["ex"]:
+                    continue
+                s = build_session(b["ex"], d, b["half"])
+                s["meso"] = mi
+                s["week"] = wi
+                sessions.append(s)
         wi += 1
     for m in mesos:
         del m["first"]
@@ -494,7 +497,7 @@ def build_program(weeks):
 
 
 def split_programs(weeks):
-    """The I key lumps four book programs (Class 1, CMS, MS, IMS); a week
+    """The I key lumps four book programs (Class 1, CMS, MS, MSIC); a week
     numbered 1 restarts the program."""
     programs: list = []
     for w in weeks:
@@ -511,18 +514,23 @@ def main():
     with open("tests/fixtures/takano_prog.json") as f:
         data = json.load(f)
     jobs = [("III", "III", data["III"]), ("II", "II", data["II"])]
-    for program, weeks in zip(
-        ("I", "CMS", "MS", "MSIC"), split_programs(data["I"])
-    ):
+    for program, weeks in zip(("I", "CMS", "MS", "MSIC"), split_programs(data["I"])):
         cls = program if program != "MSIC" else "MS"
         jobs.append((program, cls, weeks))
     for program, cls, weeks in jobs:
         LOG = []
         sessions, meta = build_program(weeks)
-        by_key = {}
+        seen = set()
+        for s in sessions:
+            # IR contract: (meso, week, day, half) unique; half null
+            # means whole-day (all our non-split days keep half null).
+            key = (s["meso"], s["week"], s["day"], s["half"])
+            assert key not in seen, f"duplicate session {key}"
+            seen.add(key)
+        by_key: dict = {}
         for s in sessions:
             by_key.setdefault((s["meso"], s["week"]), []).append(s)
-        mesos = []
+        mesos: list = []
         for mi, info in enumerate(meta):
             week_list = []
             wi = 0
@@ -537,11 +545,14 @@ def main():
                 }
             )
         ir = to_ir({"class": cls, "mesos": mesos})
+        # to_ir carries meso/week/day only; halves ride alongside in
+        # session order until wlir.py persists them (Track B contract).
+        assert len(ir["sessions"]) == len(sessions)
+        for stored, s in zip(ir["sessions"], sessions):
+            stored["half"] = s["half"]
         ir["program"] = program
         ir["title"] = TITLE.get(program, f"Takano {program}")
-        ir["mesos"] = [
-            {"name": m["name"], "phase": m["phase"]} for m in meta
-        ]
+        ir["mesos"] = [{"name": m["name"], "phase": m["phase"]} for m in meta]
         with open(f"tests/fixtures/takano-{program}.json", "w") as f:
             json.dump(ir, f)
         print(program, "sessions:", len(sessions), "log lines:", len(LOG))

@@ -101,7 +101,13 @@ def _intensity_plan(zones):
         idx = min(range(len(grid)), key=lambda i: abs(grid[i] - z))
         vec = [0] * len(grid)
         vec[idx] = 10
-        weeks.append({"sessions": [{"day": 0, "vol": 10, "movements": {"Squat": vec}, "pairs": {}}]})
+        weeks.append(
+            {
+                "sessions": [
+                    {"day": 0, "vol": 10, "movements": {"Squat": vec}, "pairs": {}}
+                ]
+            }
+        )
     plan["mesos"].append({"weeks": weeks})
     return plan
 
@@ -122,9 +128,9 @@ def test_intensity_wave_punishes_flat():
 
 
 def _rest_week(vols_by_day):
-    return {"sessions": [
-        {"day": d, "vol": v} for d, v in sorted(vols_by_day.items()) if v
-    ]}
+    return {
+        "sessions": [{"day": d, "vol": v} for d, v in sorted(vols_by_day.items()) if v]
+    }
 
 
 def test_rest_corr_rewards_heavy_after_rest():
@@ -148,14 +154,16 @@ def test_rest_corr_abstains_on_flat_weeks():
 
 
 def test_per_session_floor_passes_light_heavy_light():
-    from wlscore import RHYTHM_FLOOR, _week_rhythm
+    from wlscore import _week_rhythm
 
-    r = _week_rhythm([{"day": 0, "vol": 60}, {"day": 2, "vol": 60}, {"day": 4, "vol": 60}])
+    r = _week_rhythm(
+        [{"day": 0, "vol": 60}, {"day": 2, "vol": 60}, {"day": 4, "vol": 60}]
+    )
     assert r["shortfall"] == 0
 
 
 def test_per_session_floor_fails_flat_block():
-    from wlscore import RHYTHM_FLOOR, _week_rhythm
+    from wlscore import _week_rhythm
 
     r = _week_rhythm([{"day": d, "vol": 60} for d in range(6)])
     assert r["shortfall"] > 0.4
@@ -431,3 +439,131 @@ def test_precomp_phase_scores_as_competition_period():
     # Takano headers name three phases; ours knows two. Pre-competition
     # belongs to the competition period, so it shares comp ratios.
     assert _nominal("III", "precomp", 100) == _nominal("III", "comp", 100)
+
+
+def _day_pair(day, vol, half, squat):
+    return {
+        "day": day,
+        "vol": vol,
+        "half": half,
+        "movements": {"Squat": list(squat)},
+        "pairs": {},
+        "slots": [],
+    }
+
+
+def _split_week():
+    """One heavy day as whole vs AM/PM halves; other days identical."""
+    heavy = [0, 0, 0, 40, 20]
+    am = [0, 0, 0, 20, 10]
+    whole = [
+        _day_pair(0, 60, None, heavy),
+        _day_pair(2, 60, None, [0, 0, 0, 40, 20]),
+        _day_pair(4, 60, None, [0, 0, 0, 40, 20]),
+    ]
+    split = [
+        _day_pair(0, 30, "AM", am),
+        _day_pair(0, 30, "PM", am),
+        _day_pair(2, 60, None, [0, 0, 0, 40, 20]),
+        _day_pair(4, 60, None, [0, 0, 0, 40, 20]),
+    ]
+    return whole, split
+
+
+def test_day_doses_merge_halves():
+    from wlscore import _day_doses, _dose
+
+    whole, split = _split_week()
+    assert [_dose(d) for d in _day_doses(split)] == [
+        _dose(d) for d in _day_doses(whole)
+    ]
+    assert len(_day_doses(split)) == 3
+
+
+def _exc_of(sessions):
+    from wlconfig import BIN_GROUP
+    from wlscore import _day_doses, _dose, _session_score, _tolerance
+
+    total = 0.0
+    for day in _day_doses(sessions):
+        for g, dose in _dose(day).items():
+            total += max(0.0, _session_score(dose) - _tolerance(BIN_GROUP[g]))
+    return total
+
+
+def test_exc_ignores_day_split():
+    from wlconfig import BIN_GROUP
+    from wlscore import _dose, _session_score, _tolerance
+
+    whole, split = _split_week()
+    assert _exc_of(split) == _exc_of(whole) > 0
+
+    def sess_exc(sessions):
+        total = 0.0
+        for s in sessions:
+            for g, dose in _dose(s).items():
+                total += max(0.0, _session_score(dose) - _tolerance(BIN_GROUP[g]))
+        return total
+
+    # the old session-granular price falls when a day splits: the convex
+    # kink at tolerance forgives each half. Day granularity removes the
+    # asymmetry Takano halves would otherwise enjoy.
+    assert sess_exc(split) < sess_exc(whole)
+
+
+def test_shortfall_ignores_day_split():
+    from wlscore import FLOOR, _day_doses, _dose, _session_score
+
+    tiny = [_day_pair(0, 6, None, [0, 0, 6, 0, 0])]
+    halves = [
+        _day_pair(0, 3, "AM", [0, 0, 3, 0, 0]),
+        _day_pair(0, 3, "PM", [0, 0, 3, 0, 0]),
+    ]
+
+    def short(sessions):
+        total = 0.0
+        for day in _day_doses(sessions):
+            for _, dose in _dose(day).items():
+                score = _session_score(dose)
+                if score < FLOOR:
+                    total += FLOOR - score
+        return total
+
+    assert short(halves) == short(tiny)
+
+
+def test_rhythm_counts_days_not_sessions():
+    from wlscore import _week_rest_corr, _week_rhythm
+
+    whole, split = _split_week()
+    assert _week_rhythm(split) == _week_rhythm(whole)
+    assert _week_rest_corr({"sessions": split}) == _week_rest_corr({"sessions": whole})
+
+
+def test_score_split_day_matches_whole_day():
+    import copy
+
+    from wlscore import score_class
+
+    plan = _plan()
+    week = _copy_week(plan)
+    s = week["sessions"][0]
+    halves = []
+    for half in ("AM", "PM"):
+        h = copy.deepcopy(s)
+        h["half"] = half
+        h["vol"] = s["vol"] / 2
+        h["movements"] = {g: [n / 2 for n in vec] for g, vec in s["movements"].items()}
+        h["slots"] = []
+        halves.append(h)
+    week["sessions"] = halves + week["sessions"][1:]
+    for h in halves:
+        h["slots"] = []
+    split_plan = copy.deepcopy(plan)
+    split_plan["mesos"][0]["weeks"][0] = week
+    a = score_class("III", plan)
+    b = score_class("III", split_plan)
+    # day-level dose health and rhythm must not move when a day splits
+    assert b["excess"] == a["excess"]
+    assert b["shortfall"] == a["shortfall"]
+    assert b["rhythm_weeks"][0] == a["rhythm_weeks"][0]

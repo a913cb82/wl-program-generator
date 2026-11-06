@@ -223,7 +223,8 @@ def _week_bins_keyed(binkey, gap, fan, meso, week, group, bw="middle"):
 def untapered_week_bins(cls, meso, week, group, bw="middle"):
     """Zone fractions with the final-week taper switched off: the baseline
     the taper deletes from, so the meso can take the slack back up."""
-    return list(_shifted_fracs(*_canon(cls), meso, week, group, False, bw)[1])
+    binkey, gap, fan = _canon(cls)
+    return list(_shifted_fracs(binkey, gap, fan, meso, week, group, False, bw)[1])
 
 
 def take_up_slack(counts, zones, extra):
@@ -1012,6 +1013,10 @@ def cap(vols, weights, cap=CAP):
 
 
 def day_split(vol, pattern):
+    """Cut one week into day-sized volumes, one session per day.
+
+    The generator builds whole-day sessions only (half null); a
+    Takano-style day may instead hold two AM/PM half-day sessions."""
     weights = [SIZE_WEIGHT[s] for s in pattern]
     vols = allocate(vol, weights)
     return vols, [{"size": s, "vol": v} for s, v in zip(pattern, cap(vols, weights))]
@@ -1031,9 +1036,9 @@ def week_demand(targets, cls, mi, wi, bw="middle"):
 
 
 def demand_days(demand, vol):
-    """Days a week needs: one session of capacity per day for the heaviest
-    movement, one day's worth of total work for the rest, and never more
-    volume than the cap allows on one day."""
+    """Whole-day sessions a week needs: one session of capacity per day
+    for the heaviest movement, one day's worth of total work for the
+    rest, and never more volume than the cap allows on one day."""
     if not demand:
         return 3
     need = 3
@@ -1168,12 +1173,18 @@ def _spread_days(n):
 
 
 def _assign_weekdays(planned):
-    """Stamp each session with its weekday, in training order."""
+    """Stamp each session with its weekday, in training order.
+
+    Generated weeks hold one whole-day session per day, so every half
+    is null; half-day (AM/PM) sessions arrive only via foreign JSON."""
     for s, day in zip(planned, _spread_days(len(planned))):
         s["day"] = day
+        s["half"] = None
 
 
-def week_sessions(vol, targets, nom, cls, mi, wi, prev_last=None, topup=None, bw="middle"):
+def week_sessions(
+    vol, targets, nom, cls, mi, wi, prev_last=None, topup=None, bw="middle"
+):
     """First session-size variant the week can host: the cap-driven day count
     first, source variants in table order, canonical (first) pattern preferred.
 
@@ -1595,7 +1606,10 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None, bw="middle"):
         ztop = max((z for z, c in enumerate(rem_counts) if c), default=0)
         if ztop and peak:
             prior = [
-                [rem_units[k] ** (peak * z / ztop) if rem_units[k] else 1.0 for k in range(nS)]
+                [
+                    rem_units[k] ** (peak * z / ztop) if rem_units[k] else 1.0
+                    for k in range(nS)
+                ]
                 for z in range(len(rem_counts))
             ]
         else:
@@ -1613,7 +1627,9 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None, bw="middle"):
         for k, dk in enumerate(extras):
             if not dk:
                 continue
-            col = take_up_slack([m[z][k] for z in range(len(counts))], lo[: len(counts)], dk)
+            col = take_up_slack(
+                [m[z][k] for z in range(len(counts))], lo[: len(counts)], dk
+            )
             for z in range(len(counts)):
                 m[z][k] = col[z]
         # Extras stack onto existing tops, so a column can end with 100+
@@ -1637,9 +1653,7 @@ def pair_zones(cls, mi, wi, pairs, pair_topup=None, bw="middle"):
             hi = sum(m[z][k] for z in range(len(counts)) if lo[z] >= 90)
             if not hi:
                 continue
-            i80 = next(
-                i for i in range(len(counts)) if lo[i] == 80
-            )
+            i80 = next(i for i in range(len(counts)) if lo[i] == 80)
             for z in range(len(counts)):
                 if lo[z] >= 90:
                     m[z][k] = 0
@@ -1750,7 +1764,9 @@ def taper_topup(cls, mi, week_groups, bw="middle"):
             continue
         zones = BIN_ZONES[bt]
         zones_by_group[g] = zones
-        u4 = close_bins(allocate(week_groups[3][g], untapered_week_bins(cls, mi, 3, g, bw)))
+        u4 = close_bins(
+            allocate(week_groups[3][g], untapered_week_bins(cls, mi, 3, g, bw))
+        )
         slack = sum(n for n, z in zip(u4, zones) if z >= thresh)
         vols = [week_groups[w][g] for w in range(3)]
         if slack <= 0 or sum(vols) == 0:
@@ -1760,8 +1776,13 @@ def taper_topup(cls, mi, week_groups, bw="middle"):
     return out
 
 
-def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup=None, bw="middle"):
-    """Fill each day with the day template and exact group x zone lifts."""
+def plan_sessions(
+    session_list, targets, nom, cls, mi, wi, prev_last=None, topup=None, bw="middle"
+):
+    """Fill each session with the day template and exact group x zone lifts.
+
+    One session per day here (whole-day, half null); the day template
+    sizes the session, it does not split days into halves."""
     vols = [s["vol"] for s in session_list]
     rows = [targets[g] for g in GROUPS]
     quota = week_quota(targets, vols, prev_last)
@@ -1838,7 +1859,7 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
             while need > 0:
                 here = [i for i in free if moved[i][j] > 0]
                 safe = [i for i in here if absorb_ok(i, 1)]
-                i = max(
+                best = max(
                     safe or here,
                     key=lambda i: (
                         nom[GROUPS[i]]
@@ -1847,14 +1868,15 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
                     ),
                     default=None,
                 )
-                if i is None:
+                if best is None:
                     break
+                i = best
                 moved[i][j] += 1
                 need -= 1
             while need < 0:
                 here = [i for i in free if moved[i][j] > 0]
                 safe = [i for i in here if absorb_ok(i, -1)]
-                i = max(
+                best = max(
                     safe or here,
                     key=lambda i: (
                         sum(moved[i])
@@ -1863,8 +1885,9 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
                     ),
                     default=None,
                 )
-                if i is None:
+                if best is None:
                     break
+                i = best
                 moved[i][j] -= 1
                 need += 1
     consolidate_doses(moved, pairs)
@@ -1879,7 +1902,9 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
         nz = len(BIN_ZONES[BIN_GROUP[g]])
         active = [j for j in range(len(vols)) if moved[i][j] and (j, g) not in paired]
         if active:
-            counts = week_bin_lifts(cls, mi, wi, g, sum(moved[i][j] for j in active), bw)
+            counts = week_bin_lifts(
+                cls, mi, wi, g, sum(moved[i][j] for j in active), bw
+            )
             zones = zone_alloc(
                 counts, [moved[i][j] for j in active], peak=phase_peak(cls, mi, g)
             )
@@ -1940,11 +1965,13 @@ def plan_sessions(session_list, targets, nom, cls, mi, wi, prev_last=None, topup
                     )
                     z[src] -= 1
                     z[x] += 1
-            paired_here = [(j, paired[(j, g)]) for j in range(len(vols)) if (j, g) in paired]
+            paired_vecs = [
+                (j, paired[(j, g)]) for j in range(len(vols)) if (j, g) in paired
+            ]
             if active:
                 close_week(
                     list(zip(active, zones)),
-                    paired_here,
+                    paired_vecs,
                     BIN_ZONES[BIN_GROUP[g]][: len(zones[0])],
                 )
             zg = BIN_ZONES[BIN_GROUP[g]][: len(zones[0])]
@@ -3130,13 +3157,13 @@ def split_pair_chunks(va, vb, a_group, b_group, ref_group):
     # open heavier than the parent's own opener, so every created piece
     # must still open Takano-style (1-5). When one would not, keep the
     # pair whole (as before this change).
-    for xa, xb in halves:
-        opener = best_pair_scheme(xa, xb, a_group, b_group, ref_group)[0][0][1]
+    for ya, yb in halves:
+        opener = best_pair_scheme(ya, yb, a_group, b_group, ref_group)[0][0][1]
         if atom_total(opener) > 5:
             return [(tuple(va), tuple(vb))]
     out = []
-    for xa, xb in halves:
-        out.extend(split_pair_chunks(xa, xb, a_group, b_group, ref_group))
+    for ya, yb in halves:
+        out.extend(split_pair_chunks(ya, yb, a_group, b_group, ref_group))
     return out
 
 
@@ -3376,21 +3403,46 @@ def training_table(meso):
         cls = ' class="wk"' if wi else ""
         parts.append(f'<th scope="col" colspan="2"{cls}>Week {wi + 1}</th>')
     head = "<thead><tr><th></th>" + "".join(parts) + "</tr></thead>"
-    body = []
-    rows = max(len(w["sessions"]) for w in weeks)
-    for si in range(rows):
-        present = [w for w in weeks if si < len(w["sessions"])]
-        slots = max(
-            [len(scheme_entries(w["sessions"][si])) for w in present], default=0
+
+    # Rows follow the day, not the position: each (day, half) pair gets
+    # one row, so a Monday PM session never lands in Tuesday's row just
+    # because both are their week's second session. Day-less sessions
+    # keep their positional row. Whole days sort before their halves.
+    def _key(w, si):
+        s = w["sessions"][si]
+        day = s.get("day")
+        return (day, s.get("half"), si if day is None else 0)
+
+    keys = []
+    for w in weeks:
+        for si in range(len(w["sessions"])):
+            key = _key(w, si)
+            if key not in keys:
+                keys.append(key)
+    keys.sort(
+        key=lambda k: (
+            k[0] if k[0] is not None else 99,
+            {"AM": 1, "PM": 2}.get(k[1], 0),
+            k[2],
         )
+    )
+    body = []
+    for key in keys:
+        day, half, si0 = key
+        matched = []
+        for w in weeks:
+            hit = [s for i, s in enumerate(w["sessions"]) if _key(w, i) == key]
+            matched.append(hit[0] if hit else None)
+        present = [s for s in matched if s is not None]
+        slots = max([len(scheme_entries(s)) for s in present], default=0)
         for k in range(slots):
             cells = []
             for wi, w in enumerate(weeks):
                 gap = '<td class="wk"></td>' if wi else "<td></td>"
-                if si >= len(w["sessions"]):
+                sess = matched[wi]
+                if sess is None:
                     cells += [gap, "<td></td>"]
                     continue
-                sess = w["sessions"][si]
                 if sess.get("slots"):
                     entries = [(sl["movement"], sl["seq"]) for sl in sess["slots"]]
                 else:
@@ -3409,8 +3461,9 @@ def training_table(meso):
                     f'<td class="scheme">{phrases}</td>',
                 ]
             if k == 0:
-                day = present[0]["sessions"][si].get("day")
-                label = WEEKDAYS[day] if day is not None else si + 1
+                label = WEEKDAYS[day] if day is not None else str(si0 + 1)
+                if half:
+                    label += f" {half}"
                 first = f'<th scope="row" rowspan="{slots}">{label}</th>'
             else:
                 first = ""

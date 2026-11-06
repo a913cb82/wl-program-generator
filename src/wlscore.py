@@ -31,7 +31,7 @@ from wlconfig import (
 from wlir import allocate, from_ir, macro_days, to_ir
 from wlwaves import INTENSITY_WAVE_FLOOR, fit_amplitude
 
-FLOOR = 0.25  # smallest useful dose in one session, in session units
+FLOOR = 0.25  # smallest useful dose in one training day
 CPU_BOOK = 3.6  # frozen baseline: CPU-seconds to build the book today
 TOL_CLASSIC = 1.5
 TOL_STRENGTH = 2.0
@@ -130,8 +130,12 @@ def _intensity_shortfall(plan):
 
 
 def _dose(session):
-    """Lifted reps per zone for each movement in one session, with paired
-    work counted against both members as it is for the volume bins."""
+    """Lifted reps per zone for each movement in one dose unit, with paired
+    work counted against both members as it is for the volume bins.
+
+    The unit is one training day: whole-day sessions score as-is, AM/PM
+    halves are merged first (see _day_doses), so splitting a day never
+    dilutes a convex dose penalty."""
     doses = {}
     for g, counts in session["movements"].items():
         lo = BIN_ZONES[BIN_GROUP[g]]
@@ -146,6 +150,38 @@ def _dose(session):
                 if n:
                     d[lo[z]] = d.get(lo[z], 0) + n
     return doses
+
+
+def _day_doses(sessions):
+    """Per-day dose units for one week: sessions sharing a weekday merge.
+
+    Movement vectors sum zone-wise; a pair hosted in both halves merges by
+    summing each side. Whole-day weeks (one session per day) pass through
+    unchanged. Day-level dose health (excess, shortfall) prices these; the
+    session loop below keeps counting raw sessions for slots and clashes."""
+    by_day: dict = {}
+    order: list = []
+    for s in sessions:
+        day = s["day"]
+        if day not in by_day:
+            by_day[day] = {"movements": {}, "pairs": {}}
+            order.append(day)
+        bucket = by_day[day]
+        for g, vec in s["movements"].items():
+            row = bucket["movements"].setdefault(g, [0] * len(vec))
+            for z, n in enumerate(vec):
+                row[z] += n
+        for (a, b), (ref, va, vb) in s.get("pairs", {}).items():
+            if (a, b) in bucket["pairs"]:
+                prev_ref, oa, ob = bucket["pairs"][(a, b)]
+                bucket["pairs"][(a, b)] = (
+                    prev_ref,
+                    tuple(x + y for x, y in zip(oa, va)),
+                    tuple(x + y for x, y in zip(ob, vb)),
+                )
+            else:
+                bucket["pairs"][(a, b)] = (ref, tuple(va), tuple(vb))
+    return [by_day[d] for d in order]
 
 
 def _atom_total(value):
@@ -293,9 +329,7 @@ def _entry_problems(text, seq, items, session):
             if "+" in sl["movement"] and g in sl["movement"].split("+")
         )
         singles = [
-            _slot_total(sl.get("items", ()))
-            for sl in slots
-            if sl["movement"] == g
+            _slot_total(sl.get("items", ())) for sl in slots if sl["movement"] == g
         ]
         others = sum(singles) - _slot_total(items)
         cell = sum(session["movements"].get(g, [])) - paired_side - others
@@ -342,9 +376,7 @@ def _entry_problems(text, seq, items, session):
             prev = (zlo, value)
         slots = session.get("slots", [])
         solo = sum(
-            _slot_total(sl.get("items", ()))
-            for sl in slots
-            if sl["movement"] in (a, b)
+            _slot_total(sl.get("items", ())) for sl in slots if sl["movement"] in (a, b)
         )
         pa_total = pb_total = 0
         for sl in slots:
@@ -380,17 +412,21 @@ RHYTHM_FLOOR = 0.10
 
 
 def _week_rest_corr(week):
-    """Pearson correlation of each session's volume with the rest days
+    """Pearson correlation of each day's volume with the rest days
     before it, or None when the week has nothing to judge (fewer than
-    three sessions, one rest gap, or one volume). Heavy days should
+    three training days, one rest gap, or one volume). Halves sharing a
+    day merge first. Heavy days should
     follow rest: his program medians sit at +0.4 to +0.6, ours at -0.45.
     His odd weeks reach -0.9, so only the plan median is priced, and
     only below the neutral point."""
-    sess = sorted(week["sessions"], key=lambda s: s["day"])
+    by_day: dict = {}
+    for s in sorted(week["sessions"], key=lambda s: s["day"]):
+        by_day[s["day"]] = by_day.get(s["day"], 0) + s["vol"]
+    sess = sorted(by_day.items())
     if len(sess) < 3:
         return None
-    gaps = [((s["day"] - sess[i - 1]["day"]) % 7) for i, s in enumerate(sess)]
-    doses = [s["vol"] for s in sess]
+    gaps = [((d - sess[i - 1][0]) % 7) for i, (d, _) in enumerate(sess)]
+    doses = [v for _, v in sess]
     if len(set(gaps)) < 2 or len(set(doses)) < 2:
         return None
     mg, md = sum(gaps) / len(gaps), sum(doses) / len(doses)
@@ -405,7 +441,8 @@ def _rest_shortfall(plan):
     """Only anti-correlation is priced: the median week must not put
     heavy days after short rest. Rewards nothing above neutral."""
     corrs = [
-        c for c in (_week_rest_corr(w) for m in plan["mesos"] for w in m["weeks"])
+        c
+        for c in (_week_rest_corr(w) for m in plan["mesos"] for w in m["weeks"])
         if c is not None
     ]
     if not corrs:
@@ -433,10 +470,13 @@ def _week_rhythm(sessions):
         if total_vol
         else 0.0
     )
-    trained = sum(1 for s in sessions if s["vol"])
+    # Day-level: halves sharing a day train one day, so the per-day wave
+    # and the turn order count days with volume, never raw sessions.
+    day_vols = sorted(((d, v) for d, v in enumerate(vols) if v), key=lambda t: t[0])
+    trained = len(day_vols)
     per_day = movement / trained if trained else 0.0
     shortfall = max(0.0, RHYTHM_FLOOR - per_day) / RHYTHM_FLOOR
-    ordered = [s["vol"] for s in sorted(sessions, key=lambda s: s["day"])]
+    ordered = [v for _, v in day_vols]
     bar = (max(ordered) - min(ordered)) / 10 if ordered else 0
     big = [
         d for d in (b - a for a, b in zip(ordered, ordered[1:])) if d and abs(d) >= bar
@@ -584,7 +624,10 @@ def _score_items(items, cpu=None):
                         out["slots"] += 1
                         out["soft"] += _soft_opener(seq)
                         out["illegal"] += len(_entry_problems(text, seq, slot_items, s))
-                    for g, dose in _dose(s).items():
+                # Dose health is day-level: halves sharing a day merge first,
+                # so splitting a day never dilutes the convex penalty.
+                for day in _day_doses(w["sessions"]):
+                    for g, dose in _dose(day).items():
                         score = _session_score(dose)
                         out["excess"] += max(0.0, score - _tolerance(BIN_GROUP[g]))
                         if score < FLOOR:

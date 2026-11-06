@@ -34,7 +34,9 @@ def test_level_skips_per_plan_phases():
 def test_fit_amplitude_recovers_known_wave():
     fracs = [(i + 0.5) / 20 for i in range(19)]
     peak = INTENSITY_WAVE_PEAK
-    vals = [72 * (1 + 0.03 * math.sin(2 * math.pi * (f - (peak - 0.25)))) for f in fracs]
+    vals = [
+        72 * (1 + 0.03 * math.sin(2 * math.pi * (f - (peak - 0.25)))) for f in fracs
+    ]
     assert abs(fit_amplitude(fracs, vals) - 0.03) < 0.005
 
 
