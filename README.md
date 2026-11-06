@@ -9,11 +9,7 @@ Generates a 20-week Soviet-style Olympic weightlifting macrocycle from an annual
 - A group is one of the 12 movement groups in the plan, for example snatch or squat.
 - Prep is the preparation phase, which builds volume. Comp is the competition phase, which peaks for the contest.
 - A macrocycle is the full program of 20 weeks. It holds five mesocycles of four weeks. Each mesocycle holds four microcycles of one week. Each microcycle holds training sessions.
-<<<<<<< HEAD
 - A training day holds one session or two half-sessions (AM/PM). A session holds up to five slots. Each slot holds one movement or one combined movement. Our plans train one whole-day session per day; Takano days may hold AM and PM halves.
-=======
-- A training day holds one session or two half-sessions (AM/PM). A session holds up to five slots. Each slot holds one movement or one combined movement. Our plans train one whole-day session per day; Takano days may hold AM and PM halves.
->>>>>>> bac230a (exp: day-not-session halves merge to day-granular dose health)
 - A combined movement trains two movements in one slot, for example clean and jerk.
 - A set is one group of reps. A rep is one lift. A scheme is the written set plan for one slot. A dose is the lifts prescribed for one movement in one training day (both halves together when a day splits).
 - Median means the middle value.
@@ -127,11 +123,7 @@ Each level takes a share of the level above it.
 
 ## Representation and scoring
 
-<<<<<<< HEAD
 Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds the class label and the sessions, plus bodyweight when it is not middleweight. Each session knows its mesocycle, week, weekday and half (null for a whole day, AM/PM for a half day) plus its movements, combined movements, and slots. The unique session key is mesocycle, week, day, half. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
-=======
-Each plan is also saved as JSON (`outputs/<CLASS>.json`). The JSON is the intermediate representation. It holds plain data using only basic types, so any tool can read it. The file holds the class label and the sessions, plus bodyweight when it is not middleweight. Each session knows its mesocycle, week, weekday and half (null for a whole day, AM/PM for a half day) plus its movements, combined movements, and slots. The unique session key is mesocycle, week, day, half. Volumes, groups, bins, nominals, names and phases all derive from the sessions and the class ground truth tables. The HTML is rendered from the JSON itself. Two functions use it. `generate_json` writes the files. `score_json` reads one back and returns the score. Scoring never imports the generator, so any JSON in the same shape scores the same.
->>>>>>> bac230a (exp: day-not-session halves merge to day-granular dose health)
 
 `wlgen audit` builds all five classes and prints one scoreboard row per class plus the book total. The score has four parts. Lower is better.
 
@@ -155,3 +147,7 @@ The divisors (150, 9300, 25, 0.5) scale each part to about 1.0 on today's plans.
 ## Open
 
 1. Which volume split should the default Comp mesocycle use?
+
+## Past experiments
+
+Branch verdicts live in git notes: `git fetch origin refs/notes/verdicts:refs/notes/verdicts` then `git notes --ref=verdicts list`.
