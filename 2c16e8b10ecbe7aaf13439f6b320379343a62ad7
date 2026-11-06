@@ -1,0 +1,2 @@
+research/jerk-spill: verdict=rejected
+rejected: research/jerk-spill: Jerk class-I spill attempted, exc-neutral no-op, reverted (exc 144.7, 136 green)
