@@ -357,9 +357,30 @@ def feasible(prior, rows, cols):
 
     Only the support (zero vs positive) matters, so the cache key carries
     0/1 flags: quota weights (1, epsilon, boundary) that share a support
-    share one max-flow run."""
+    share one max-flow run. A demand row/column with empty support can
+    never be saturated, so answer False in the key-building pass and
+    skip the graph build + BFS (same boolean max-flow would return)."""
+    nc = len(cols)
+    col_has = [False] * nc
+    support = []
+    for i, prow in enumerate(prior):
+        row_any = False
+        srow = []
+        for j, x in enumerate(prow):
+            if x > 0:
+                srow.append(1)
+                row_any = True
+                col_has[j] = True
+            else:
+                srow.append(0)
+        if rows[i] > 0 and not row_any:
+            return False
+        support.append(tuple(srow))
+    for j in range(nc):
+        if cols[j] > 0 and not col_has[j]:
+            return False
     return _feasible(
-        tuple(tuple(1 if x > 0 else 0 for x in row) for row in prior),
+        tuple(support),
         tuple(rows),
         tuple(cols),
     )

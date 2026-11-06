@@ -2068,6 +2068,20 @@ def test_feasible_matches_brute_force():
         )
 
 
+def test_feasible_isolated_demand_is_infeasible():
+    # A demand row/col with empty support can never be saturated,
+    # so feasible() must answer False without running max-flow.
+    cases = [
+        ([[0, 0], [1, 1]], [3, 3], [3, 3]),
+        ([[1, 0], [1, 0]], [3, 3], [3, 3]),
+        ([[1, 0, 0], [0, 1, 0]], [2, 4], [2, 2, 2]),
+        ([[0, 0], [1, 1]], [2, 0], [1, 1]),
+    ]
+    for prior, rows, cols in cases:
+        assert feasible(prior, rows, cols) is False, (prior, rows, cols)
+        assert _brute_feasible(prior, rows, cols) is False, (prior, rows, cols)
+
+
 def test_feasible_uses_only_support():
     prior = [[1.0, 0.01], [0.5, 2.0]]
     other = [[3.0, 0.001], [1.0, 7.0]]
