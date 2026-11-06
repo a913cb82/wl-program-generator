@@ -1,0 +1,2 @@
+research/spare-1: verdict=rejected
+rejected: Stack fund-spill-2: top-3 gap-guarded spill, all classes (exc 147.3 -> 144.7)
