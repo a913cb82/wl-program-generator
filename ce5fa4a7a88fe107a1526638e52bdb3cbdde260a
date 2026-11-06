@@ -1,0 +1,2 @@
+research/finish-scan: verdict=rejected
+rejected: finish-scan: FINISH_SCAN 2->1 rejected (book 0.931->0.898, 2 fails)
