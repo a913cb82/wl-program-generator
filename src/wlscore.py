@@ -26,6 +26,7 @@ from wlconfig import (
     PRILEPIN_CLASSIC,
     REPS,
     TOL,
+    _unjustified_gaps,
     slot_match,
 )
 from wlir import allocate, from_ir, macro_days, to_ir
@@ -491,40 +492,6 @@ def _week_rhythm(sessions):
         "missing": possible - turns,
         "total": shortfall + (possible - turns),
     }
-
-
-def _unjustified_gaps(session, sessions, week_bins):
-    """Zone gaps in one session's cells that the week could have covered,
-    mirroring the contiguity test: a gap stands only where the week cannot
-    cover every session spanning it."""
-    count = 0
-    for g, counts in session["movements"].items():
-        used = [z for z, x in enumerate(counts) if x]
-        if len(used) < 2:
-            continue
-        nz = len(counts)
-        pros = [t["movements"].get(g, [0] * nz) for t in sessions]
-        week_base = next((z for z, x in enumerate(week_bins[g]) if x), None)
-        for z in range(used[0], used[-1] + 1):
-            if counts[z] or week_base is None:
-                continue
-            if z == week_base:
-                spanning = sum(1 for t in pros if sum(t[z + 1 :]))
-            else:
-                spanning = sum(1 for t in pros if sum(t[:z]) and sum(t[z + 1 :]))
-            locked = sum(
-                t[z]
-                for t, s in zip(pros, sessions)
-                if any(g in p for p in s.get("pairs", {}))
-                and not (
-                    sum(t[:z]) and sum(t[z + 1 :])
-                    if z != week_base
-                    else sum(t[z + 1 :])
-                )
-            )
-            if not (week_bins[g][z] - locked < spanning):
-                count += 1
-    return count
 
 
 def _score_items(items, cpu=None):
