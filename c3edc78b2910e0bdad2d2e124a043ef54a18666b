@@ -1,0 +1,2 @@
+research/order-4day-2: verdict=rejected
+rejected: research(order-4day-2): 4-day SLMS->SMSL rhythm 2.09->1.96, book 0.855->0.852, revert
