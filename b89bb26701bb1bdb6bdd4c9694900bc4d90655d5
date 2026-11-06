@@ -1,0 +1,2 @@
+research/sched-lock-3: verdict=rejected
+rejected: sched-lock-3: Class-I SnPull/Other-Snatch 1:1-light lock tried, no-op (exc 144.7), reverted
