@@ -1,0 +1,2 @@
+research/sched-lock: verdict=rejected
+rejected: sched-lock: note II global 1:1-forbid trial, reverted (exc 144.7->130.8 but bad 0->1, 124 green)
