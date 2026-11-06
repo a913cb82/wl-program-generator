@@ -1,0 +1,2 @@
+research/beam-joint: verdict=rejected
+rejected: Revert BEAM_JOINT 16->24: regresses size and pace on verification
