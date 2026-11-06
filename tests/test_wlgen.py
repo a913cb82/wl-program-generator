@@ -2598,3 +2598,59 @@ def test_ir_writes_null_half():
         for w in m["weeks"]:
             assert all(s["half"] is None for s in w["sessions"])
     assert to_ir(back) == ir
+
+
+# Stall-abort fixtures harvested from a real MS build: a feasible-but-glacial
+# burn (IPF creeps to a fixed point that misses the margins: 1000 iters,
+# still None) and a slow converger (510 iters to a matrix). The abort must
+# cut the former early and spare the latter exactly.
+_DOOMED_PRIOR = [
+    [0.0, 0.0, 1.0],
+    [1.0, 1.0, 0.0],
+    [0.0, 0.0, 1.0],
+    [1.0, 1.0, 0.0],
+    [0.0, 0.0, 1.0],
+    [1.0, 1.0, 0.0],
+    [1.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
+    [1.0, 1.0, 1.0],
+    [0.0, 1.0, 1.0],
+    [0.0, 0.0, 0.0],
+    [1.0, 1.0, 1.0],
+]
+_DOOMED_ROWS = [19, 28, 12, 19, 14, 16, 47, 0, 20, 24, 0, 36]
+_DOOMED_COLS = [47, 141, 47]
+_SLOW_PRIOR = [
+    [0.0, 1.0, 0.0, 1.0, 0.0],
+    [1.0, 0.0, 1.0, 0.0, 1.0],
+    [0.0, 0.0, 0.0, 0.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 0.0],
+    [0.0, 1.0, 0.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0],
+    [1.0, 0.0, 1.0, 0.0, 1.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0],
+]
+_SLOW_ROWS = [31, 47, 19, 31, 23, 27, 77, 0, 33, 39, 0, 60]
+_SLOW_COLS = [86, 43, 129, 86, 43]
+
+
+def test_ipf_stalled_flags_flat_deviation():
+    # doomed burns freeze (0.075 -> 0.075) or crawl (~33% drop per window);
+    # slow convergers plunge (~93% drop per window).
+    assert wlgen._ipf_stalled(0.075, 0.075)
+    assert wlgen._ipf_stalled(0.1245, 0.1859)
+    assert not wlgen._ipf_stalled(0.01, 0.1468)
+
+
+def test_ipf_stall_abort_cuts_doomed_burn():
+    assert ipf(_DOOMED_PRIOR, _DOOMED_ROWS, _DOOMED_COLS) is None
+
+
+def test_ipf_stall_abort_spares_slow_converger():
+    got = ipf(_SLOW_PRIOR, _SLOW_ROWS, _SLOW_COLS)
+    assert got is not None
+    assert got == _naive_ipf(_SLOW_PRIOR, _SLOW_ROWS, _SLOW_COLS)

@@ -302,11 +302,21 @@ def ipf(prior, rows, cols, iters=1000):
     return None if m is None else [list(r) for r in m]
 
 
+def _ipf_stalled(dev, anchor):
+    """True when the deviation barely moved over the trailing window.
+
+    Converging burns shrink ~10x per 100 iters; doomed burns freeze or
+    crawl (worst observed window ratio 0.32 vs best converger 0.04),
+    so a halving test separates them with wide margin on both sides."""
+    return dev > anchor * 0.5
+
+
 @cache
 def _ipf(prior, rows, cols, iters):
     nr = len(rows)
     m = [[float(x) for x in row] for row in prior]
     rng = range(nr)
+    anchor = None
     for it in range(iters):
         for i in rng:
             row = m[i]
@@ -322,17 +332,23 @@ def _ipf(prior, rows, cols, iters):
                     row[j] *= factor
         if it % 10 == 9:
             ok = True
+            dev = 0.0
             for i in rng:
-                if abs(sum(m[i]) - rows[i]) >= 1e-6:
+                d = abs(sum(m[i]) - rows[i])
+                dev += d
+                if d >= 1e-6:
                     ok = False
-                    break
-            if ok:
-                for j, col in enumerate(zip(*m)):
-                    if abs(sum(col) - cols[j]) >= 1e-6:
-                        ok = False
-                        break
+            for j, col in enumerate(zip(*m)):
+                d = abs(sum(col) - cols[j])
+                dev += d
+                if d >= 1e-6:
+                    ok = False
             if ok:
                 return tuple(tuple(r) for r in m)
+            if (it + 1) % 200 == 0:
+                if anchor is not None and _ipf_stalled(dev, anchor):
+                    return None
+                anchor = dev
     return None
 
 
