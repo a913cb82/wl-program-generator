@@ -1,0 +1,2 @@
+research/snatch-spill-3: verdict=rejected
+rejected: snatch-spill-3: guarded clone exc-neutral, reverted (illegal was paired-cohost, exc 144.7, 136 green)
