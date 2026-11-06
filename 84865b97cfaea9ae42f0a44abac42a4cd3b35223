@@ -1,0 +1,2 @@
+research/snatch-spill-5: verdict=rejected
+rejected: research/snatch-spill-5: Other Snatch class-I spill attempted, exc-neutral, reverted (exc 144.7, 136 green)
