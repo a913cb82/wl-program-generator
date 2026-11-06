@@ -1,0 +1,11 @@
+research/pace-prof: verdict=rejected
+rejected: Stack layer-fix-2: gap helper to wlconfig, byte-identical
+---
+research/snatch-spill-4: verdict=rejected
+rejected: Stack layer-fix-2: gap helper to wlconfig, byte-identical
+---
+research/spare-2: verdict=rejected
+rejected: Stack layer-fix-2: gap helper to wlconfig, byte-identical
+---
+research/ubiquity: verdict=rejected
+rejected: Stack layer-fix-2: gap helper to wlconfig, byte-identical
