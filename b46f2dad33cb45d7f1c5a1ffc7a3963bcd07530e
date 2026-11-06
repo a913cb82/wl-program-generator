@@ -1,0 +1,2 @@
+research/cap-refits: verdict=rejected
+rejected: cap-refits: reject 200->300, pin cap at 200
