@@ -1,0 +1,2 @@
+research/pairvol-trim: verdict=rejected
+rejected: research/pairvol-trim: 0.9x C1 light trim tried, exc 144.7 -> 161.3, reverted
