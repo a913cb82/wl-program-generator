@@ -1,0 +1,2 @@
+research/bins-shift: verdict=rejected
+rejected: research(bins-shift): MS Snatch bin probe — fence both sides, no win, src reverted
