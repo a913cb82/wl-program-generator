@@ -2621,7 +2621,7 @@ def beam_search(zones, family):
         seed_pick = _rank(cost, cx, seed, compact_text(seed))
         if seed_pick < base_rank:
             base, base_rank = seed, seed_pick
-    return base
+    return wave_polish(base, family)
 
 
 @cache
@@ -2799,6 +2799,55 @@ def capped_order(zones):
     return tuple(seq) if seq else None
 
 
+def wave_polish(order, family):
+    """Round-robin reorder of the same sets into wave compression.
+
+    Zones take turns ascending with their largest remaining set first, so
+    evenly matched zones alternate into a wave the phrase count reads as
+    one body plus its repeat. Same multiset (zone totals identical) and
+    same length; kept only for a strict instruction cut with no
+    stray/warmup regression, else the base order. Pure, deterministic."""
+    if len(order) < 4:
+        return order
+    present = tuple(sorted({z for z, _ in order}))
+    if len(present) < 2:
+        return order
+    counts: dict = {}
+    for pair in order:
+        counts[pair] = counts.get(pair, 0) + 1
+    if sum(1 for c in counts.values() if c >= 2) < 2:
+        return order
+    rem: dict = {}
+    for z, v in order:
+        rem.setdefault(z, []).append(v)
+    for vs in rem.values():
+        vs.sort(key=atom_total, reverse=True)
+    out = []
+    seen: set = set()
+    last_zone, last_value = None, None
+    while any(rem[z] for z in present):
+        progressed = False
+        for z in present:
+            if rem[z] and _transition_ok(
+                last_zone, last_value, z, rem[z][0], frozenset(seen), present
+            ):
+                v = rem[z].pop(0)
+                seen.add(z)
+                last_zone, last_value = z, v
+                out.append((z, v))
+                progressed = True
+        if not progressed:
+            return order
+    polished = tuple(out)
+    if polished == order:
+        return order
+    _, stray0, warmup0, cx0 = scheme_cost(order, family)
+    _, stray1, warmup1, cx1 = scheme_cost(polished, family)
+    if stray1 <= stray0 and warmup1 <= warmup0 and cx1 < cx0:
+        return polished
+    return order
+
+
 def fixed_beam(types, family):
     """Best legal order of a fixed atom multiset; None if impossible."""
     present = tuple(sorted({z for z, _, _ in types}))
@@ -2921,7 +2970,7 @@ def fixed_beam(types, family):
         if best is None or rank < best[0]:
             best = (rank, prefix)
     assert best is not None
-    return best[1]
+    return wave_polish(best[1], family)
 
 
 @cache

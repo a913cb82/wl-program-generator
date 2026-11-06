@@ -2654,3 +2654,40 @@ def test_ipf_stall_abort_spares_slow_converger():
     got = ipf(_SLOW_PRIOR, _SLOW_ROWS, _SLOW_COLS)
     assert got is not None
     assert got == _naive_ipf(_SLOW_PRIOR, _SLOW_ROWS, _SLOW_COLS)
+
+
+def test_wave_polish_alternates_into_wave():
+    # Two zones of even doubles read as four phrases climbing but as one
+    # wave plus its repeat when alternated; the polish must find it with
+    # identical zone totals and no stray/warmup regression.
+    family = "Squat"
+    base = ((70, 2), (70, 2), (80, 2), (80, 2))
+    polished = wlgen.wave_polish(base, family)
+    assert polished == ((70, 2), (80, 2), (70, 2), (80, 2))
+    assert complexity(polished) == 3
+    assert complexity(base) == 4
+    for seq in (base, polished):
+        assert sorted(seq) == sorted(polished)
+    seen = set()
+    last_zone, last_value = None, None
+    present = (70, 80)
+    for z, v in polished:
+        assert wlgen._transition_ok(
+            last_zone, last_value, z, v, frozenset(seen), present
+        )
+        seen.add(z)
+        last_zone, last_value = z, v
+    (_, stray0, warmup0, _), (_, stray1, warmup1, _) = (
+        scheme_cost(base, family),
+        scheme_cost(polished, family),
+    )
+    assert (stray1, warmup1) == (stray0, warmup0)
+
+
+def test_wave_polish_keeps_base_without_strict_cut():
+    # A leftover set after the wave ties the climb's phrase count, so the
+    # polish must leave the order alone rather than churn it.
+    family = "Squat"
+    base = ((70, 2), (70, 2), (70, 2), (80, 2), (80, 2))
+    assert wlgen.wave_polish(base, family) == base
+    assert wlgen.wave_polish(((70, 1),), family) == ((70, 1),)

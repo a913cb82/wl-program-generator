@@ -225,10 +225,11 @@ def test_book_numbers_match_research():
     # bit-identical (fit margins exact: ob/iv stay 0.0); each hosting day
     # renders its own 80 ladder at ladder-max sizes, so instructions rise
     # (more days carry 80s) while modes are untouched.
+    # Wave-polish: alternating waves cut 8 instructions, totals exact.
     assert round(book["excess"], 1) == 187.8
     # phase peak starves a few thin tops just under the floor
     assert book["shortfall"] < 0.2
-    assert book["instructions"] == 9528
+    assert book["instructions"] == 9520
     assert book["slots"] == 1440
     assert book["longest"] == 33
 
