@@ -1,0 +1,5 @@
+research/beam-seed-2: verdict=rejected
+rejected: stack perclass-impl: MS-only M+0.5
+---
+research/single-exc: verdict=rejected
+rejected: stack perclass-impl: MS-only M+0.5
